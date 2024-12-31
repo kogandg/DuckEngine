@@ -1,0 +1,66 @@
+#include "WindowManager.h"
+
+void WindowManager::AddWindow(Window* window)
+{
+	windows.emplace(window);
+}
+
+void WindowManager::RemoveWindow(Window* window)
+{
+	windows.erase(window);
+}
+
+void WindowManager::CleanRemoveWindow(Window* window)
+{
+	window->CleanUp();
+	window->Destroy();
+	windows.erase(window);
+}
+
+void WindowManager::DisplayCallback()
+{
+	for (auto window : windows)
+	{
+		window->DisplayCallback();
+	}
+}
+
+void WindowManager::CleanUp()
+{
+	for (auto window : windows)
+	{
+		window->CleanUp();
+	}
+}
+
+void WindowManager::DestroyWindows()
+{
+	for (auto window : windows)
+	{
+		window->Destroy();
+	}
+}
+
+bool WindowManager::SomeClosed()
+{
+	for (auto window : windows)
+	{
+		if (window->Initialized() && window->ShouldClose())
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+bool WindowManager::AllClosed()
+{
+	for (auto window : windows)
+	{
+		if (window->Initialized() && !window->ShouldClose())
+		{
+			return false;
+		}
+	}
+	return true;
+}
