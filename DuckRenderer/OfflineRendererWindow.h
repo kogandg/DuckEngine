@@ -23,5 +23,6 @@ private:
 	bool joined = false;
 	std::thread worker;
 
+	bool cancelPressed = false;
 };
 

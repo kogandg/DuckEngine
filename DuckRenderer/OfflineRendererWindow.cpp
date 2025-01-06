@@ -46,7 +46,7 @@ void OfflineRendererWindow::IdleCallback()
 
 	if (renderer.Started())
 	{
-		loadTexture(renderer.GetImage(), 256, 256);
+		loadTexture(renderer.GetImage(), renderer.GetPixelWidth(), renderer.GetPixelHeight());
 	}
 
 	if (worker.joinable() && renderer.DoneRendering())
@@ -59,12 +59,18 @@ void OfflineRendererWindow::IdleCallback()
 	{
 		saveImage(renderer.GetImage(), width, height);
 	}
+
+	if (cancelPressed)
+	{
+		renderer.Cancel();
+	}
 }
 
 void OfflineRendererWindow::DisplayCallback()
 {
 	if (!Window::Begin()) return;
 	savePressed = false;
+	cancelPressed = false;
 
 	drawQuad();
 
@@ -73,6 +79,11 @@ void OfflineRendererWindow::DisplayCallback()
 
 	ImGui::Text("Window width: %d", width);
 	ImGui::Text("Window height: %d", height);
+
+	if (ImGui::Button("Cancel rendering"))
+	{
+		cancelPressed = true;
+	}
 
 	if (saveEnable)
 	{

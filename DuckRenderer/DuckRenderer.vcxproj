@@ -133,6 +133,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="EmbreeGeometry.cpp" />
     <ClCompile Include="ImageWindow.cpp" />
     <ClCompile Include="imgui\imgui.cpp" />
     <ClCompile Include="imgui\imgui_demo.cpp" />
@@ -150,11 +152,18 @@
     </ClCompile>
     <ClCompile Include="OfflineRenderer.cpp" />
     <ClCompile Include="OfflineRendererWindow.cpp" />
+    <ClCompile Include="RenderableObject.cpp" />
+    <ClCompile Include="Scene.cpp" />
+    <ClCompile Include="SceneObject.cpp" />
     <ClCompile Include="SelectionWindow.cpp" />
+    <ClCompile Include="Triangle.cpp" />
     <ClCompile Include="Window.cpp" />
     <ClCompile Include="WindowManager.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Camera.h" />
+    <ClInclude Include="EmbreeGeometry.h" />
+    <ClInclude Include="Geometry.h" />
     <ClInclude Include="ImageWindow.h" />
     <ClInclude Include="imgui\imconfig.h" />
     <ClInclude Include="imgui\imgui.h" />
@@ -166,11 +175,16 @@
     <ClInclude Include="imgui\imstb_rectpack.h" />
     <ClInclude Include="imgui\imstb_textedit.h" />
     <ClInclude Include="imgui\imstb_truetype.h" />
+    <ClInclude Include="Intersection.h" />
     <ClInclude Include="OfflineRenderer.h" />
     <ClInclude Include="OfflineRendererWindow.h" />
+    <ClInclude Include="RenderableObject.h" />
+    <ClInclude Include="Scene.h" />
+    <ClInclude Include="SceneObject.h" />
     <ClInclude Include="SelectionWindow.h" />
     <ClInclude Include="stb\stb_image.h" />
     <ClInclude Include="stb\stb_image_write.h" />
+    <ClInclude Include="Triangle.h" />
     <ClInclude Include="Window.h" />
     <ClInclude Include="WindowManager.h" />
   </ItemGroup>
