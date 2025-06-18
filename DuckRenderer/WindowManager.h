@@ -10,6 +10,7 @@ public:
 	void RemoveWindow(Window* window);
 	void CleanRemoveWindow(Window* window);
 
+	void IdleCallback();
 	void DisplayCallback();
 	void CleanUp();
 	void DestroyWindows();

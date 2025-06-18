@@ -1,16 +1,15 @@
 #pragma once
 
-#include <glm/glm.hpp>
-
-#include "Geometry.h"
 #include "EmbreeGeometry.h"
 
-class Triangle : public Geometry
+#include <glm/gtc/type_ptr.hpp>
+
+class Triangle : public EmbreeGeometry
 {
 public:
 	Triangle(glm::vec3 v1, glm::vec3 v2, glm::vec3 v3);
 
-	void InitGeometry(RTCDevice device, RTCScene scene) override;
+	void InitGeometry(RTCDevice device, RTCScene scene, glm::mat4 transform) override;
 
 private:
 	glm::vec3 v1;

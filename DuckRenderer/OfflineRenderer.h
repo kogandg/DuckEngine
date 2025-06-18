@@ -7,50 +7,67 @@
 
 #include "Intersection.h"
 #include "Triangle.h"
+#include "Sphere.h"
 #include "Scene.h"
 #include "RenderableObject.h"
+#include "Integrator.h"
+#include "RenderTarget.h"
 
 #include <thread>
 #include <chrono>
+#include <algorithm>
 
+
+enum ProgressState
+{
+	NotStarted,
+	Running,
+	Done,
+	Canceled
+};
 
 class OfflineRenderer
 {
 public:
-	OfflineRenderer(int maxDepth = 5);
+	OfflineRenderer(std::shared_ptr<Integrator> integrator, std::shared_ptr<Scene> scene);
 
-	void Render(int imageWidth, int imageHeight);
+	void Initialize();
+	void Render(std::shared_ptr<RenderTarget> target);
+	
+	inline ProgressState GetProgressState() { return progressState; }
+	//inline bool DoneRendering() { return started && !running; }
+	//inline unsigned char* GetImage() { return image; }
+	inline void Cancel() { progressState = ProgressState::Canceled; }
+	//inline bool Started() { return started; }
 
-	inline bool DoneRendering() { return started && !running; }
-	inline unsigned char* GetImage() { return image; }
-	inline void Cancel() { cancel = true; }
-	inline bool Started() { return started; }
-
-	inline int GetPixelWidth() { return scene.GetCamera().get()->GetPixelWidth(); }
-	inline int GetPixelHeight() { return scene.GetCamera().get()->GetPixelHeight(); }
+	inline int GetPixelWidth() { return scene.get()->GetCamera().get()->GetPixelWidth(); }
+	inline int GetPixelHeight() { return scene.get()->GetCamera().get()->GetPixelHeight(); }
 
 private:
 
+	RTCDevice embreeDevice;
 	std::shared_ptr<RenderableObject> tri;
+	std::shared_ptr<RenderableObject> sphere;
 
-	unsigned char* image;
+	//bool started = false;
+	//bool running = false;
+	//bool cancel = false;
 
-	bool started = false;
-	bool running = false;
-	bool cancel = false;
+	ProgressState progressState = ProgressState::NotStarted;
 
 	int maxDepth;
 
-	//void errorFunction(void* userPtr, enum RTCError error, const char* str);
-	RTCDevice initializeDevice();
-	void initializeScene(RTCDevice device);
+	////void errorFunction(void* userPtr, enum RTCError error, const char* str);
+	//RTCDevice initializeDevice();
+	//void initializeScene(RTCDevice device);
 	
-	Scene scene;
+	std::shared_ptr<Scene> scene;
+	std::shared_ptr<Integrator> integrator;
 	//RTCScene scene;
 
 	//Intersection castRay(glm::vec3 origin, glm::vec3 direction);
-	glm::vec3 rayColor(Intersection intersection);
+	//glm::vec3 rayColor(Intersection intersection);
 
-	void writePixel(glm::vec3 color, int x, int y, int width);
+	//void writePixel(glm::vec3 color, int x, int y, int width);
 };
 

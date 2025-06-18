@@ -1,7 +1,15 @@
 #include "OfflineRendererWindow.h"
 
-OfflineRendererWindow::OfflineRendererWindow(const char* title, int width, int height) : ImageWindow(title, width, height)
+OfflineRendererWindow::OfflineRendererWindow(const char* title, int width, int height, std::shared_ptr<OfflineRenderer> renderer, std::shared_ptr<RenderTarget> renderTarget) : ImageWindow(title, width, height)
 {
+	this->renderer = renderer;
+	this->renderTarget = renderTarget;
+}
+
+OfflineRendererWindow::OfflineRendererWindow(const char* title, std::shared_ptr<OfflineRenderer> renderer, std::shared_ptr<RenderTarget> renderTarget) : ImageWindow(title, renderTarget.get()->GetWidth(), renderTarget.get()->GetHeight())
+{
+	this->renderer = renderer;
+	this->renderTarget = renderTarget;
 }
 
 void OfflineRendererWindow::Init()
@@ -11,7 +19,7 @@ void OfflineRendererWindow::Init()
 
 void OfflineRendererWindow::CleanUp()
 {
-	renderer.Cancel();
+	renderer.get()->Cancel();
 	if (!joined)
 	{
 		if (worker.joinable())
@@ -30,11 +38,12 @@ void OfflineRendererWindow::CleanUp()
 void OfflineRendererWindow::InitObjects()
 {
 	initGLObjects();
+	renderer.get()->Initialize();
 }
 
-void OfflineRendererWindow::StartRendering(int width, int height)
+void OfflineRendererWindow::StartRendering()
 {
-	worker = std::thread(&OfflineRenderer::Render, &renderer, width, height);
+	worker = std::thread(&OfflineRenderer::Render, renderer.get(), renderTarget);
 	saveEnable = true;
 }
 
@@ -44,12 +53,12 @@ void OfflineRendererWindow::IdleCallback()
 
 	if (!initialized) return;
 
-	if (renderer.Started())
+	if (renderer.get()->GetProgressState() != ProgressState::NotStarted)
 	{
-		loadTexture(renderer.GetImage(), renderer.GetPixelWidth(), renderer.GetPixelHeight());
+		loadTexture(renderTarget.get()->GetImage(), renderTarget.get()->GetWidth(), renderTarget.get()->GetHeight());
 	}
 
-	if (worker.joinable() && renderer.DoneRendering())
+	if (worker.joinable() && (renderer.get()->GetProgressState() == ProgressState::Done || renderer.get()->GetProgressState() == ProgressState::Canceled))
 	{
 		worker.join();
 		joined = true;
@@ -57,12 +66,12 @@ void OfflineRendererWindow::IdleCallback()
 
 	if (savePressed)
 	{
-		saveImage(renderer.GetImage(), width, height);
+		saveImage(renderTarget.get()->GetImage(), renderTarget.get()->GetWidth(), renderTarget.get()->GetHeight());
 	}
 
 	if (cancelPressed)
 	{
-		renderer.Cancel();
+		renderer.get()->Cancel();
 	}
 }
 
@@ -80,7 +89,7 @@ void OfflineRendererWindow::DisplayCallback()
 	ImGui::Text("Window width: %d", width);
 	ImGui::Text("Window height: %d", height);
 
-	if (ImGui::Button("Cancel rendering"))
+	if (renderer.get()->GetProgressState() != ProgressState::Done && ImGui::Button("Cancel rendering"))
 	{
 		cancelPressed = true;
 	}
@@ -88,6 +97,11 @@ void OfflineRendererWindow::DisplayCallback()
 	if (saveEnable)
 	{
 		imguiSaveDialog();
+	}
+
+	if (ImGui::Button("Debug"))
+	{
+		int count = 0;
 	}
 
 	ImGui::End();

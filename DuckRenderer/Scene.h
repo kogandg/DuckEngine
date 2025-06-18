@@ -3,16 +3,22 @@
 #include <vector>
 #include <memory>
 #include <embree4/rtcore.h>
+#include <iostream>
 
 #include "Intersection.h"
 #include "SceneObject.h"
 #include "RenderableObject.h"
 #include "Camera.h"
+#include "EmbreeGeometry.h"
+#include <unordered_map>
+#include "Light.h"
+#include "PointLight.h"
 
 
 class Scene
 {
 public:
+	Scene();
 
 	void AddObject(std::shared_ptr<SceneObject> object);
 
@@ -27,13 +33,22 @@ public:
 
 	inline std::shared_ptr<Camera> GetCamera() { return camera; }
 
+	std::shared_ptr<RenderableObject> GetRenderable(unsigned int geomID);
+
+	inline std::vector<std::shared_ptr<Light>> GetLights() { return lightSources; }
+	inline std::vector<std::shared_ptr<PointLight>> GetPointLights() { return pointLights; }
+
 private:
 	std::vector<std::shared_ptr<SceneObject>> objects;
 	std::vector<std::shared_ptr<RenderableObject>> renderableObjects;
-	std::vector<std::shared_ptr<SceneObject>> lightSources;
+
+	std::vector<std::shared_ptr<Light>> lightSources;
+	std::vector<std::shared_ptr<PointLight>> pointLights;
+	//directionalLights
 
 	std::shared_ptr<Camera> camera;
 
 	RTCScene embreeScene;
+	//RTCScene embreeSceneInstance;
 };
 

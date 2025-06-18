@@ -1,15 +1,12 @@
 #pragma once
 
+#include "Geometry.h"
+
 #include <embree4/rtcore.h>
 
-class EmbreeGeometry
+class EmbreeGeometry : public Geometry
 {
 public: 
-	virtual void InitGeometry(RTCDevice device, RTCScene scene);
-
-	inline unsigned int GetGeometryID() { return geometryID; }
-	
-protected:
-	unsigned int geometryID = RTC_INVALID_GEOMETRY_ID;
+	virtual void InitGeometry(RTCDevice device, RTCScene scene, glm::mat4 transform);
 };
 

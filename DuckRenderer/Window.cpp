@@ -124,6 +124,7 @@ void Window::End()
 		ImGui::UpdatePlatformWindows();
 		ImGui::RenderPlatformWindowsDefault();
 		glfwMakeContextCurrent(backup_current_context);
+		//delete backup_current_context;
 	}
 
 	// Swap buffers

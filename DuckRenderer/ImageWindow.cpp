@@ -200,10 +200,22 @@ void main() {
 )";
 
 	createShaderProgram(vertexShaderSource, fragmentShaderSource);
+
+
+	//test this location
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+
+	// Set texture parameters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 }
 
 void ImageWindow::loadTexture(const char* path)
 {
+	//only needs to be done once for each texture
 	glGenTextures(1, &texture);
 	glBindTexture(GL_TEXTURE_2D, texture);
 
@@ -212,6 +224,9 @@ void ImageWindow::loadTexture(const char* path)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	//end of only once
+	//leaving here as this is more likely to be called once to load an image from a file
+	//removed from other loadTexture as it is reloaded every frame with new image, but texture is already bound in initialized 
 
 	int width;
 	int height;
@@ -239,21 +254,14 @@ void ImageWindow::loadTexture(const unsigned char* data, int width, int height)
 	//flip image
 	auto flipped = flipImage(data, width, height);
 
-	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_2D, texture);
-
-	// Set texture parameters
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
 	// Upload the texture data to GPU
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, flipped);
 	glGenerateMipmap(GL_TEXTURE_2D);
 
 	aspectWidth = width;
 	aspectHeight = height;
+
+	delete flipped;
 }
 
 unsigned char* ImageWindow::flipImage(const unsigned char* data, int width, int height)

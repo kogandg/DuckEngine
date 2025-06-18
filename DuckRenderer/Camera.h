@@ -5,7 +5,7 @@
 class Camera : public SceneObject
 {
 public:
-	Camera(glm::vec3 lookFrom, glm::vec3 lookAt, glm::vec3 up);
+	Camera(glm::vec3 lookFrom, glm::vec3 lookAt, glm::vec3 up, float fovy);
 
 	void Initialize(int imagePixelWidth, int imagePixelHeight);
 	void Initialize(int imagePixelWidth, float aspectRatio);
@@ -26,7 +26,7 @@ private:
 	glm::vec3 lookAt;
 	glm::vec3 up;
 
-	float fovY = 90;
+	float fovY;//this is weird, need to test with real scenes
 	float aspectRatio = 0.0f;
 
 	//local space

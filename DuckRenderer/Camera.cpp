@@ -1,10 +1,11 @@
 #include "Camera.h"
 
-Camera::Camera(glm::vec3 lookFrom, glm::vec3 lookAt, glm::vec3 up)
+Camera::Camera(glm::vec3 lookFrom, glm::vec3 lookAt, glm::vec3 up, float fovy)
 {
 	this->lookFrom = lookFrom;
 	this->lookAt = lookAt;
 	this->up = up;
+	this->fovY = fovy;
 }
 
 void Camera::Initialize(int imagePixelWidth, int imagePixelHeight)
@@ -32,10 +33,10 @@ void Camera::Initialize(int imagePixelWidth, float aspectRatio)
 
 std::pair<glm::vec3, glm::vec3> Camera::GetRay(int x, int y)
 {
-	glm::vec3 pixelCenter = pixel0Location + (pixelDeltaU * (float)x) + (pixelDeltaV * (float)y);
+	glm::vec3 pixelCenter = pixel0Location + ((pixelDeltaU * (float)x) + (pixelDeltaV * (float)y));
 	glm::vec3 rayDirection = pixelCenter - lookFrom;
 
-	return std::make_pair(lookFrom, rayDirection);//not sure if it should be from pixelCenter or lookFrom but doesnt matter
+	return std::make_pair(pixelCenter, rayDirection);//not sure if it should be from pixelCenter or lookFrom but doesnt matter
 }
 
 void Camera::initialize()
@@ -48,8 +49,8 @@ void Camera::initialize()
 	viewportWidth = viewportHeight * aspectRatio;
 
 	w = glm::normalize(lookFrom - lookAt);
-	u = glm::cross(up, w);
-	v = glm::cross(w, u);
+	u = glm::normalize(glm::cross(up, w));
+	v = glm::normalize(glm::cross(w, u));
 
 	viewportU = u * viewportWidth;
 	viewportV = (-v) * viewportHeight;

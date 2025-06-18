@@ -25,91 +25,12 @@
 #include <chrono>
 #include <atomic>
 #include "OfflineRenderer.h"
-
 #include "WindowManager.h"
 #include "OfflineRendererWindow.h"
-
-
-
-unsigned char* image;
-
-//void testThread()
-//{
-//	for (int i = 0; i < 10; i++)
-//	{
-//		bufferMutex.lock();
-//		buffer += "test";
-//		bufferMutex.unlock();
-//		std::this_thread::sleep_for(std::chrono::seconds(2));
-//	}
-//
-//	std::cout << "done" << std::endl;
-//	running = false;
-//}
-//
-//// Generate a checkerboard pattern for the texture
-//void generateCheckerboard(unsigned char* image, int width, int height)
-//{
-//	running = true;
-//	started = true;
-//
-//	for (int y = 0; y < height; y++)
-//	{
-//		for (int x = 0; x < width; x++)
-//		{
-//			int index = (y * width + x) * 3; // 3 channels (RGB) per pixel
-//			bool isWhite = ((x / 16) % 2 == (y / 16) % 2); // 16-pixel checkerboard pattern
-//			//bufferMutex.lock();
-//			image[index + 0] = isWhite ? 255 : 0;  // Red
-//			image[index + 1] = isWhite ? 255 : 0;  // Green
-//			image[index + 2] = isWhite ? 255 : 0;  // Blue
-//			//bufferMutex.unlock();
-//
-//			if (cancelThread)
-//			{
-//				return;
-//			}
-//		}
-//		//std::this_thread::sleep_for(std::chrono::milliseconds(10));
-//	}
-//
-//	std::cout << "Done Rendering!" << std::endl;
-//	running = false;
-//}
-//
-//void generateGradient(unsigned char* image, int width, int height)
-//{
-//	running = true;
-//	started = true;
-//
-//	for (int y = 0; y < height; y++)
-//	{
-//		for (int x = 0; x < width; x++)
-//		{
-//			int index = (y * width + x) * 3; // 3 channels (RGB) per pixel
-//			//bool isWhite = ((x / 16) % 2 == (y / 16) % 2); // 16-pixel checkerboard pattern
-//			//bufferMutex.lock();
-//
-//			auto r = double(x) / (width - 1);
-//			auto g = double(y) / (height - 1);
-//			auto b = 0.0;
-//
-//			image[index + 0] = int(255.99 * r);  // Red
-//			image[index + 1] = int(255.99 * g);  // Green
-//			image[index + 2] = int(255.99 * b);  // Blue
-//			//bufferMutex.unlock();
-//
-//			if (cancelThread)
-//			{
-//				return;
-//			}
-//		}
-//		//std::this_thread::sleep_for(std::chrono::milliseconds(10));
-//	}
-//
-//	std::cout << "Done Rendering!" << std::endl;
-//	running = false;
-//}
+#include "RayTracerIntegrator.h"
+#include "Cube.h"
+#include "SceneLoader.h"
+#include "RenderTarget.h"
 
 static void errorCallback(int error, const char* description)
 {
@@ -144,65 +65,79 @@ void initGLEW()
 	printf("OpenGL version supported %s\n", version);
 }
 
+//Scene makeScene()
+//{
+//	Scene scene = Scene();
+//	//scene.SetCamera(std::make_shared<Camera>(Camera(glm::vec3(0, -4, 4), glm::vec3(0, -1, 0), glm::vec3(0, 1, 1))));//fov 45
+//	scene.SetCamera(std::make_shared<Camera>(Camera(glm::vec3(0, 0, 2), glm::vec3(0, 0, -1), glm::vec3(0, 1, 0), 45)));
+//
+//	auto triGeom = Triangle(glm::vec3(0, 0, -1.25), glm::vec3(1, 0, -1.25), glm::vec3(0, 1, -1.25));
+//	auto sphereGeom = Sphere(glm::vec3(0, 0, -2), 1);
+//	auto cubeGeom = Cube();
+//
+//	Material mat1 = Material(glm::vec3(1, 0, 0), glm::vec3(1, 0, 0), 0, glm::vec3(0));
+//	Material mat2 = Material(glm::vec3(0, 1, 0), glm::vec3(0, 1, 0), 0, glm::vec3(0));
+//
+//	auto tri = std::make_shared<RenderableObject>(RenderableObject("tri", std::make_shared<Triangle>(triGeom), std::make_shared<Material>(mat1)));
+//	auto sphere = std::make_shared<RenderableObject>(RenderableObject("sphere", std::make_shared<Sphere>(sphereGeom), std::make_shared<Material>(mat2)));
+//	auto cube = std::make_shared<RenderableObject>(RenderableObject("cube", std::make_shared<Cube>(cubeGeom), std::make_shared<Material>(mat2)));
+//
+//	//scene.AddObject(tri);
+//	//scene.AddObject(sphere);
+//	scene.AddObject(cube);
+//
+//	return scene;
+//}
+
 int main()
 {
 	initGLFW();
 
-	int testWidth = 256;
-	int testHeight = 256;
-	image = new unsigned char[testWidth * testHeight * 3];
-	for (int i = 0; i < testWidth * testHeight * 3; i++)
-	{
-		image[i] = 0;
-	}
-
 	SelectionWindow* selWindow = new SelectionWindow("Selection", 400, 400);
-	//ImageWindow* imageWindow = new ImageWindow("Renderer", testWidth * 2, testHeight * 2);
-	OfflineRendererWindow* rendererWindow = new OfflineRendererWindow("Offline Renderer", testWidth*2, testHeight*2);
+	OfflineRendererWindow* rendererWindow = nullptr;
 
-	//selWindow->Init(ImVec4(0.2f, 0.3f, 0.3f, 1.0f));
 	selWindow->Init(ImVec4(0, 0, 0, 1));
 
 	initGLEW();
-
-	//std::thread worker;
 
 	//OfflineRenderer renderer = OfflineRenderer();
 
 	WindowManager manager = WindowManager();
 	manager.AddWindow(selWindow);
-	//manager.AddWindow(imageWindow);
-	manager.AddWindow(rendererWindow);
 
 	while (!manager.SomeClosed())
 	{
 		// Poll for and process events
 		glfwPollEvents();
 
-		if (selWindow->offlinePressed && !rendererWindow->Initialized())
+		if (selWindow->offlinePressed && (rendererWindow == nullptr || !rendererWindow->Initialized()))
 		{
 			manager.CleanRemoveWindow(selWindow);
 
+			//auto scene = std::make_shared<Scene>(makeScene());
+			
+			SceneLoader sceneLoader = SceneLoader();
+			auto sceneLoadingOutput = sceneLoader.ParseSceneFromTestFile("scene4-diffuse.txt");
+			/*auto scene = std::make_shared<Scene>(sceneLoadingOutput.scene);
+			auto target = std::make_shared<RenderTarget>(sceneLoadingOutput.renderTarget);
+			auto integrator = std::make_shared<Integrator>(sceneLoadingOutput.integrator);*/
+
+			auto renderer = std::make_shared<OfflineRenderer>(sceneLoadingOutput.integrator, sceneLoadingOutput.scene);
+
+			rendererWindow = new OfflineRendererWindow("Offline Renderer", renderer, sceneLoadingOutput.renderTarget);
+			manager.AddWindow(rendererWindow);
 			rendererWindow->Init();
 			rendererWindow->InitObjects();
-			rendererWindow->StartRendering(testWidth, testHeight);
+			rendererWindow->StartRendering();
 
 			//worker = std::thread(&OfflineRenderer::Render, &renderer, image, testWidth, testHeight);
 		}
 
 
-		selWindow->IdleCallback();
-		//imageWindow->IdleCallback(image, testWidth, testHeight);
-		rendererWindow->IdleCallback();
+		manager.IdleCallback();
 
 		manager.DisplayCallback();
 	}
-
-	/*if (worker.joinable())
-	{
-		renderer.Cancel();
-		worker.detach();
-	}*/
 
 	manager.CleanUp();
 	manager.DestroyWindows();

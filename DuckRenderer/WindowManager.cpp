@@ -17,6 +17,14 @@ void WindowManager::CleanRemoveWindow(Window* window)
 	windows.erase(window);
 }
 
+void WindowManager::IdleCallback()
+{
+	for (auto window : windows)
+	{
+		window->IdleCallback();
+	}
+}
+
 void WindowManager::DisplayCallback()
 {
 	for (auto window : windows)

@@ -37,6 +37,27 @@
     <Filter Include="Source Files\windows">
       <UniqueIdentifier>{91ec3956-f644-449d-b381-58e8c070f687}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\integrators">
+      <UniqueIdentifier>{5029a52d-a5bf-453e-b353-be8569781aeb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\integrators">
+      <UniqueIdentifier>{72630e72-dec6-486d-8acf-05a03b62496d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\scenes">
+      <UniqueIdentifier>{aa69fda0-5bbb-4a0e-8079-cab18e6a0abd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\scenes\1">
+      <UniqueIdentifier>{53378665-46ac-44b7-af15-76d18690b7e8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\sceneObjects">
+      <UniqueIdentifier>{2a715300-1c4f-4522-89bf-decd0617e71f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\sceneObjects">
+      <UniqueIdentifier>{2689608e-2757-4560-b390-e67c4ea5192e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\sceneObjects\lights">
+      <UniqueIdentifier>{f1649c1b-0a94-4947-8ef5-001a01169fcc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -78,12 +99,6 @@
     <ClCompile Include="Triangle.cpp">
       <Filter>Source Files\geometry</Filter>
     </ClCompile>
-    <ClCompile Include="RenderableObject.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SceneObject.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ImageWindow.cpp">
       <Filter>Source Files\windows</Filter>
     </ClCompile>
@@ -99,8 +114,41 @@
     <ClCompile Include="WindowManager.cpp">
       <Filter>Source Files\windows</Filter>
     </ClCompile>
-    <ClCompile Include="Camera.cpp">
+    <ClCompile Include="Sphere.cpp">
+      <Filter>Source Files\geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Material.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RayTracerIntegrator.cpp">
+      <Filter>Source Files\integrators</Filter>
+    </ClCompile>
+    <ClCompile Include="SceneLoader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Cube.cpp">
+      <Filter>Source Files\geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Tokenizer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderTarget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Integrator.cpp">
+      <Filter>Source Files\integrators</Filter>
+    </ClCompile>
+    <ClCompile Include="PointLight.cpp">
+      <Filter>Source Files\sceneObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderableObject.cpp">
+      <Filter>Source Files\sceneObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="SceneObject.cpp">
+      <Filter>Source Files\sceneObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="Camera.cpp">
+      <Filter>Source Files\sceneObjects</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -143,9 +191,6 @@
     <ClInclude Include="OfflineRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SceneObject.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Scene.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -160,9 +205,6 @@
     </ClInclude>
     <ClInclude Include="Triangle.h">
       <Filter>Header Files\geometry</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderableObject.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ImageWindow.h">
       <Filter>Header Files\windows</Filter>
@@ -179,12 +221,69 @@
     <ClInclude Include="WindowManager.h">
       <Filter>Header Files\windows</Filter>
     </ClInclude>
-    <ClInclude Include="Camera.h">
+    <ClInclude Include="Sphere.h">
+      <Filter>Header Files\geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Material.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Integrator.h">
+      <Filter>Header Files\integrators</Filter>
+    </ClInclude>
+    <ClInclude Include="RayTracerIntegrator.h">
+      <Filter>Header Files\integrators</Filter>
+    </ClInclude>
+    <ClInclude Include="SceneLoader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cube.h">
+      <Filter>Header Files\geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Tokenizer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderTarget.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderableObject.h">
+      <Filter>Header Files\sceneObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="SceneObject.h">
+      <Filter>Header Files\sceneObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>Header Files\sceneObjects</Filter>
+    </ClInclude>
+    <ClInclude Include="Light.h">
+      <Filter>Header Files\sceneObjects\lights</Filter>
+    </ClInclude>
+    <ClInclude Include="PointLight.h">
+      <Filter>Header Files\sceneObjects\lights</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="imgui\imgui.natstepfilter" />
+    <None Include="scene4-ambient.txt">
+      <Filter>Resource Files\scenes\1</Filter>
+    </None>
+    <None Include="scene4-diffuse.txt">
+      <Filter>Resource Files\scenes\1</Filter>
+    </None>
+    <None Include="scene4-emission.txt">
+      <Filter>Resource Files\scenes\1</Filter>
+    </None>
+    <None Include="scene4-specular.txt">
+      <Filter>Resource Files\scenes\1</Filter>
+    </None>
+    <None Include="scene5.txt">
+      <Filter>Resource Files\scenes\1</Filter>
+    </None>
+    <None Include="scene6.txt">
+      <Filter>Resource Files\scenes\1</Filter>
+    </None>
+    <None Include="scene7.txt">
+      <Filter>Resource Files\scenes\1</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="imgui\imgui.natvis" />
@@ -198,5 +297,16 @@
     <Font Include="fonts\DroidSans.ttf">
       <Filter>Resource Files\fonts</Filter>
     </Font>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="scene1.txt">
+      <Filter>Resource Files\scenes\1</Filter>
+    </Text>
+    <Text Include="scene2.txt">
+      <Filter>Resource Files\scenes\1</Filter>
+    </Text>
+    <Text Include="scene3.txt">
+      <Filter>Resource Files\scenes\1</Filter>
+    </Text>
   </ItemGroup>
 </Project>
