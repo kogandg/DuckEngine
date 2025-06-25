@@ -1,5 +1,4 @@
 #include "Scene.h"
-#include "RenderableObject.h"
 
 Scene::Scene()
 {
@@ -18,6 +17,11 @@ void Scene::AddObject(std::shared_ptr<SceneObject> object)
 		if (auto pointLight = std::dynamic_pointer_cast<PointLight>(light))
 		{
 			pointLights.push_back(pointLight);
+		}
+
+		if (auto directionalLight = std::dynamic_pointer_cast<DirectionalLight>(light))
+		{
+			directionalLights.push_back(directionalLight);
 		}
 	}
 
@@ -83,12 +87,14 @@ Intersection Scene::CastRay(glm::vec3 origin, glm::vec3 direction)
 	if (intersection.id != RTC_INVALID_GEOMETRY_ID)
 	{
 		auto hitObject = GetRenderable(intersection.id).get();
-		auto transform = hitObject->GetTransform();
+		//auto transform = hitObject->GetTransform();
 
 		intersection.hit = origin + (intersection.t * direction);
+		//intersection.hit = transform * glm::vec4(intersection.hit, 0.0f);
 
 		auto embreeNorm = glm::vec3(rayhit.hit.Ng_x, rayhit.hit.Ng_y, rayhit.hit.Ng_z);
-		intersection.normal = glm::normalize(hitObject->GetInverseTransposeTransform() * glm::vec4(embreeNorm, 0.0f));
+		intersection.normal = hitObject->GetInverseTransposeTransform() * glm::vec4(embreeNorm, 0.0f);
+		intersection.normal = glm::normalize(intersection.normal);
 	}
 	return intersection;
 }

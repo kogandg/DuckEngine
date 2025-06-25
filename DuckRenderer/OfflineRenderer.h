@@ -16,6 +16,7 @@
 #include <thread>
 #include <chrono>
 #include <algorithm>
+#include <condition_variable>
 
 
 enum ProgressState
@@ -23,7 +24,8 @@ enum ProgressState
 	NotStarted,
 	Running,
 	Done,
-	Canceled
+	Canceled,
+	Paused
 };
 
 class OfflineRenderer
@@ -37,11 +39,15 @@ public:
 	inline ProgressState GetProgressState() { return progressState; }
 	//inline bool DoneRendering() { return started && !running; }
 	//inline unsigned char* GetImage() { return image; }
-	inline void Cancel() { progressState = ProgressState::Canceled; }
+	inline void Cancel() { progressState = ProgressState::Canceled; pauseCV.notify_all(); }
+
+	void TogglePaused();
+
 	//inline bool Started() { return started; }
 
 	inline int GetPixelWidth() { return scene.get()->GetCamera().get()->GetPixelWidth(); }
 	inline int GetPixelHeight() { return scene.get()->GetCamera().get()->GetPixelHeight(); }
+	inline glm::ivec2 GetCurrentPixel() { return currentPixel; }
 
 private:
 
@@ -54,6 +60,10 @@ private:
 	//bool cancel = false;
 
 	ProgressState progressState = ProgressState::NotStarted;
+	glm::ivec2 currentPixel = glm::ivec2(0, 0);
+
+	std::mutex pauseMutex;
+	std::condition_variable pauseCV;
 
 	int maxDepth;
 

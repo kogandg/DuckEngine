@@ -27,5 +27,6 @@ private:
 	std::thread worker;
 
 	bool cancelPressed = false;
+	bool pausePressed = false;
 };
 

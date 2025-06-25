@@ -1,6 +1,5 @@
 #include "SceneLoader.h"
-#include "PointLight.h"
-
+#include "DirectionalLight.h"
 
 
 SceneFileParsingOutput SceneLoader::ParseSceneFromTestFile(const char* fileName)
@@ -11,11 +10,12 @@ SceneFileParsingOutput SceneLoader::ParseSceneFromTestFile(const char* fileName)
 	auto scene = std::make_shared<Scene>();
 	auto target = std::make_shared<RenderTarget>(0, 0);
 	std::shared_ptr<Integrator> integrator = std::make_shared<RayTracerIntegrator>();
+	integrator.get()->SetMaxDepth(5);
 
 	std::vector<glm::vec3> verts;
 	std::stack<glm::mat4> transformationStack;
 
-	AmbientMaterial currentMaterial = AmbientMaterial(glm::vec3(0.0f), glm::vec3(0.0f), 0.0f, glm::vec3(0.0f), glm::vec3(0.2f));
+	Material* currentMaterial = new RayTracingMaterial(glm::vec3(0.0f), glm::vec3(0.0f), 0, glm::vec3(0.0f), glm::vec3(0.2f));
 
 	glm::vec3 currentAttenuation = glm::vec3(1, 0, 0);
 
@@ -38,6 +38,25 @@ SceneFileParsingOutput SceneLoader::ParseSceneFromTestFile(const char* fileName)
 			int height = tokenizer->GetInt();
 
 			target = std::make_shared<RenderTarget>(width, height);
+		}
+
+		if (command == "integrator")
+		{
+			std::string type = tokenizer->GetToken();
+
+			if (type == "raytracer")
+			{
+				integrator = std::make_shared<RayTracerIntegrator>();
+
+				currentMaterial = new RayTracingMaterial(glm::vec3(0.0f), glm::vec3(0.0f), 0, glm::vec3(0.0f), glm::vec3(0.2f));
+			}
+		}
+
+		if (command == "maxdepth")
+		{
+			int depth = tokenizer->GetInt();
+
+			integrator.get()->SetMaxDepth(depth);
 		}
 
 		if (command == "camera")
@@ -79,7 +98,9 @@ SceneFileParsingOutput SceneLoader::ParseSceneFromTestFile(const char* fileName)
 
 			auto triangleGeom = Triangle(verts[v1], verts[v2], verts[v3]);
 
-			auto triangle = std::make_shared<RenderableObject>(RenderableObject("tri", std::make_shared<Triangle>(triangleGeom), std::make_shared<AmbientMaterial>(currentMaterial), transformationStack.top()));
+			auto mat = std::make_shared<RayTracingMaterial>(*dynamic_cast<RayTracingMaterial*>(currentMaterial));
+
+			auto triangle = std::make_shared<RenderableObject>(RenderableObject("tri", std::make_shared<Triangle>(triangleGeom), mat, transformationStack.top()));
 
 			scene.get()->AddObject(triangle);
 		}
@@ -95,7 +116,9 @@ SceneFileParsingOutput SceneLoader::ParseSceneFromTestFile(const char* fileName)
 
 			auto sphereGeom = Sphere(position, r);
 
-			auto sphere = std::make_shared<RenderableObject>(RenderableObject("sphere", std::make_shared<Sphere>(sphereGeom), std::make_shared<AmbientMaterial>(currentMaterial), transformationStack.top()));
+			auto mat = std::make_shared<RayTracingMaterial>(*dynamic_cast<RayTracingMaterial*>(currentMaterial));
+
+			auto sphere = std::make_shared<RenderableObject>(RenderableObject("sphere", std::make_shared<Sphere>(sphereGeom), mat, transformationStack.top()));
 
 			scene.get()->AddObject(sphere);
 		}
@@ -127,7 +150,10 @@ SceneFileParsingOutput SceneLoader::ParseSceneFromTestFile(const char* fileName)
 			float r = tokenizer->GetFloat();
 			float g = tokenizer->GetFloat();
 			float b = tokenizer->GetFloat();
-			currentMaterial.SetAmbient(glm::vec3(r, g, b));
+			if (RayTracingMaterial* rtm = dynamic_cast<RayTracingMaterial*>(currentMaterial))
+			{
+				rtm->SetAmbient(glm::vec3(r, g, b));
+			}
 		}
 
 		if (command == "diffuse")
@@ -135,26 +161,38 @@ SceneFileParsingOutput SceneLoader::ParseSceneFromTestFile(const char* fileName)
 			float r = tokenizer->GetFloat();
 			float g = tokenizer->GetFloat();
 			float b = tokenizer->GetFloat();
-			currentMaterial.SetDiffuse(glm::vec3(r, g, b));
+			if (RayTracingMaterial* rtm = dynamic_cast<RayTracingMaterial*>(currentMaterial))
+			{
+				rtm->SetDiffuse(glm::vec3(r, g, b));
+			}
 		}
 		if (command == "specular")
 		{
 			float r = tokenizer->GetFloat();
 			float g = tokenizer->GetFloat();
 			float b = tokenizer->GetFloat();
-			currentMaterial.SetSpecular(glm::vec3(r, g, b));
+			if (RayTracingMaterial* rtm = dynamic_cast<RayTracingMaterial*>(currentMaterial))
+			{
+				rtm->SetSpecular(glm::vec3(r, g, b));
+			}
 		}
 		if (command == "shininess")
 		{
 			float s = tokenizer->GetFloat();
-			currentMaterial.SetShininess(s);
+			if (RayTracingMaterial* rtm = dynamic_cast<RayTracingMaterial*>(currentMaterial))
+			{
+				rtm->SetShininess(s);
+			}
 		}
 		if (command == "emission")
 		{
 			float r = tokenizer->GetFloat();
 			float g = tokenizer->GetFloat();
 			float b = tokenizer->GetFloat();
-			currentMaterial.SetEmission(glm::vec3(r, g, b));
+			if (RayTracingMaterial* rtm = dynamic_cast<RayTracingMaterial*>(currentMaterial))
+			{
+				rtm->SetEmission(glm::vec3(r, g, b));
+			}
 		}
 
 		if (command == "translate")
@@ -216,7 +254,7 @@ SceneFileParsingOutput SceneLoader::ParseSceneFromTestFile(const char* fileName)
 
 			//light->attenuation = currentAttenuation;
 		}
-		/*if (command == "directional")
+		if (command == "directional")
 		{
 			float x = tokenizer->GetFloat();
 			float y = tokenizer->GetFloat();
@@ -225,11 +263,10 @@ SceneFileParsingOutput SceneLoader::ParseSceneFromTestFile(const char* fileName)
 			float g = tokenizer->GetFloat();
 			float b = tokenizer->GetFloat();
 
-			DirectionalLight* light = new DirectionalLight();
-			light->direction = glm::normalize(glm::vec3(x, y, z));
-			light->color = glm::vec3(r, g, b);
-			scene->AddDirectionalLight(light);
-		}*/
+			auto directionalLight = std::make_shared<DirectionalLight>("directionalLight", glm::vec3(x, y, z), glm::vec3(r, g, b));
+
+			scene.get()->AddObject(directionalLight);
+		}
 
 
 	} while (command != "");

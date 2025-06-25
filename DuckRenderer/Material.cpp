@@ -1,32 +1,27 @@
 #include "Material.h"
 
+MaterialEvaluation Material::Evaluate(Intersection intersection)
+{
+    MaterialEvaluation me;
+    me.direction = glm::normalize(intersection.normal);
+    me.color = glm::vec3(0.0f);
+    return me;
+}
 
-Material::Material(glm::vec3 diffuse, glm::vec3 specular, float shininess, glm::vec3 emission)
+
+RayTracingMaterial::RayTracingMaterial(glm::vec3 diffuse, glm::vec3 specular, float shininess, glm::vec3 emission, glm::vec3 ambient) : Material()
 {
     this->diffuse = diffuse;
     this->specular = specular;
     this->shininess = shininess;
     this->emission = emission;
-}
-
-
-MaterialEvaluation Material::Evaluate(Intersection intersection)
-{
-    MaterialEvaluation me;
-    me.direction = glm::normalize(intersection.normal);
-    me.color = diffuse;
-    return me;
-}
-
-AmbientMaterial::AmbientMaterial(glm::vec3 diffuse, glm::vec3 specular, float shininess, glm::vec3 emission, glm::vec3 ambient) : Material(diffuse, specular, shininess, emission)
-{
     this->ambient = ambient;
 }
 
-MaterialEvaluation AmbientMaterial::Evaluate(Intersection intersection)
+MaterialEvaluation RayTracingMaterial::Evaluate(Intersection intersection)
 {
     MaterialEvaluation me;
-    me.direction = glm::normalize(intersection.normal);
-    me.color = diffuse;
+    me.direction = intersection.normal;
+    me.color = emission + ambient;
     return me;
 }

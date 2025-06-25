@@ -32,9 +32,9 @@ void OfflineRenderer::Render(std::shared_ptr<RenderTarget> target)
 {
 	/* Initialization. All of this may fail, but we will be notified by
    * our errorFunction. */
-	//RTCDevice device = initializeDevice();
-	//scene = initializeScene(device);
-	//initializeScene(device);
+   //RTCDevice device = initializeDevice();
+   //scene = initializeScene(device);
+   //initializeScene(device);
 
 	scene.get()->InitCamera(target.get()->GetWidth(), target.get()->GetHeight());
 
@@ -81,11 +81,17 @@ void OfflineRenderer::Render(std::shared_ptr<RenderTarget> target)
 	{
 		for (int x = 0; x < target.get()->GetWidth(); x++)
 		{
+			currentPixel.x = x;
+			currentPixel.y = y;
+			
+			std::unique_lock<std::mutex> lock(pauseMutex);
+			pauseCV.wait(lock, [this] { return progressState != Paused || progressState == ProgressState::Canceled; });
 			if (progressState == ProgressState::Canceled)
 			{
 				std::cout << "Done canceling" << std::endl;
 				return;
 			}
+
 
 			Intersection intersection = scene.get()->CastRay(x, y);
 			glm::vec3 color = integrator.get()->RayColor(scene, intersection, 0);// rayColor(intersection);
@@ -105,6 +111,19 @@ void OfflineRenderer::Render(std::shared_ptr<RenderTarget> target)
 
 	progressState = ProgressState::Done;
 	//running = false;
+}
+
+void OfflineRenderer::TogglePaused()
+{
+	if (progressState == Paused)
+	{
+		progressState = Running;
+		pauseCV.notify_all();
+	}
+	else
+	{
+		progressState = Paused;
+	}
 }
 
 //void OfflineRenderer::initializeScene(RTCDevice device)

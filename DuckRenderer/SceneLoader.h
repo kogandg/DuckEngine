@@ -7,6 +7,7 @@
 #include "Triangle.h"
 #include "Sphere.h"
 #include "RayTracerIntegrator.h"
+#include "PointLight.h"
 
 #include <stack>
 

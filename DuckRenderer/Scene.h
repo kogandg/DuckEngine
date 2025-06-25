@@ -13,6 +13,8 @@
 #include <unordered_map>
 #include "Light.h"
 #include "PointLight.h"
+#include "RenderableObject.h"
+#include "DirectionalLight.h"
 
 
 class Scene
@@ -37,6 +39,7 @@ public:
 
 	inline std::vector<std::shared_ptr<Light>> GetLights() { return lightSources; }
 	inline std::vector<std::shared_ptr<PointLight>> GetPointLights() { return pointLights; }
+	inline std::vector<std::shared_ptr<DirectionalLight>> GetDirectionalLights() { return directionalLights; }
 
 private:
 	std::vector<std::shared_ptr<SceneObject>> objects;
@@ -44,6 +47,7 @@ private:
 
 	std::vector<std::shared_ptr<Light>> lightSources;
 	std::vector<std::shared_ptr<PointLight>> pointLights;
+	std::vector<std::shared_ptr<DirectionalLight>> directionalLights;
 	//directionalLights
 
 	std::shared_ptr<Camera> camera;

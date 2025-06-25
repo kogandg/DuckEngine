@@ -58,6 +58,9 @@
     <Filter Include="Header Files\sceneObjects\lights">
       <UniqueIdentifier>{f1649c1b-0a94-4947-8ef5-001a01169fcc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\sceneObjects\lights">
+      <UniqueIdentifier>{17dfb298-b3d5-4d9c-924b-905b5df1ffe2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -138,9 +141,6 @@
     <ClCompile Include="Integrator.cpp">
       <Filter>Source Files\integrators</Filter>
     </ClCompile>
-    <ClCompile Include="PointLight.cpp">
-      <Filter>Source Files\sceneObjects</Filter>
-    </ClCompile>
     <ClCompile Include="RenderableObject.cpp">
       <Filter>Source Files\sceneObjects</Filter>
     </ClCompile>
@@ -149,6 +149,12 @@
     </ClCompile>
     <ClCompile Include="Camera.cpp">
       <Filter>Source Files\sceneObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="DirectionalLight.cpp">
+      <Filter>Source Files\sceneObjects\lights</Filter>
+    </ClCompile>
+    <ClCompile Include="PointLight.cpp">
+      <Filter>Source Files\sceneObjects\lights</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -258,6 +264,9 @@
       <Filter>Header Files\sceneObjects\lights</Filter>
     </ClInclude>
     <ClInclude Include="PointLight.h">
+      <Filter>Header Files\sceneObjects\lights</Filter>
+    </ClInclude>
+    <ClInclude Include="DirectionalLight.h">
       <Filter>Header Files\sceneObjects\lights</Filter>
     </ClInclude>
   </ItemGroup>

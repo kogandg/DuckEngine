@@ -23,7 +23,7 @@ void OfflineRendererWindow::CleanUp()
 	if (!joined)
 	{
 		if (worker.joinable())
-		{	
+		{
 			worker.join();
 		}
 		else
@@ -73,6 +73,12 @@ void OfflineRendererWindow::IdleCallback()
 	{
 		renderer.get()->Cancel();
 	}
+
+	if (pausePressed)
+	{
+		renderer.get()->TogglePaused();
+		pausePressed = false;
+	}
 }
 
 void OfflineRendererWindow::DisplayCallback()
@@ -89,9 +95,32 @@ void OfflineRendererWindow::DisplayCallback()
 	ImGui::Text("Window width: %d", width);
 	ImGui::Text("Window height: %d", height);
 
-	if (renderer.get()->GetProgressState() != ProgressState::Done && ImGui::Button("Cancel rendering"))
+	auto imageSize = glm::ivec2(renderTarget.get()->GetWidth(), renderTarget.get()->GetHeight());
+	ImGui::Text("Image Size: %d, %d", imageSize.x, imageSize.y);
+	auto currentPixel = renderer.get()->GetCurrentPixel();
+	ImGui::Text("Current Pixel: %d, %d", currentPixel.x, currentPixel.y);
+
+	int totalPixels = imageSize.x * imageSize.y;
+	int renderedPixels = (currentPixel.y * imageSize.x) + currentPixel.x + 1;
+	ImGui::Text("Rendered pixels: %d", renderedPixels);
+
+	float progress = (float)renderedPixels / totalPixels;
+
+	char progressLabel[32];
+	snprintf(progressLabel, sizeof(progressLabel), "%.1f%%", progress * 100.0f);
+	ImGui::ProgressBar(progress, ImVec2(0.0f, 0.0f), progressLabel);
+
+	auto progressState = renderer.get()->GetProgressState();
+	if (progressState != ProgressState::Done && progressState != ProgressState::Canceled)
 	{
-		cancelPressed = true;
+		if (ImGui::Button(progressState != ProgressState::Paused ? "Pause rendering" : "Resume rendering"))
+		{
+			pausePressed = true;
+		}
+		if (ImGui::Button("Cancel rendering"))
+		{
+			cancelPressed = true;
+		}
 	}
 
 	if (saveEnable)
@@ -101,7 +130,7 @@ void OfflineRendererWindow::DisplayCallback()
 
 	if (ImGui::Button("Debug"))
 	{
-		int count = 0;
+		bool debug = true;
 	}
 
 	ImGui::End();

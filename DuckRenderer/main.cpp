@@ -117,7 +117,7 @@ int main()
 			//auto scene = std::make_shared<Scene>(makeScene());
 			
 			SceneLoader sceneLoader = SceneLoader();
-			auto sceneLoadingOutput = sceneLoader.ParseSceneFromTestFile("scene4-diffuse.txt");
+			auto sceneLoadingOutput = sceneLoader.ParseSceneFromTestFile("scene5.txt");
 			/*auto scene = std::make_shared<Scene>(sceneLoadingOutput.scene);
 			auto target = std::make_shared<RenderTarget>(sceneLoadingOutput.renderTarget);
 			auto integrator = std::make_shared<Integrator>(sceneLoadingOutput.integrator);*/
