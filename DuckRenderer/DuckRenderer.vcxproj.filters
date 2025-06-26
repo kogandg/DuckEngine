@@ -156,6 +156,9 @@
     <ClCompile Include="PointLight.cpp">
       <Filter>Source Files\sceneObjects\lights</Filter>
     </ClCompile>
+    <ClCompile Include="ThreadPool.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="imgui\imconfig.h">
@@ -268,6 +271,9 @@
     </ClInclude>
     <ClInclude Include="DirectionalLight.h">
       <Filter>Header Files\sceneObjects\lights</Filter>
+    </ClInclude>
+    <ClInclude Include="ThreadPool.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

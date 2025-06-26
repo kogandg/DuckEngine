@@ -93,7 +93,7 @@ int main()
 {
 	initGLFW();
 
-	SelectionWindow* selWindow = new SelectionWindow("Selection", 400, 400);
+	SelectionWindow* selWindow = new SelectionWindow("Selection", 600, 400);
 	OfflineRendererWindow* rendererWindow = nullptr;
 
 	selWindow->Init(ImVec4(0, 0, 0, 1));
@@ -117,7 +117,7 @@ int main()
 			//auto scene = std::make_shared<Scene>(makeScene());
 			
 			SceneLoader sceneLoader = SceneLoader();
-			auto sceneLoadingOutput = sceneLoader.ParseSceneFromTestFile("scene5.txt");
+			auto sceneLoadingOutput = sceneLoader.ParseSceneFromTestFile("scene7.txt");
 			/*auto scene = std::make_shared<Scene>(sceneLoadingOutput.scene);
 			auto target = std::make_shared<RenderTarget>(sceneLoadingOutput.renderTarget);
 			auto integrator = std::make_shared<Integrator>(sceneLoadingOutput.integrator);*/

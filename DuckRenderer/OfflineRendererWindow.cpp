@@ -133,9 +133,40 @@ void OfflineRendererWindow::DisplayCallback()
 		bool debug = true;
 	}
 
+	
+
+	ImGui::End();
+
+	int windowPosX = 0;
+	int windowPosY = 0;
+	glfwGetWindowPos(glfwWindow, &windowPosX, &windowPosY);
+	ImGui::SetNextWindowPos(ImVec2(windowPosX, windowPosY));
+	ImGui::SetNextWindowSize(ImVec2((float)width, (float)height));
+	
+	auto windowFlags = ImGuiWindowFlags_NoDecoration |
+		ImGuiWindowFlags_NoMove |
+		ImGuiWindowFlags_NoResize |
+		ImGuiWindowFlags_NoSavedSettings |
+		ImGuiWindowFlags_NoBackground;
+
+	ImGui::Begin("Overlay", nullptr,
+		windowFlags);
+
+	ImVec2 imagePos = ImGui::GetWindowPos();
+	auto tiles = renderer.get()->GetTiles();
+	auto drawList = ImGui::GetWindowDrawList();
+	for (auto tile : tiles)
+	{
+		if (tile->state == TileState::InProgress)
+		{
+			float lineWidth = 2.0f;
+			ImVec2 p0 = ImVec2(imagePos.x + tile->x, imagePos.y + tile->y);
+			ImVec2 p1 = ImVec2(p0.x + tile->width, p0.y + tile->height);
+			drawList->AddRect(p0, p1, IM_COL32(255, 0, 0, 128), 0.0f, 0, lineWidth);
+		}
+	}
+
 	ImGui::End();
 
 	Window::End();
 }
-
-
