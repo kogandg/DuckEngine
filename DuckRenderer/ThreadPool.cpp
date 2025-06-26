@@ -2,6 +2,15 @@
 
 ThreadPool::ThreadPool(int numThreads)
 {
+	if (numThreads > std::thread::hardware_concurrency())
+	{
+		//std::print();
+
+		std::cout << "Threads requested are greater than threads available" << std::endl;
+		std::cout << "Threads to be used set to max: " << std::thread::hardware_concurrency() << std::endl;
+		numThreads = std::thread::hardware_concurrency();
+	}
+
 	this->stop = false;
 
 	for (int i = 0; i < numThreads; i++)

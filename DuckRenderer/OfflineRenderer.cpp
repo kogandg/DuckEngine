@@ -37,9 +37,9 @@ void OfflineRenderer::Render(std::shared_ptr<RenderTarget> target)
 
 	//int tileSize = 16;
 
-	genTiles(target, 64);
+	genTiles(target, 8);
 
-	ThreadPool pool(8);
+	ThreadPool pool(10);
 
 	for (int i = 0; i < tiles.size(); i++)
 	{
@@ -91,24 +91,32 @@ void OfflineRenderer::Render(std::shared_ptr<RenderTarget> target)
 	}
 	*/
 
-	std::cout << "Done Rendering!" << std::endl;
-
 	pool.Shutdown();
 
+	if (progressState == ProgressState::Canceled)
+	{
+		std::cout << "Done canceling" << std::endl;
+		return;
+	}
+
+	std::cout << "Done Rendering!" << std::endl;
 	progressState = ProgressState::Done;
 }
 
 void OfflineRenderer::TogglePaused()
 {
-	if (progressState == Paused)
+	switch (progressState)
 	{
-		progressState = Running;
-		pauseCV.notify_all();
-	}
-	else
-	{
+	case Running:
 		progressState = Paused;
+		break;
+	case Paused:
+		progressState = Running;
+		break;
+	default://Not sure how to cancel pausing in other states, maybe nothing needs to change
+		break;
 	}
+	pauseCV.notify_all();
 }
 
 void OfflineRenderer::genTiles(std::shared_ptr<RenderTarget> target, int tileSize)
@@ -127,6 +135,20 @@ void OfflineRenderer::genTiles(std::shared_ptr<RenderTarget> target, int tileSiz
 
 void OfflineRenderer::renderTile(Tile* tile, std::shared_ptr<RenderTarget> target)
 {
+
+	{
+		std::unique_lock<std::mutex> lock(pauseMutex);
+		pauseCV.wait(lock, [&] {return progressState != ProgressState::Paused || progressState == ProgressState::Canceled; });
+	
+		if (progressState == ProgressState::Canceled)
+		{
+			std::cout << "Canceled tile " << tile->x << ", " << tile->y << std::endl;
+			//std::print();
+			//std::print();
+			return;
+		}
+	}
+
 	tile->state = TileState::InProgress;
 	for (int y = tile->y; y < tile->y + tile->height; y++)
 	{

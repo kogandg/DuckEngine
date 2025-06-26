@@ -8,6 +8,9 @@
 #include <functional>
 #include <atomic>
 
+#include <iostream>
+#include <print>
+
 class ThreadPool
 {
 public:
