@@ -19,6 +19,8 @@ public:
 
 	void Enqueue(const std::function<void()>& job);
 
+	void Cancel();
+
 	void Shutdown();
 
 private:

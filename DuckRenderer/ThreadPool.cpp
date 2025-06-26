@@ -4,10 +4,8 @@ ThreadPool::ThreadPool(int numThreads)
 {
 	if (numThreads > std::thread::hardware_concurrency())
 	{
-		//std::print();
-
-		std::cout << "Threads requested are greater than threads available" << std::endl;
-		std::cout << "Threads to be used set to max: " << std::thread::hardware_concurrency() << std::endl;
+		std::println("Threads requested are greater than threads available");
+		std::println("Threads to be used set to max: {}", std::thread::hardware_concurrency());
 		numThreads = std::thread::hardware_concurrency();
 	}
 
@@ -48,6 +46,20 @@ void ThreadPool::Enqueue(const std::function<void()>& job)
 		jobQueue.push(job);
 	}
 	queueCV.notify_one();
+}
+
+void ThreadPool::Cancel()
+{
+	{
+		std::lock_guard<std::mutex> lock(queueMutex);
+		stop = true;
+
+		while (!jobQueue.empty()) 
+		{
+			jobQueue.pop();
+		}
+	}
+	queueCV.notify_all();
 }
 
 void ThreadPool::Shutdown()

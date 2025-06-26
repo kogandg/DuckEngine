@@ -97,14 +97,13 @@ void OfflineRendererWindow::DisplayCallback()
 
 	auto imageSize = glm::ivec2(renderTarget.get()->GetWidth(), renderTarget.get()->GetHeight());
 	ImGui::Text("Image Size: %d, %d", imageSize.x, imageSize.y);
-	auto currentPixel = renderer.get()->GetCurrentPixel();
-	ImGui::Text("Current Pixel: %d, %d", currentPixel.x, currentPixel.y);
 
 	int totalPixels = imageSize.x * imageSize.y;
-	int renderedPixels = (currentPixel.y * imageSize.x) + currentPixel.x + 1;
-	ImGui::Text("Rendered pixels: %d", renderedPixels);
+	ImGui::Text("Total Pixels: %d", totalPixels);
+	int pixelsRendered = renderer.get()->GetPixelsRendered();
+	ImGui::Text("Rendered pixels: %d", pixelsRendered);
 
-	float progress = (float)renderedPixels / totalPixels;
+	float progress = (float)pixelsRendered / totalPixels;
 
 	char progressLabel[32];
 	snprintf(progressLabel, sizeof(progressLabel), "%.1f%%", progress * 100.0f);

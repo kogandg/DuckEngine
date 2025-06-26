@@ -35,11 +35,9 @@ void OfflineRenderer::Render(std::shared_ptr<RenderTarget> target)
 
 	progressState = ProgressState::Running;
 
-	//int tileSize = 16;
-
 	genTiles(target, 8);
 
-	ThreadPool pool(10);
+	ThreadPool pool(8);
 
 	for (int i = 0; i < tiles.size(); i++)
 	{
@@ -61,7 +59,7 @@ void OfflineRenderer::Render(std::shared_ptr<RenderTarget> target)
 
 		if (progressState == ProgressState::Canceled)
 		{
-			pool.Shutdown();
+			pool.Cancel();
 			break;
 		}
 	}
@@ -91,15 +89,26 @@ void OfflineRenderer::Render(std::shared_ptr<RenderTarget> target)
 	}
 	*/
 
-	pool.Shutdown();
 
 	if (progressState == ProgressState::Canceled)
 	{
-		std::cout << "Done canceling" << std::endl;
+		bool allTilesDoneCanceling = false;
+		while (!allTilesDoneCanceling)
+		{
+			allTilesDoneCanceling = true;
+			for (auto tile : tiles)
+			{
+				if (tile->state == TileState::InProgress)
+				{
+					allTilesDoneCanceling = false;
+				}
+			}
+		}
+		std::println("Done canceling");
 		return;
 	}
 
-	std::cout << "Done Rendering!" << std::endl;
+	std::println("Done rendering!");
 	progressState = ProgressState::Done;
 }
 
@@ -142,9 +151,7 @@ void OfflineRenderer::renderTile(Tile* tile, std::shared_ptr<RenderTarget> targe
 	
 		if (progressState == ProgressState::Canceled)
 		{
-			std::cout << "Canceled tile " << tile->x << ", " << tile->y << std::endl;
-			//std::print();
-			//std::print();
+			std::println("Canceled tile {0}, {1}", tile->x, tile->y);
 			return;
 		}
 	}
@@ -154,23 +161,14 @@ void OfflineRenderer::renderTile(Tile* tile, std::shared_ptr<RenderTarget> targe
 	{
 		for (int x = tile->x; x < tile->x + tile->width; x++)
 		{
-			/*std::unique_lock<std::mutex> lock(pauseMutex);
-			pauseCV.wait(lock, [this] { return progressState != Paused || progressState == ProgressState::Canceled; });
-			*/
-			/*if (progressState == ProgressState::Canceled)
-			{
-				std::cout << "Done canceling tile " << tile->x << ", " << tile->y << std::endl;
-				return;
-			}*/
-
-
 			Intersection intersection = scene.get()->CastRay(x, y);
 			glm::vec3 color = integrator.get()->RayColor(scene, intersection, 0);
 
 			target.get()->WritePixel(color, x, y);
+			pixelsRendered++;
 		}
 	}
 
 	tile->state = TileState::Complete;
-	std::cout << "Done rendering tile " << tile->x << ", " << tile->y << std::endl;
+	std::println("Done rendering tile {0}, {1}", tile->x, tile->y);
 }

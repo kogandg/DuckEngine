@@ -59,7 +59,7 @@ public:
 
 	inline int GetPixelWidth() { return scene.get()->GetCamera().get()->GetPixelWidth(); }
 	inline int GetPixelHeight() { return scene.get()->GetCamera().get()->GetPixelHeight(); }
-	inline glm::ivec2 GetCurrentPixel() { return currentPixel; }
+	inline int GetPixelsRendered() { return pixelsRendered; }
 
 	inline std::vector<Tile*> GetTiles() { return tiles; }
 
@@ -67,7 +67,7 @@ private:
 	RTCDevice embreeDevice;
 
 	ProgressState progressState = ProgressState::NotStarted;
-	glm::ivec2 currentPixel = glm::ivec2(0, 0);
+	std::atomic<int> pixelsRendered;
 
 	std::mutex pauseMutex;
 	std::condition_variable pauseCV;
