@@ -104,10 +104,7 @@ void OfflineRendererWindow::DisplayCallback()
 	ImGui::Text("Rendered pixels: %d", pixelsRendered);
 
 	float progress = (float)pixelsRendered / totalPixels;
-
-	char progressLabel[32];
-	snprintf(progressLabel, sizeof(progressLabel), "%.1f%%", progress * 100.0f);
-	ImGui::ProgressBar(progress, ImVec2(0.0f, 0.0f), progressLabel);
+	ImGui::ProgressBar(progress, ImVec2(0.0f, 0.0f), std::format("{:.1f}%", progress * 100.0f).c_str());
 
 	auto progressState = renderer.get()->GetProgressState();
 	if (progressState != ProgressState::Done && progressState != ProgressState::Canceled)
@@ -148,8 +145,7 @@ void OfflineRendererWindow::DisplayCallback()
 		ImGuiWindowFlags_NoSavedSettings |
 		ImGuiWindowFlags_NoBackground;
 
-	ImGui::Begin("Overlay", nullptr,
-		windowFlags);
+	ImGui::Begin("Overlay", nullptr, windowFlags);
 
 	ImVec2 imagePos = ImGui::GetWindowPos();
 	auto tiles = renderer.get()->GetTiles();
@@ -159,8 +155,15 @@ void OfflineRendererWindow::DisplayCallback()
 		if (tile->state == TileState::InProgress)
 		{
 			float lineWidth = 2.0f;
-			ImVec2 p0 = ImVec2(imagePos.x + tile->x, imagePos.y + tile->y);
-			ImVec2 p1 = ImVec2(p0.x + tile->width, p0.y + tile->height);
+
+			ImVec2 origin = ImVec2(tile->x, tile->y);
+			auto mappedOrigin = mapImagePosToWindowPos(origin, imageSize.x, imageSize.y);
+			ImVec2 tileEnd = ImVec2(tile->x + tile->width, tile->y + tile->height);
+			auto mappedTileEnd = mapImagePosToWindowPos(tileEnd, imageSize.x, imageSize.y);
+
+			auto p0 = ImVec2(mappedOrigin.x + imagePos.x, mappedOrigin.y + imagePos.y);
+			auto p1 = ImVec2(mappedTileEnd.x + imagePos.x, mappedTileEnd.y + imagePos.y);
+
 			drawList->AddRect(p0, p1, IM_COL32(255, 0, 0, 128), 0.0f, 0, lineWidth);
 		}
 	}

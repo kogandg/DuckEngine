@@ -37,7 +37,7 @@ void OfflineRenderer::Render(std::shared_ptr<RenderTarget> target)
 
 	genTiles(target, 8);
 
-	ThreadPool pool(8);
+	ThreadPool pool(6);
 
 	for (int i = 0; i < tiles.size(); i++)
 	{

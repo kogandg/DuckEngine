@@ -355,3 +355,10 @@ void ImageWindow::saveImage(const unsigned char* data, int width, int height)
 		std::cerr << "Failed to save image\n";
 	}
 }
+
+ImVec2 ImageWindow::mapImagePosToWindowPos(ImVec2 imagePos, int imageWidth, int imageHeight)
+{
+	float scaleX = (float)width / imageWidth;
+	float scaleY = (float)height / imageHeight;
+	return ImVec2(imagePos.x * scaleX, imagePos.y * scaleY);
+}

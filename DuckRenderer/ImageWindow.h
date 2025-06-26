@@ -61,5 +61,7 @@ protected:
 	void drawQuad();
 	void imguiSaveDialog();
 	void saveImage(const unsigned char* data, int width, int height);
+
+	ImVec2 mapImagePosToWindowPos(ImVec2 imagePos, int imageWidth, int imageHeight);
 };
 
