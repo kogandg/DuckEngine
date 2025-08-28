@@ -161,6 +161,7 @@
     <ClCompile Include="OfflineRendererWindow.cpp" />
     <ClCompile Include="PointLight.cpp" />
     <ClCompile Include="RayTracerIntegrator.cpp" />
+    <ClCompile Include="RealTimeRendererWindow.cpp" />
     <ClCompile Include="RenderableObject.cpp" />
     <ClCompile Include="RenderTarget.cpp" />
     <ClCompile Include="Scene.cpp" />
@@ -199,6 +200,7 @@
     <ClInclude Include="OfflineRendererWindow.h" />
     <ClInclude Include="PointLight.h" />
     <ClInclude Include="RayTracerIntegrator.h" />
+    <ClInclude Include="RealTimeRendererWindow.h" />
     <ClInclude Include="RenderableObject.h" />
     <ClInclude Include="RenderTarget.h" />
     <ClInclude Include="Scene.h" />

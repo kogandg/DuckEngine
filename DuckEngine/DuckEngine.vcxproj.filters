@@ -159,6 +159,9 @@
     <ClCompile Include="ThreadPool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="RealTimeRendererWindow.cpp">
+      <Filter>Source Files\windows</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="imgui\imconfig.h">
@@ -274,6 +277,9 @@
     </ClInclude>
     <ClInclude Include="ThreadPool.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RealTimeRendererWindow.h">
+      <Filter>Header Files\windows</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

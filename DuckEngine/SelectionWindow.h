@@ -15,6 +15,7 @@ public:
 
 	//inline void SetBackgroundColor(ImVec4 color) { backgroundColor = color; }
 	bool offlinePressed = false;
+	bool realTimePressed = false;
 
 private:
 

@@ -31,6 +31,7 @@
 #include "Cube.h"
 #include "SceneLoader.h"
 #include "RenderTarget.h"
+#include "RealTimeRendererWindow.h"
 
 static void errorCallback(int error, const char* description)
 {
@@ -95,6 +96,7 @@ int main()
 
 	SelectionWindow* selWindow = new SelectionWindow("Selection", 600, 400);
 	OfflineRendererWindow* rendererWindow = nullptr;
+	RealTimeRendererWindow* openGLWindow = nullptr;
 
 	selWindow->Init(ImVec4(0, 0, 0, 1));
 
@@ -131,6 +133,16 @@ int main()
 			rendererWindow->StartRendering();
 
 			//worker = std::thread(&OfflineRenderer::Render, &renderer, image, testWidth, testHeight);
+		}
+
+		if (selWindow->realTimePressed && (openGLWindow == nullptr || !openGLWindow->Initialized()))
+		{
+			manager.CleanRemoveWindow(selWindow);
+
+			openGLWindow = new RealTimeRendererWindow("OpenGL Renderer", 800, 600);
+			manager.AddWindow(openGLWindow);
+			openGLWindow->Init();
+			openGLWindow->InitObjects();
 		}
 
 

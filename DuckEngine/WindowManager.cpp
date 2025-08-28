@@ -12,6 +12,7 @@ void WindowManager::RemoveWindow(Window* window)
 
 void WindowManager::CleanRemoveWindow(Window* window)
 {
+	if (!windows.contains(window)) { return; }
 	window->CleanUp();
 	window->Destroy();
 	windows.erase(window);

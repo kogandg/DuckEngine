@@ -51,6 +51,10 @@ void SelectionWindow::DisplayCallback()
 	{
 		offlinePressed = true;
 	}
+	if (ImGui::Button("Realtime Renderer"))
+	{
+		realTimePressed = true;
+	}
 
 	ImGui::End();
 
