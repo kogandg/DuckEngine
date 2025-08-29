@@ -61,6 +61,9 @@
     <Filter Include="Source Files\sceneObjects\lights">
       <UniqueIdentifier>{17dfb298-b3d5-4d9c-924b-905b5df1ffe2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\shaders">
+      <UniqueIdentifier>{b0bf7d21-23d2-4b59-9ea8-78b1029cbe08}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -161,6 +164,9 @@
     </ClCompile>
     <ClCompile Include="RealTimeRendererWindow.cpp">
       <Filter>Source Files\windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Shader.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -281,6 +287,9 @@
     <ClInclude Include="RealTimeRendererWindow.h">
       <Filter>Header Files\windows</Filter>
     </ClInclude>
+    <ClInclude Include="Shader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="imgui\imgui.natstepfilter" />
@@ -304,6 +313,12 @@
     </None>
     <None Include="scene7.txt">
       <Filter>Resource Files\scenes\1</Filter>
+    </None>
+    <None Include="vertexShader.vert">
+      <Filter>Resource Files\shaders</Filter>
+    </None>
+    <None Include="fragShader.frag">
+      <Filter>Resource Files\shaders</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

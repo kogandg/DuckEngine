@@ -94,56 +94,65 @@ int main()
 {
 	initGLFW();
 
-	SelectionWindow* selWindow = new SelectionWindow("Selection", 600, 400);
+	/*SelectionWindow* selWindow = new SelectionWindow("Selection", 600, 400);
 	OfflineRendererWindow* rendererWindow = nullptr;
 	RealTimeRendererWindow* openGLWindow = nullptr;
 
-	selWindow->Init(ImVec4(0, 0, 0, 1));
+	selWindow->Init(ImVec4(0, 0, 0, 1));*/
 
+	
+
+	RealTimeRendererWindow* openGLWindow = new RealTimeRendererWindow("OpenGL Renderer", 800, 600);
+	openGLWindow->Init();
+	
 	initGLEW();
 
 	//OfflineRenderer renderer = OfflineRenderer();
 
 	WindowManager manager = WindowManager();
-	manager.AddWindow(selWindow);
+	//manager.AddWindow(selWindow);
+
+	openGLWindow->InitObjects();
+
+	manager.AddWindow(openGLWindow);
 
 	while (!manager.SomeClosed())
 	{
 		// Poll for and process events
 		glfwPollEvents();
 
-		if (selWindow->offlinePressed && (rendererWindow == nullptr || !rendererWindow->Initialized()))
-		{
-			manager.CleanRemoveWindow(selWindow);
+		//if (selWindow->offlinePressed && (rendererWindow == nullptr || !rendererWindow->Initialized()))
+		//{
+		//	manager.CleanRemoveWindow(selWindow);
 
-			//auto scene = std::make_shared<Scene>(makeScene());
-			
-			SceneLoader sceneLoader = SceneLoader();
-			auto sceneLoadingOutput = sceneLoader.ParseSceneFromTestFile("scene7.txt");
-			/*auto scene = std::make_shared<Scene>(sceneLoadingOutput.scene);
-			auto target = std::make_shared<RenderTarget>(sceneLoadingOutput.renderTarget);
-			auto integrator = std::make_shared<Integrator>(sceneLoadingOutput.integrator);*/
+		//	//auto scene = std::make_shared<Scene>(makeScene());
+		//	
+		//	SceneLoader sceneLoader = SceneLoader();
+		//	auto sceneLoadingOutput = sceneLoader.ParseSceneFromTestFile("scene7.txt");
+		//	/*auto scene = std::make_shared<Scene>(sceneLoadingOutput.scene);
+		//	auto target = std::make_shared<RenderTarget>(sceneLoadingOutput.renderTarget);
+		//	auto integrator = std::make_shared<Integrator>(sceneLoadingOutput.integrator);*/
 
-			auto renderer = std::make_shared<OfflineRenderer>(sceneLoadingOutput.integrator, sceneLoadingOutput.scene);
+		//	auto renderer = std::make_shared<OfflineRenderer>(sceneLoadingOutput.integrator, sceneLoadingOutput.scene);
 
-			rendererWindow = new OfflineRendererWindow("Offline Renderer", renderer, sceneLoadingOutput.renderTarget);
-			manager.AddWindow(rendererWindow);
-			rendererWindow->Init();
-			rendererWindow->InitObjects();
-			rendererWindow->StartRendering();
+		//	rendererWindow = new OfflineRendererWindow("Offline Renderer", renderer, sceneLoadingOutput.renderTarget);
+		//	manager.AddWindow(rendererWindow);
+		//	rendererWindow->Init();
+		//	rendererWindow->InitObjects();
+		//	rendererWindow->StartRendering();
 
-			//worker = std::thread(&OfflineRenderer::Render, &renderer, image, testWidth, testHeight);
-		}
+		//	//worker = std::thread(&OfflineRenderer::Render, &renderer, image, testWidth, testHeight);
+		//}
 
-		if (selWindow->realTimePressed && (openGLWindow == nullptr || !openGLWindow->Initialized()))
-		{
-			manager.CleanRemoveWindow(selWindow);
+		//if (selWindow->realTimePressed && (openGLWindow == nullptr || !openGLWindow->Initialized()))
+		//{
+		//	manager.CleanRemoveWindow(selWindow);
 
-			openGLWindow = new RealTimeRendererWindow("OpenGL Renderer", 800, 600);
-			manager.AddWindow(openGLWindow);
-			openGLWindow->Init();
-			openGLWindow->InitObjects();
-		}
+		//	openGLWindow = new RealTimeRendererWindow("OpenGL Renderer", 800, 600);
+		//	manager.AddWindow(openGLWindow);
+		//	openGLWindow->Init();
+		//	openGLWindow->InitObjects();
+		//}
 
 
 		manager.IdleCallback();

@@ -1,5 +1,6 @@
 #pragma once
 #include "Window.h"
+#include "Shader.h"
 
 class RealTimeRendererWindow : public Window
 {
@@ -18,7 +19,8 @@ private:
 	GLuint VBO;
 	GLuint VAO;
 	GLuint EBO;
-	GLuint shaderProgram;
+	//GLuint shaderProgram;
+	Shader* shader;
 
 	void initGLObjects();
 };
