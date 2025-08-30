@@ -25,10 +25,14 @@ public:
 
 private:
 	GLuint VBO;
-	GLuint VAO;
-	GLuint EBO;
+	GLuint cubeVAO;
+	GLuint lightVAO;
+	//GLuint EBO;
 	//GLuint shaderProgram;
-	Shader* shader;
+
+	Shader* lightingShader;
+	Shader* lightCubeShader;
+	
 	GLuint texture1;
 	GLuint texture2;
 
@@ -45,8 +49,21 @@ private:
 		glm::vec3(-1.3f,  1.0f, -1.5f)
 	} };
 
+	glm::vec3 lightPosition = glm::vec3(1.2f, 1.0f, 2.0f);
+
 	Camera camera;
 
+	float movementSpeed = 2.5f;
+	float mouseSensitivity = 0.1f;
+
+	float deltaTime = 0.0f;
+	float lastTime = 0.0f;
+
 	void initGLObjects();
+
+	bool firstMouse = true;
+	float lastX;
+	float lastY;
+	virtual void onCursorPos(double currX, double currY) override;
 };
 

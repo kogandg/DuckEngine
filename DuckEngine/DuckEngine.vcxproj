@@ -224,6 +224,8 @@
     <None Include="imgui\imgui.natstepfilter" />
     <None Include="lightCube.frag" />
     <None Include="lightCube.vert" />
+    <None Include="lighting.frag" />
+    <None Include="lighting.vert" />
     <None Include="scene4-ambient.txt" />
     <None Include="scene4-diffuse.txt" />
     <None Include="scene4-emission.txt" />
