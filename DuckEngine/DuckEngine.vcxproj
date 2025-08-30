@@ -170,6 +170,7 @@
     <ClCompile Include="SelectionWindow.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="Sphere.cpp" />
+    <ClCompile Include="stb_impl.cpp" />
     <ClCompile Include="ThreadPool.cpp" />
     <ClCompile Include="Tokenizer.cpp" />
     <ClCompile Include="Triangle.cpp" />
@@ -221,6 +222,8 @@
   <ItemGroup>
     <None Include="fragShader.frag" />
     <None Include="imgui\imgui.natstepfilter" />
+    <None Include="lightCube.frag" />
+    <None Include="lightCube.vert" />
     <None Include="scene4-ambient.txt" />
     <None Include="scene4-diffuse.txt" />
     <None Include="scene4-emission.txt" />
@@ -228,12 +231,15 @@
     <None Include="scene5.txt" />
     <None Include="scene6.txt" />
     <None Include="scene7.txt" />
+    <None Include="texture.frag" />
+    <None Include="texture.vert" />
     <None Include="vertexShader.vert" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="imgui\imgui.natvis" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="container.jpg" />
     <Image Include="out12.png" />
   </ItemGroup>
   <ItemGroup>

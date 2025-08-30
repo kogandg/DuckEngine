@@ -39,6 +39,13 @@ std::pair<glm::vec3, glm::vec3> Camera::GetRay(int x, int y)
 	return std::make_pair(pixelCenter, rayDirection);//not sure if it should be from pixelCenter or lookFrom but doesnt matter
 }
 
+void Camera::SetImageSize(int width, int height)
+{
+	imagePixelWidth = width;
+	imagePixelHeight = height;
+	aspectRatio = (float)imagePixelWidth / (float)imagePixelHeight;
+}
+
 void Camera::initialize()
 {
 	float focalLength = 1.0f;
@@ -61,4 +68,7 @@ void Camera::initialize()
 	pixelDeltaV = viewportV / (float)imagePixelHeight;
 
 	pixel0Location = viewportUpperLeft + (0.5f * (pixelDeltaU + pixelDeltaV));
+
+	viewMatrix = glm::lookAt(lookFrom, lookAt, up);
+	projectionMatrix = glm::perspective(glm::radians(fovY), aspectRatio, 0.01f, 100.0f);
 }

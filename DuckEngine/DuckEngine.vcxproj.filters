@@ -168,6 +168,9 @@
     <ClCompile Include="Shader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="stb_impl.cpp">
+      <Filter>Header Files\stb</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="imgui\imconfig.h">
@@ -320,12 +323,27 @@
     <None Include="fragShader.frag">
       <Filter>Resource Files\shaders</Filter>
     </None>
+    <None Include="texture.vert">
+      <Filter>Resource Files\shaders</Filter>
+    </None>
+    <None Include="texture.frag">
+      <Filter>Resource Files\shaders</Filter>
+    </None>
+    <None Include="lightCube.vert">
+      <Filter>Resource Files\shaders</Filter>
+    </None>
+    <None Include="lightCube.frag">
+      <Filter>Resource Files\shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="imgui\imgui.natvis" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="out12.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="container.jpg">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

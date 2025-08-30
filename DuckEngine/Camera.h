@@ -1,6 +1,7 @@
 #pragma once
 
 #include "SceneObject.h"
+#include <glm/gtc/matrix_transform.hpp>
 
 class Camera : public SceneObject
 {
@@ -12,8 +13,19 @@ public:
 
 	std::pair<glm::vec3, glm::vec3> GetRay(int x, int y);
 
+	void UpdateCameraVectors() { initialize(); }
+
 	inline int GetPixelWidth() { return imagePixelWidth; }
 	inline int GetPixelHeight() { return imagePixelHeight; }
+
+	inline void SetLookFrom(glm::vec3 lookFrom) { this->lookFrom = lookFrom; }
+	inline void SetLookAt(glm::vec3 lookAt) { this->lookAt = lookAt; }
+	inline void SetUp(glm::vec3 up) { this->up = up; }
+	inline void SetFOVY(float fovY) { this->fovY = fovY; }
+	void SetImageSize(int width, int height);
+
+	inline glm::mat4 GetViewMatrix() { return viewMatrix; }
+	inline glm::mat4 GetProjectionMatrix() { return projectionMatrix; }
 
 private:
 
@@ -44,5 +56,8 @@ private:
 	glm::vec3 pixelDeltaU;
 	glm::vec3 pixelDeltaV;
 	glm::vec3 pixel0Location;
+
+	glm::mat4 viewMatrix;
+	glm::mat4 projectionMatrix;
 };
 

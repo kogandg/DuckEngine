@@ -13,17 +13,15 @@
 
 #include <vector>
 
-#define STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-
-#include "Window.h"
-#include "SelectionWindow.h"
-#include "ImageWindow.h"
-
 #include <thread>
 #include <mutex>
 #include <chrono>
 #include <atomic>
+
+#include "Window.h"
+#include "SelectionWindow.h"
+#include "ImageWindow.h"
+#include "RealTimeRendererWindow.h"
 #include "OfflineRenderer.h"
 #include "WindowManager.h"
 #include "OfflineRendererWindow.h"
@@ -31,7 +29,9 @@
 #include "Cube.h"
 #include "SceneLoader.h"
 #include "RenderTarget.h"
-#include "RealTimeRendererWindow.h"
+
+
+
 
 static void errorCallback(int error, const char* description)
 {
