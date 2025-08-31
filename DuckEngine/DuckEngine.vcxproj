@@ -242,6 +242,7 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="container.jpg" />
+    <Image Include="container2.png" />
     <Image Include="out12.png" />
   </ItemGroup>
   <ItemGroup>

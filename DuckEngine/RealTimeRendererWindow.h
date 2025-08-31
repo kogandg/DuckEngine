@@ -8,8 +8,6 @@
 #include <array>
 #include "Camera.h"
 
-
-
 class RealTimeRendererWindow : public Window
 {
 public:
@@ -33,8 +31,8 @@ private:
 	Shader* lightingShader;
 	Shader* lightCubeShader;
 	
-	GLuint texture1;
-	GLuint texture2;
+	GLuint diffuseMap;
+	GLuint specularMap;
 
 	std::array<glm::vec3, 10> cubePositions = { {
 		glm::vec3(0.0f,  0.0f,  0.0f),
@@ -49,6 +47,13 @@ private:
 		glm::vec3(-1.3f,  1.0f, -1.5f)
 	} };
 
+	std::array<glm::vec3, 4> pointLightPositions = { {
+		glm::vec3(0.7f,  0.2f,  2.0f),
+		glm::vec3(2.3f, -3.3f, -4.0f),
+		glm::vec3(-4.0f,  2.0f, -12.0f),
+		glm::vec3(0.0f,  0.0f, -3.0f)
+	} };
+
 	glm::vec3 lightPosition = glm::vec3(1.2f, 1.0f, 2.0f);
 
 	Camera camera;
@@ -60,6 +65,8 @@ private:
 	float lastTime = 0.0f;
 
 	void initGLObjects();
+
+	GLuint loadTexture(const char* path);
 
 	bool firstMouse = true;
 	float lastX;

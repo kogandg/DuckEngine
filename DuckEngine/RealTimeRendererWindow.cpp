@@ -66,7 +66,6 @@ void RealTimeRendererWindow::IdleCallback()
 	//camera.SetFOVY(45.0f);
 	camera.SetImageSize(width, height);
 	camera.UpdateCameraVectors();
-
 }
 
 void RealTimeRendererWindow::DisplayCallback()
@@ -77,30 +76,84 @@ void RealTimeRendererWindow::DisplayCallback()
 
 	//cube
 	lightingShader->Use();
+
+	lightingShader->SetFloat("material.shininess", 32.0f);
+
 	lightingShader->SetMat4("view", camera.GetViewMatrix());
 	lightingShader->SetMat4("projection", camera.GetProjectionMatrix());
+	lightingShader->SetVec3("viewPos", camera.GetLookFrom());
 
-	lightingShader->SetVec3("objectColor", 1.0f, 0.5f, 0.31f);
-	lightingShader->SetVec3("lightColor", 1.0f, 1.0f, 1.0f);
+	//directional light
+	lightingShader->SetVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
+	lightingShader->SetVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
+	lightingShader->SetVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
+	lightingShader->SetVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
 
-	glm::mat4 model = glm::mat4(1.0f);
-	lightingShader->SetMat4("model", model);
+	//point lights
+	for (int i = 0; i < 4; i++)
+	{
+		std::string index = std::to_string(i);
+		lightingShader->SetVec3(("pointLights[" + index + "].position").c_str(), pointLightPositions[i]);
+		lightingShader->SetVec3(("pointLights[" + index + "].ambient").c_str(), 0.05f, 0.05f, 0.05f);
+		lightingShader->SetVec3(("pointLights[" + index + "].diffuse").c_str(), 0.8f, 0.8f, 0.8f);
+		lightingShader->SetVec3(("pointLights[" + index + "].specular").c_str(), 1.0f, 1.0f, 1.0f);
+		lightingShader->SetFloat(("pointLights[" + index + "].constant").c_str(), 1.0f);
+		lightingShader->SetFloat(("pointLights[" + index + "].linear").c_str(), 0.09f);
+		lightingShader->SetFloat(("pointLights[" + index + "].quadratic").c_str(), 0.032f);
+	}
+
+	//spotlight
+	lightingShader->SetVec3("spotLight.position", camera.GetLookFrom());
+	lightingShader->SetVec3("spotLight.direction", camera.GetDirection());
+	lightingShader->SetVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
+	lightingShader->SetVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
+	lightingShader->SetVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+	lightingShader->SetFloat("spotLight.constant", 1.0f);
+	lightingShader->SetFloat("spotLight.linear", 0.09f);
+	lightingShader->SetFloat("spotLight.quadratic", 0.032f);
+	lightingShader->SetFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
+	lightingShader->SetFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
+	
+
+	//bind diffuse map
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, diffuseMap);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, specularMap);
 
 	glBindVertexArray(cubeVAO);
-	glDrawArrays(GL_TRIANGLES, 0, 36);
+	for (int i = 0; i < 10; i++)
+	{
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, cubePositions[i]);
+		float angle = 20.0f * i;
+		model = glm::rotate(model, glm::radians(angle), glm::vec3(1, 0.3f, 0.5f));
+		lightingShader->SetMat4("model", model);
+
+		glm::mat3 transInversemodel = glm::transpose(glm::inverse(model));
+		lightingShader->SetMat3("transposeInverseModel", transInversemodel);
+
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+	}
+
+	//glBindVertexArray(cubeVAO);
+	//glDrawArrays(GL_TRIANGLES, 0, 36);
 
 	//light cube
 	lightCubeShader->Use();
 	lightCubeShader->SetMat4("view", camera.GetViewMatrix());
 	lightCubeShader->SetMat4("projection", camera.GetProjectionMatrix());
 
-	model = glm::mat4(1.0f);
-	model = glm::translate(model, lightPosition);
-	model = glm::scale(model, glm::vec3(0.2f));
-	lightCubeShader->SetMat4("model", model);
-
 	glBindVertexArray(lightVAO);
-	glDrawArrays(GL_TRIANGLES, 0, 36);
+	for (int i = 0; i < 4; i++)
+	{
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, pointLightPositions[i]);
+		model = glm::scale(model, glm::vec3(0.2f));
+		lightCubeShader->SetMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+	}
 
 	// bind textures on corresponding texture units
 	/*glActiveTexture(GL_TEXTURE0);
@@ -122,7 +175,7 @@ void RealTimeRendererWindow::DisplayCallback()
 
 	
 	ImGui::SetNextWindowPos(ImVec2(0, 0));// , ImGuiCond_Always);
-	ImGui::SetNextWindowSize(ImVec2(300, 400));
+	ImGui::SetNextWindowSize(ImVec2(225, 250));
 	ImGui::Begin("Camera info", nullptr);
 
 	auto camPos = camera.GetLookFrom();
@@ -146,8 +199,8 @@ void RealTimeRendererWindow::InitObjects()
 {
 	initGLObjects();
 	//camera.SetImageSize(width, height);
-	camera.SetLookFrom(glm::vec3(0.0f, 0.0f, 3.0f));
-	camera.SetPitchYaw(0.f, -90.0f);
+	camera.SetLookFrom(glm::vec3(1.0f, 1.0f, 4.0f));
+	camera.SetPitchYaw(-12.5f, -101.0f);
 	camera.SetUp(glm::vec3(0.0f, 1.0f, 0.0f));
 	camera.SetFOVY(45.0f);
 	camera.SetImageSize(width, height);
@@ -163,47 +216,48 @@ void RealTimeRendererWindow::initGLObjects()
 	lightingShader = new Shader("lighting.vert", "lighting.frag");
 
 	float vertices[] = {
-		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-		 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+		// positions          // normals           // texture coords
+		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  0.0f,
+		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
+		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
 
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-		-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  0.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  1.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
 
-		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-		-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+		-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
+		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+		-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
+		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
 
-		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		 0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
 
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		 0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  1.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  0.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
 
-		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-		-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,
+		 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  1.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  0.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
 	};
 
 	//verts setup
@@ -220,14 +274,18 @@ void RealTimeRendererWindow::initGLObjects()
 	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-	int stride = 3 + 2;
+	int stride = 3 + 3 + 2;
 	//position attrib
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
-	//texture cord attrib
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(3 * sizeof(float)));
+	//normal attrib
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
+
+	//tex coords attrib
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
 
 
 	//lightcube setup
@@ -242,6 +300,12 @@ void RealTimeRendererWindow::initGLObjects()
 	glEnableVertexAttribArray(0);
 
 	//texture
+	diffuseMap = loadTexture("container2.png");
+	specularMap = loadTexture("container2_specular.png");
+
+	lightingShader->Use();
+	lightingShader->SetInt("material.diffuse", 0);
+	lightingShader->SetInt("material.specular", 1);
 
 	//stbi_set_flip_vertically_on_load(true);
 
@@ -299,6 +363,42 @@ void RealTimeRendererWindow::initGLObjects()
 	////shader->SetInt("texture2", 1);
 
 	//stbi_set_flip_vertically_on_load(false);//just in case anywhere else using loading
+}
+
+GLuint RealTimeRendererWindow::loadTexture(const char* path)
+{
+	GLuint textureID;
+	glGenTextures(1, &textureID);
+
+	int width;
+	int height;
+	int numComponents;
+	unsigned char* data = stbi_load(path, &width, &height, &numComponents, 0);
+	if (data)
+	{
+		GLenum format;
+		if (numComponents == 1) format = GL_RED;
+		else if (numComponents == 3) format = GL_RGB;
+		else if (numComponents == 4) format = GL_RGBA;
+
+		glBindTexture(GL_TEXTURE_2D, textureID);
+		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		stbi_image_free(data);
+	}
+	else
+	{
+		std::cout << "Texture failed to load at path: " << path << std::endl;
+		stbi_image_free(data);
+	}
+
+	return textureID;
 }
 
 void RealTimeRendererWindow::onCursorPos(double currX, double currY)
