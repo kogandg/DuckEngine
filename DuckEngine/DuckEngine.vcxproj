@@ -235,6 +235,8 @@
     <None Include="scene7.txt" />
     <None Include="texture.frag" />
     <None Include="texture.vert" />
+    <None Include="tri.frag" />
+    <None Include="tri.vert" />
     <None Include="vertexShader.vert" />
   </ItemGroup>
   <ItemGroup>

@@ -72,88 +72,98 @@ void RealTimeRendererWindow::DisplayCallback()
 {
 	if (!Window::Begin()) return;
 
-	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
-	//cube
-	lightingShader->Use();
+	triShader->Use();
+	triShader->SetMat4("view", camera.GetViewMatrix());
+	triShader->SetMat4("projection", camera.GetProjectionMatrix());
 
-	lightingShader->SetFloat("material.shininess", 32.0f);
-
-	lightingShader->SetMat4("view", camera.GetViewMatrix());
-	lightingShader->SetMat4("projection", camera.GetProjectionMatrix());
-	lightingShader->SetVec3("viewPos", camera.GetLookFrom());
-
-	//directional light
-	lightingShader->SetVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
-	lightingShader->SetVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
-	lightingShader->SetVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
-	lightingShader->SetVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
-
-	//point lights
-	for (int i = 0; i < 4; i++)
+	for (auto triangle : triangles)
 	{
-		std::string index = std::to_string(i);
-		lightingShader->SetVec3(("pointLights[" + index + "].position").c_str(), pointLightPositions[i]);
-		lightingShader->SetVec3(("pointLights[" + index + "].ambient").c_str(), 0.05f, 0.05f, 0.05f);
-		lightingShader->SetVec3(("pointLights[" + index + "].diffuse").c_str(), 0.8f, 0.8f, 0.8f);
-		lightingShader->SetVec3(("pointLights[" + index + "].specular").c_str(), 1.0f, 1.0f, 1.0f);
-		lightingShader->SetFloat(("pointLights[" + index + "].constant").c_str(), 1.0f);
-		lightingShader->SetFloat(("pointLights[" + index + "].linear").c_str(), 0.09f);
-		lightingShader->SetFloat(("pointLights[" + index + "].quadratic").c_str(), 0.032f);
+		glBindVertexArray(triangle.VAO);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
 	}
 
-	//spotlight
-	lightingShader->SetVec3("spotLight.position", camera.GetLookFrom());
-	lightingShader->SetVec3("spotLight.direction", camera.GetDirection());
-	lightingShader->SetVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
-	lightingShader->SetVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
-	lightingShader->SetVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
-	lightingShader->SetFloat("spotLight.constant", 1.0f);
-	lightingShader->SetFloat("spotLight.linear", 0.09f);
-	lightingShader->SetFloat("spotLight.quadratic", 0.032f);
-	lightingShader->SetFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
-	lightingShader->SetFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
-	
+	////cube
+	//lightingShader->Use();
 
-	//bind diffuse map
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, diffuseMap);
+	//lightingShader->SetFloat("material.shininess", 32.0f);
 
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, specularMap);
+	//lightingShader->SetMat4("view", camera.GetViewMatrix());
+	//lightingShader->SetMat4("projection", camera.GetProjectionMatrix());
+	//lightingShader->SetVec3("viewPos", camera.GetLookFrom());
 
-	glBindVertexArray(cubeVAO);
-	for (int i = 0; i < 10; i++)
-	{
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, cubePositions[i]);
-		float angle = 20.0f * i;
-		model = glm::rotate(model, glm::radians(angle), glm::vec3(1, 0.3f, 0.5f));
-		lightingShader->SetMat4("model", model);
+	////directional light
+	//lightingShader->SetVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
+	//lightingShader->SetVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
+	//lightingShader->SetVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
+	//lightingShader->SetVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
 
-		glm::mat3 transInversemodel = glm::transpose(glm::inverse(model));
-		lightingShader->SetMat3("transposeInverseModel", transInversemodel);
+	////point lights
+	//for (int i = 0; i < 4; i++)
+	//{
+	//	std::string index = std::to_string(i);
+	//	lightingShader->SetVec3(("pointLights[" + index + "].position").c_str(), pointLightPositions[i]);
+	//	lightingShader->SetVec3(("pointLights[" + index + "].ambient").c_str(), 0.05f, 0.05f, 0.05f);
+	//	lightingShader->SetVec3(("pointLights[" + index + "].diffuse").c_str(), 0.8f, 0.8f, 0.8f);
+	//	lightingShader->SetVec3(("pointLights[" + index + "].specular").c_str(), 1.0f, 1.0f, 1.0f);
+	//	lightingShader->SetFloat(("pointLights[" + index + "].constant").c_str(), 1.0f);
+	//	lightingShader->SetFloat(("pointLights[" + index + "].linear").c_str(), 0.09f);
+	//	lightingShader->SetFloat(("pointLights[" + index + "].quadratic").c_str(), 0.032f);
+	//}
 
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-	}
+	////spotlight
+	//lightingShader->SetVec3("spotLight.position", camera.GetLookFrom());
+	//lightingShader->SetVec3("spotLight.direction", camera.GetDirection());
+	//lightingShader->SetVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
+	//lightingShader->SetVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
+	//lightingShader->SetVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+	//lightingShader->SetFloat("spotLight.constant", 1.0f);
+	//lightingShader->SetFloat("spotLight.linear", 0.09f);
+	//lightingShader->SetFloat("spotLight.quadratic", 0.032f);
+	//lightingShader->SetFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
+	//lightingShader->SetFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
+	//
+
+	////bind diffuse map
+	//glActiveTexture(GL_TEXTURE0);
+	//glBindTexture(GL_TEXTURE_2D, diffuseMap);
+
+	//glActiveTexture(GL_TEXTURE1);
+	//glBindTexture(GL_TEXTURE_2D, specularMap);
 
 	//glBindVertexArray(cubeVAO);
-	//glDrawArrays(GL_TRIANGLES, 0, 36);
+	//for (int i = 0; i < 10; i++)
+	//{
+	//	glm::mat4 model = glm::mat4(1.0f);
+	//	model = glm::translate(model, cubePositions[i]);
+	//	float angle = 20.0f * i;
+	//	model = glm::rotate(model, glm::radians(angle), glm::vec3(1, 0.3f, 0.5f));
+	//	lightingShader->SetMat4("model", model);
 
-	//light cube
-	lightCubeShader->Use();
-	lightCubeShader->SetMat4("view", camera.GetViewMatrix());
-	lightCubeShader->SetMat4("projection", camera.GetProjectionMatrix());
+	//	glm::mat3 transInversemodel = glm::transpose(glm::inverse(model));
+	//	lightingShader->SetMat3("transposeInverseModel", transInversemodel);
 
-	glBindVertexArray(lightVAO);
-	for (int i = 0; i < 4; i++)
-	{
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, pointLightPositions[i]);
-		model = glm::scale(model, glm::vec3(0.2f));
-		lightCubeShader->SetMat4("model", model);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-	}
+	//	glDrawArrays(GL_TRIANGLES, 0, 36);
+	//}
+
+	////glBindVertexArray(cubeVAO);
+	////glDrawArrays(GL_TRIANGLES, 0, 36);
+
+	////light cube
+	//lightCubeShader->Use();
+	//lightCubeShader->SetMat4("view", camera.GetViewMatrix());
+	//lightCubeShader->SetMat4("projection", camera.GetProjectionMatrix());
+
+	//glBindVertexArray(lightVAO);
+	//for (int i = 0; i < 4; i++)
+	//{
+	//	glm::mat4 model = glm::mat4(1.0f);
+	//	model = glm::translate(model, pointLightPositions[i]);
+	//	model = glm::scale(model, glm::vec3(0.2f));
+	//	lightCubeShader->SetMat4("model", model);
+	//	glDrawArrays(GL_TRIANGLES, 0, 36);
+	//}
 
 	// bind textures on corresponding texture units
 	/*glActiveTexture(GL_TEXTURE0);
@@ -212,157 +222,40 @@ void RealTimeRendererWindow::initGLObjects()
 {
 	//shaders
 
-	lightCubeShader = new Shader("lightCube.vert", "lightCube.frag");
-	lightingShader = new Shader("lighting.vert", "lighting.frag");
+	SceneLoader sceneLoader = SceneLoader();
+	auto sceneLoadingOutput = sceneLoader.ParseSceneFromTestFile("scene7.txt");
 
-	float vertices[] = {
-		// positions          // normals           // texture coords
-		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
-		 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  0.0f,
-		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
-		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
-		-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  1.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
+	auto scene = sceneLoadingOutput.scene.get();
+	auto renderTarget = sceneLoadingOutput.renderTarget.get();
+	auto integrator = sceneLoadingOutput.integrator.get();
 
-		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
-		 0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  0.0f,
-		 0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
-		 0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
-		-0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  1.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
+	camera = *(scene->GetCamera().get());
+	auto objects = scene->GetRenderableObjects();
 
-		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
-		-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
-		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
-		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
-		-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
-		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+	for (auto object : objects)
+	{
+		auto triangle = object.get();
+		auto geom = static_cast<Triangle*>(triangle->geometry.get());
 
-		 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
-		 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
-		 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
-		 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
-		 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+		tri newTri;
+		glGenBuffers(1, &newTri.VBO);
+		glBindBuffer(GL_ARRAY_BUFFER, newTri.VBO);
 
-		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
-		 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  1.0f,
-		 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
-		 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  0.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
+		float verts[]{
+			geom->v1.x, geom->v1.y, geom->v1.z, geom->v2.x, geom->v2.y, geom->v2.z, geom->v3.x, geom->v3.y, geom->v3.z
+		};
+		glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
 
-		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,
-		 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  1.0f,
-		 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
-		 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
-		-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  0.0f,
-		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
-	};
+		glGenVertexArrays(1, &newTri.VAO);
+		glBindVertexArray(newTri.VAO);
 
-	//verts setup
-	glGenBuffers(1, &VBO);
-	//glGenBuffers(1, &EBO);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(0);
 
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+		int count = 0;
+	}
 
-	//cube setup
-	glGenVertexArrays(1, &cubeVAO);
-	glBindVertexArray(cubeVAO);
-
-	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-	int stride = 3 + 3 + 2;
-	//position attrib
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-
-	//normal attrib
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-
-	//tex coords attrib
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(6 * sizeof(float)));
-	glEnableVertexAttribArray(2);
-
-
-	//lightcube setup
-	glGenVertexArrays(1, &lightVAO);
-	glBindVertexArray(lightVAO);
-
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	//position attrib
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-
-	//texture
-	diffuseMap = loadTexture("container2.png");
-	specularMap = loadTexture("container2_specular.png");
-
-	lightingShader->Use();
-	lightingShader->SetInt("material.diffuse", 0);
-	lightingShader->SetInt("material.specular", 1);
-
-	//stbi_set_flip_vertically_on_load(true);
-
-	//int texWidth;
-	//int texHeight;
-	//int texNumChannels;
-	//unsigned char* texData = stbi_load("container.jpg", &texWidth, &texHeight, &texNumChannels, 0);
-
-	//glGenTextures(1, &texture1);
-	//glBindTexture(GL_TEXTURE_2D, texture1);
-
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	//if (texData)
-	//{
-	//	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texWidth, texHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, texData);
-	//	glGenerateMipmap(GL_TEXTURE_2D);
-	//}
-	//else
-	//{
-	//	std::cout << "Failed to load texture" << std::endl;
-	//}
-
-	//stbi_image_free(texData);
-
-
-	////texture2
-	//texData = stbi_load("out12.png", &texWidth, &texHeight, &texNumChannels, 0);
-
-	//glGenTextures(1, &texture2);
-	//glBindTexture(GL_TEXTURE_2D, texture2);
-
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	//if (texData)
-	//{
-	//	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, texData);
-	//	glGenerateMipmap(GL_TEXTURE_2D);
-	//}
-	//else
-	//{
-	//	std::cout << "Failed to load texture" << std::endl;
-	//}
-
-	//stbi_image_free(texData);
-
-	////shader->Use();
-	////shader->SetInt("texture1", 0);
-	////shader->SetInt("texture2", 1);
-
-	//stbi_set_flip_vertically_on_load(false);//just in case anywhere else using loading
+	triShader = new Shader("tri.vert", "tri.frag");
 }
 
 GLuint RealTimeRendererWindow::loadTexture(const char* path)

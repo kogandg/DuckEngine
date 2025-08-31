@@ -40,6 +40,7 @@ public:
 	inline std::vector<std::shared_ptr<Light>> GetLights() { return lightSources; }
 	inline std::vector<std::shared_ptr<PointLight>> GetPointLights() { return pointLights; }
 	inline std::vector<std::shared_ptr<DirectionalLight>> GetDirectionalLights() { return directionalLights; }
+	inline std::vector<std::shared_ptr<RenderableObject>> GetRenderableObjects() { return renderableObjects; }
 
 private:
 	std::vector<std::shared_ptr<SceneObject>> objects;

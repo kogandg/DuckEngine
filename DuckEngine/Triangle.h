@@ -11,7 +11,8 @@ public:
 
 	void InitGeometry(RTCDevice device, RTCScene scene, glm::mat4 transform) override;
 
-private:
+	//need to add getters for verts or something
+//private:
 	glm::vec3 v1;
 	glm::vec3 v2;
 	glm::vec3 v3;
