@@ -100,6 +100,8 @@ int main()
 
 	selWindow->Init(ImVec4(0, 0, 0, 1));*/
 
+	
+
 	RealTimeRendererWindow* openGLWindow = new RealTimeRendererWindow("OpenGL Renderer", 800, 600);
 	openGLWindow->Init();
 	

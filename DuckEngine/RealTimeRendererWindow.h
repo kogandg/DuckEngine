@@ -7,13 +7,6 @@
 #include "Shader.h"
 #include <array>
 #include "Camera.h"
-#include "SceneLoader.h"
-
-struct tri
-{
-	GLuint VBO;
-	GLuint VAO;
-};
 
 class RealTimeRendererWindow : public Window
 {
@@ -35,12 +28,11 @@ private:
 	//GLuint EBO;
 	//GLuint shaderProgram;
 
-	Shader* triShader;
+	Shader* lightingShader;
+	Shader* lightCubeShader;
 	
 	GLuint diffuseMap;
 	GLuint specularMap;
-
-	std::vector<tri> triangles;
 
 	std::array<glm::vec3, 10> cubePositions = { {
 		glm::vec3(0.0f,  0.0f,  0.0f),

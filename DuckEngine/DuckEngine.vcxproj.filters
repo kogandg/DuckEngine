@@ -341,12 +341,6 @@
     <None Include="lighting.frag">
       <Filter>Resource Files\shaders</Filter>
     </None>
-    <None Include="tri.vert">
-      <Filter>Resource Files\shaders</Filter>
-    </None>
-    <None Include="tri.frag">
-      <Filter>Resource Files\shaders</Filter>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="imgui\imgui.natvis" />
