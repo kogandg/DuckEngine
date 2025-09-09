@@ -3,7 +3,7 @@
 
 RealTimeRendererWindow::RealTimeRendererWindow(const char* title, int width, int height) : Window(title, width, height), camera(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(0.0f), 0.0f)
 {
-	
+
 }
 
 void RealTimeRendererWindow::Init()
@@ -17,6 +17,100 @@ void RealTimeRendererWindow::Init()
 	// tell GL to only draw onto a pixel if the shape is closer to the viewer
 	glEnable(GL_DEPTH_TEST); // enable depth-testing
 	glDepthFunc(GL_LESS); // depth-testing interprets a smaller value as "closer"
+
+	auto cubeMesh = std::make_shared<ECS::MeshData>(ECS::MeshData({
+		// positions          // normals           // texture coords
+		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  0.0f,
+		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
+		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
+
+		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  0.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  1.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
+
+		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+		-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
+		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+		-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
+		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+
+		 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+
+		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  1.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  0.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
+
+		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,
+		 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  1.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  0.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
+		}));
+
+	auto lightCubeMat = ECS::MaterialData(ECS::MaterialType::Color, ECS::ColorData(glm::vec3(1.0f)));
+	auto lightCubeMaterial = std::make_shared<ECS::MaterialData>(lightCubeMat);
+	auto cubeMat = ECS::MaterialData(ECS::MaterialType::Phong, ECS::PhongData("container2.png", "container2_specular.png"));
+	auto cubeMaterial = std::make_shared<ECS::MaterialData>(cubeMat);
+
+
+	ECS::Mesh mesh;
+	mesh.data = cubeMesh;
+
+	ECS::Material cubeMatComp;
+	cubeMatComp.data = cubeMaterial;
+	for (int i = 0; i < 10; i++)
+	{
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, cubePositions[i]);
+		float angle = 20.0f * i;
+		model = glm::rotate(model, glm::radians(angle), glm::vec3(1, 0.3f, 0.5f));
+
+		ECS::Transform transform;
+		transform.local = glm::mat4(1.0f);
+		transform.world = model;
+
+		auto cube = ecs.CreateEntity();
+
+		ecs.addComponent<ECS::Mesh>(cube, mesh);
+		ecs.addComponent<ECS::Transform>(cube, transform);
+		ecs.addComponent<ECS::Material>(cube, cubeMatComp);
+	}
+
+	ECS::Material lightCubeMatComp;
+	lightCubeMatComp.data = lightCubeMaterial;
+	for (int i = 0; i < 4; i++)
+	{
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, pointLightPositions[i]);
+		model = glm::scale(model, glm::vec3(0.2f));
+		lightCubeShader->SetMat4("model", model);
+
+		ECS::Transform transform;
+		transform.local = glm::mat4(1.0f);
+		transform.world = model;
+
+		auto lightCube = ecs.CreateEntity();
+
+		ecs.addComponent<ECS::Mesh>(lightCube, mesh);
+		ecs.addComponent<ECS::Transform>(lightCube, transform);
+		ecs.addComponent<ECS::Material>(lightCube, lightCubeMatComp);
+	}
 }
 
 void RealTimeRendererWindow::CleanUp()
@@ -32,7 +126,7 @@ void RealTimeRendererWindow::CleanUp()
 void RealTimeRendererWindow::IdleCallback()
 {
 	if (!initialized) return;
-	
+
 	float currentTime = static_cast<float>(glfwGetTime());
 	deltaTime = currentTime - lastTime;
 	lastTime = currentTime;
@@ -58,7 +152,7 @@ void RealTimeRendererWindow::IdleCallback()
 	{
 		camera.SetLookFrom(camera.GetLookFrom() - (camera.GetRight() * velocity));
 	}
-	
+
 
 	//camera.SetLookFrom(glm::vec3(0.0f, 0.0f, 3.0f));
 	//camera.SetPitchYaw(0.f, -90.0f);
@@ -113,7 +207,7 @@ void RealTimeRendererWindow::DisplayCallback()
 	lightingShader->SetFloat("spotLight.quadratic", 0.032f);
 	lightingShader->SetFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
 	lightingShader->SetFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
-	
+
 
 	//bind diffuse map
 	glActiveTexture(GL_TEXTURE0);
@@ -173,7 +267,7 @@ void RealTimeRendererWindow::DisplayCallback()
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 	}*/
 
-	
+
 	ImGui::SetNextWindowPos(ImVec2(0, 0));// , ImGuiCond_Always);
 	ImGui::SetNextWindowSize(ImVec2(225, 250));
 	ImGui::Begin("Camera info", nullptr);
@@ -183,7 +277,7 @@ void RealTimeRendererWindow::DisplayCallback()
 	auto camRight = camera.GetRight();
 	auto camPitch = camera.GetPitch();
 	auto camYaw = camera.GetYaw();
-	
+
 	ImGui::Text("Pos = (%.2f, %.2f, %.2f)", camPos.x, camPos.y, camPos.z);
 	ImGui::Text("Dir = (%.2f, %.2f, %.2f)", camDir.x, camDir.y, camDir.z);
 	ImGui::Text("Right = (%.2f, %.2f, %.2f)", camRight.x, camRight.y, camRight.z);
@@ -433,9 +527,168 @@ void RealTimeRendererWindow::onCursorPos(double currX, double currY)
 		newPitch = -89.0f;
 	}
 
-	camera.SetPitchYaw(newPitch, camera.GetYaw()+xOffset);
+	camera.SetPitchYaw(newPitch, camera.GetYaw() + xOffset);
 
 	camera.UpdateCameraVectors();
 }
 
+std::shared_ptr<GPUScene::GPUGeometry> GPUScene::getOrCreateGeometry(GPUCache& c, const std::shared_ptr<ECS::MeshData>& md, const VertexLayoutKey& layout)
+{
+	auto iter = c.geomCache.find(md);
+	if (iter != c.geomCache.end())
+	{
+		return c.geomCache[md];
+	}
 
+	auto geom = std::make_shared<GPUGeometry>();
+	geom.get()->layout = layout;
+
+	glGenBuffers(1, &geom.get()->VBO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, geom.get()->VBO);
+	glBufferData(GL_ARRAY_BUFFER, md.get()->verts.size() * sizeof(float), md.get()->verts.data(), GL_STATIC_DRAW);
+
+	geom.get()->vertexCount = (GLsizei)(md.get()->verts.size() * sizeof(float) / geom.get()->layout.stride);
+
+	return c.geomCache[md] = geom;
+}
+
+std::shared_ptr<GPUScene::Shader> GPUScene::getOrCreateShader(GPUCache& c, MaterialType type, const char* vertexPath, const char* fragmentPath)
+{
+	auto iter = c.shaderCache.find(type);
+	if (iter != c.shaderCache.end())
+	{
+		return c.shaderCache[type];
+	}
+
+	auto shader = std::make_shared<Shader>();
+	shader.get()->program = compileAndLinkShader(vertexPath, fragmentPath);
+
+	auto cacheUniform = [&](const char* name) {shader.get()->uniforms[name] = glGetUniformLocation(shader.get()->program, name); };
+
+	switch (type)
+	{
+	case MaterialType::Color:
+	{
+		cacheUniform("view");
+		cacheUniform("projection");
+		cacheUniform("model");
+		cacheUniform("color");
+	} break;
+	case MaterialType::Phong:
+	{
+		cacheUniform("view");
+		cacheUniform("projection");
+		cacheUniform("model");
+
+
+
+	} break;
+	}
+
+	return std::shared_ptr<Shader>();
+}
+
+GLuint GPUScene::getOrCreateTexture(GPUCache& c, const std::string& path)
+{
+	return GLuint();
+}
+
+std::shared_ptr<GPUScene::GPUMaterial> GPUScene::getOrCreateMaterial(GPUCache& c, const std::shared_ptr<ECS::MaterialData>& md)
+{
+	return std::shared_ptr<GPUMaterial>();
+}
+
+GLuint GPUScene::buildVAO(const GPUGeometry& g, const Shader& s)
+{
+	return GLuint();
+}
+
+GLuint GPUScene::getOrCreateVAO(GPUCache& c, const std::shared_ptr<GPUGeometry>& g, const std::shared_ptr<Shader>& s)
+{
+	return GLuint();
+}
+
+GLuint GPUScene::compileAndLinkShader(std::string vertexPath, std::string fragmentPath)
+{
+	std::string vertexCode;
+	std::string fragmentCode;
+	std::ifstream vShaderFile;
+	std::ifstream fShaderFile;
+
+	// ensure ifstream objects can throw exceptions:
+	vShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+	fShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+	try
+	{
+		// open files
+		vShaderFile.open(vertexPath);
+		fShaderFile.open(fragmentPath);
+		std::stringstream vShaderStream, fShaderStream;
+		// read file's buffer contents into streams
+		vShaderStream << vShaderFile.rdbuf();
+		fShaderStream << fShaderFile.rdbuf();
+		// close file handlers
+		vShaderFile.close();
+		fShaderFile.close();
+		// convert stream into string
+		vertexCode = vShaderStream.str();
+		fragmentCode = fShaderStream.str();
+	}
+	catch (std::ifstream::failure& e)
+	{
+		std::cout << "ERROR::SHADER::FILE_NOT_SUCCESSFULLY_READ: " << e.what() << std::endl;
+	}
+
+	const char* vShaderCode = vertexCode.c_str();
+	const char* fShaderCode = fragmentCode.c_str();
+	// 2. compile shaders
+	unsigned int vertex;
+	unsigned int fragment;
+	// vertex shader
+	vertex = glCreateShader(GL_VERTEX_SHADER);
+	glShaderSource(vertex, 1, &vShaderCode, NULL);
+	glCompileShader(vertex);
+	checkShaderCompileErrors(vertex, "VERTEX");
+	// fragment Shader
+	fragment = glCreateShader(GL_FRAGMENT_SHADER);
+	glShaderSource(fragment, 1, &fShaderCode, NULL);
+	glCompileShader(fragment);
+	checkShaderCompileErrors(fragment, "FRAGMENT");
+
+	// shader Program
+	GLuint shaderID = glCreateProgram();
+	glAttachShader(shaderID, vertex);
+	glAttachShader(shaderID, fragment);
+	glLinkProgram(shaderID);
+	checkShaderCompileErrors(shaderID, "PROGRAM");
+	// delete the shaders as they're linked into our program now and no longer necessary
+	glDeleteShader(vertex);
+	glDeleteShader(fragment);
+
+	return shaderID;
+}
+
+void GPUScene::checkShaderCompileErrors(GLuint shader, std::string type)
+{
+	int success;
+	char infoLog[1024];
+	if (type != "PROGRAM")
+	{
+		glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+		if (!success)
+		{
+			glGetShaderInfoLog(shader, 1024, NULL, infoLog);
+			std::cout << "ERROR::SHADER_COMPILATION_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
+		}
+	}
+	else
+	{
+		glGetProgramiv(shader, GL_LINK_STATUS, &success);
+		if (!success)
+		{
+			glGetProgramInfoLog(shader, 1024, NULL, infoLog);
+			std::cout << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
+		}
+	}
+}

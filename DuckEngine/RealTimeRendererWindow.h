@@ -7,6 +7,102 @@
 #include "Shader.h"
 #include <array>
 #include "Camera.h"
+#include "Scene.h"
+
+namespace GPUScene
+{
+	struct VertexAttrib
+	{
+		GLuint location; //glsl layout location
+		GLint size;
+		GLenum type; //GL_FLOAT, etc
+		unsigned int offset; //byte offset
+	};
+
+	struct VertexLayoutKey
+	{
+		GLsizei stride; //stride in bytes
+		std::vector<VertexAttrib> attrs;
+
+		bool operator==(const VertexLayoutKey&) const = default;
+	};
+
+	struct GPUGeometry
+	{
+		GLuint VBO = 0;
+		//GLuint EBO = 0;     // 0 if not indexed
+		//GLsizei indexCount = 0;
+		GLsizei vertexCount = 0;
+		VertexLayoutKey layout; // for VAO creation
+	};
+
+	struct Shader
+	{
+		GLuint program = 0;
+
+		//cache the uniform locations used
+		std::unordered_map<std::string, GLint> uniforms;
+	};
+
+	enum class MaterialType
+	{
+		Color, Phong
+	};
+
+	struct GPUMaterial
+	{
+		MaterialType type;
+		std::shared_ptr<Shader> shader;
+
+		GLuint diffuseTexture = 0;
+		GLuint specularTexture = 0;
+
+		glm::vec3 color = glm::vec3(1.0f);
+		float shininess = 32.0f;
+	};
+
+	struct VAOKey
+	{
+		GLuint VBO;
+		//GLuint EBO;
+
+		VertexLayoutKey layout;
+		bool operator==(const VAOKey&) const = default;
+	};
+
+	struct VAOEntry
+	{
+		GLuint VAO = 0;
+	};
+
+	struct GPUCache
+	{
+		std::unordered_map<std::shared_ptr<ECS::MeshData>, std::shared_ptr<GPUGeometry>> geomCache;
+
+		//textures keyed by file path
+		std::unordered_map<std::string, std::shared_ptr<GLuint>> textureCache;
+
+		std::unordered_map<MaterialType, std::shared_ptr<Shader>> shaderCache;
+
+		std::unordered_map<std::shared_ptr<ECS::MaterialData>, std::shared_ptr<GPUMaterial>> materialCache;
+
+		struct VAOKeyHash
+		{
+			size_t operator()(const VAOKey&) const noexcept;
+		};
+		std::unordered_map<VAOKey, VAOEntry, VAOKeyHash> vaoCache;
+	};
+
+	std::shared_ptr<GPUGeometry> getOrCreateGeometry(GPUCache& c, const std::shared_ptr<ECS::MeshData>& md, const VertexLayoutKey& layout);
+	std::shared_ptr<Shader> getOrCreateShader(GPUCache& c, MaterialType type, const char* vertexPath, const char* fragmentPath);
+	GLuint getOrCreateTexture(GPUCache& c, const std::string& path);
+	std::shared_ptr<GPUMaterial> getOrCreateMaterial(GPUCache& c, const std::shared_ptr<ECS::MaterialData>& md);
+	GLuint buildVAO(const GPUGeometry& g, const Shader& s);
+	GLuint getOrCreateVAO(GPUCache& c, const std::shared_ptr<GPUGeometry>& g, const std::shared_ptr<Shader>& s);
+
+	GLuint compileAndLinkShader(std::string vertexPath, std::string fragmentPath);
+	void checkShaderCompileErrors(GLuint shader, std::string type);
+};
 
 class RealTimeRendererWindow : public Window
 {
@@ -22,6 +118,9 @@ public:
 	virtual void InitObjects();
 
 private:
+	ECS::ECS ecs;
+
+
 	GLuint VBO;
 	GLuint cubeVAO;
 	GLuint lightVAO;
