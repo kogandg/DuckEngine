@@ -220,6 +220,8 @@
     <ClInclude Include="WindowManager.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="color.frag" />
+    <None Include="color.vert" />
     <None Include="fragShader.frag" />
     <None Include="imgui\imgui.natstepfilter" />
     <None Include="lightCube.frag" />

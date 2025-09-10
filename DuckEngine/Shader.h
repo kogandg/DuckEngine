@@ -11,6 +11,7 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <unordered_map>
 
 class Shader
 {
@@ -38,7 +39,10 @@ public:
 	void SetMat3(const std::string& name, const glm::mat3& mat) const;
 	void SetMat4(const std::string& name, const glm::mat4& mat) const;
 
+	void CacheUniform(const std::string& name);
+
 private:
 	void checkCompileErrors(unsigned int shader, std::string type);
+	std::unordered_map<std::string, GLint> uniforms;
 };
 

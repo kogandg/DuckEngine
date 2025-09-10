@@ -99,7 +99,6 @@ void RealTimeRendererWindow::Init()
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::translate(model, pointLightPositions[i]);
 		model = glm::scale(model, glm::vec3(0.2f));
-		lightCubeShader->SetMat4("model", model);
 
 		ECS::Transform transform;
 		transform.local = glm::mat4(1.0f);
@@ -168,86 +167,167 @@ void RealTimeRendererWindow::DisplayCallback()
 
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
-	//cube
-	lightingShader->Use();
-
-	lightingShader->SetFloat("material.shininess", 32.0f);
-
-	lightingShader->SetMat4("view", camera.GetViewMatrix());
-	lightingShader->SetMat4("projection", camera.GetProjectionMatrix());
-	lightingShader->SetVec3("viewPos", camera.GetLookFrom());
-
-	//directional light
-	lightingShader->SetVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
-	lightingShader->SetVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
-	lightingShader->SetVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
-	lightingShader->SetVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
-
-	//point lights
-	for (int i = 0; i < 4; i++)
+	for (auto& [entity, meshComp] : ecs.view<ECS::Mesh>())
 	{
-		std::string index = std::to_string(i);
-		lightingShader->SetVec3(("pointLights[" + index + "].position").c_str(), pointLightPositions[i]);
-		lightingShader->SetVec3(("pointLights[" + index + "].ambient").c_str(), 0.05f, 0.05f, 0.05f);
-		lightingShader->SetVec3(("pointLights[" + index + "].diffuse").c_str(), 0.8f, 0.8f, 0.8f);
-		lightingShader->SetVec3(("pointLights[" + index + "].specular").c_str(), 1.0f, 1.0f, 1.0f);
-		lightingShader->SetFloat(("pointLights[" + index + "].constant").c_str(), 1.0f);
-		lightingShader->SetFloat(("pointLights[" + index + "].linear").c_str(), 0.09f);
-		lightingShader->SetFloat(("pointLights[" + index + "].quadratic").c_str(), 0.032f);
+		auto& matComp = ecs.getComponent<ECS::Material>(entity);
+		auto& transform = ecs.getComponent<ECS::Transform>(entity);
+
+		auto geom = cache.geomCache[meshComp.data];
+		auto gpuMat = cache.materialCache[matComp.data];
+		auto shader = gpuMat.get()->shader.get();
+		GLuint vao = GPUScene::getOrCreateVAO(cache, geom, gpuMat.get()->shader);
+
+		shader->Use();
+		glBindVertexArray(vao);
+
+		//uniforms
+		switch (gpuMat.get()->type)
+		{
+		case GPUScene::MaterialType::Color:
+		{
+			shader->SetMat4("view", camera.GetViewMatrix());
+			shader->SetMat4("projection", camera.GetProjectionMatrix());
+
+			shader->SetMat4("model", transform.world);
+
+			shader->SetVec3("color", glm::vec3(1.0f));
+		}break;
+		case GPUScene::MaterialType::Phong:
+		{
+			shader->SetMat4("view", camera.GetViewMatrix());
+			shader->SetMat4("projection", camera.GetProjectionMatrix());
+
+			shader->SetMat4("model", transform.world);
+			shader->SetMat3("transposeInverseModel", glm::transpose(glm::inverse(transform.world)));
+
+			shader->SetFloat("material.shininess", 32.0f);
+			shader->SetInt("material.diffuse", 0);
+			shader->SetInt("material.specular", 1);
+
+			//bind textures
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, diffuseMap);
+
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, specularMap);
+
+			shader->SetVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
+			shader->SetVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
+			shader->SetVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
+			shader->SetVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
+
+			//point lights
+			for (int i = 0; i < 4; i++)
+			{
+				std::string index = std::to_string(i);
+				shader->SetVec3(("pointLights[" + index + "].position").c_str(), pointLightPositions[i]);
+				shader->SetVec3(("pointLights[" + index + "].ambient").c_str(), 0.05f, 0.05f, 0.05f);
+				shader->SetVec3(("pointLights[" + index + "].diffuse").c_str(), 0.8f, 0.8f, 0.8f);
+				shader->SetVec3(("pointLights[" + index + "].specular").c_str(), 1.0f, 1.0f, 1.0f);
+				shader->SetFloat(("pointLights[" + index + "].constant").c_str(), 1.0f);
+				shader->SetFloat(("pointLights[" + index + "].linear").c_str(), 0.09f);
+				shader->SetFloat(("pointLights[" + index + "].quadratic").c_str(), 0.032f);
+			}
+
+			//spotlight
+			shader->SetVec3("spotLight.position", camera.GetLookFrom());
+			shader->SetVec3("spotLight.direction", camera.GetDirection());
+			shader->SetVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
+			shader->SetVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
+			shader->SetVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+			shader->SetFloat("spotLight.constant", 1.0f);
+			shader->SetFloat("spotLight.linear", 0.09f);
+			shader->SetFloat("spotLight.quadratic", 0.032f);
+			shader->SetFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
+			shader->SetFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
+		}break;
+		}
+
+		glDrawArrays(GL_TRIANGLES, 0, geom.get()->vertexCount);
 	}
 
-	//spotlight
-	lightingShader->SetVec3("spotLight.position", camera.GetLookFrom());
-	lightingShader->SetVec3("spotLight.direction", camera.GetDirection());
-	lightingShader->SetVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
-	lightingShader->SetVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
-	lightingShader->SetVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
-	lightingShader->SetFloat("spotLight.constant", 1.0f);
-	lightingShader->SetFloat("spotLight.linear", 0.09f);
-	lightingShader->SetFloat("spotLight.quadratic", 0.032f);
-	lightingShader->SetFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
-	lightingShader->SetFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
+	////cube
+	//lightingShader->Use();
+
+	//lightingShader->SetFloat("material.shininess", 32.0f);
+	//lightingShader->SetInt("material.diffuse", 0);
+	//lightingShader->SetInt("material.specular", 1);
+
+	//lightingShader->SetMat4("view", camera.GetViewMatrix());
+	//lightingShader->SetMat4("projection", camera.GetProjectionMatrix());
+	//lightingShader->SetVec3("viewPos", camera.GetLookFrom());
+
+	////directional light
+	//lightingShader->SetVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
+	//lightingShader->SetVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
+	//lightingShader->SetVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
+	//lightingShader->SetVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
+
+	////point lights
+	//for (int i = 0; i < 4; i++)
+	//{
+	//	std::string index = std::to_string(i);
+	//	lightingShader->SetVec3(("pointLights[" + index + "].position").c_str(), pointLightPositions[i]);
+	//	lightingShader->SetVec3(("pointLights[" + index + "].ambient").c_str(), 0.05f, 0.05f, 0.05f);
+	//	lightingShader->SetVec3(("pointLights[" + index + "].diffuse").c_str(), 0.8f, 0.8f, 0.8f);
+	//	lightingShader->SetVec3(("pointLights[" + index + "].specular").c_str(), 1.0f, 1.0f, 1.0f);
+	//	lightingShader->SetFloat(("pointLights[" + index + "].constant").c_str(), 1.0f);
+	//	lightingShader->SetFloat(("pointLights[" + index + "].linear").c_str(), 0.09f);
+	//	lightingShader->SetFloat(("pointLights[" + index + "].quadratic").c_str(), 0.032f);
+	//}
+
+	////spotlight
+	//lightingShader->SetVec3("spotLight.position", camera.GetLookFrom());
+	//lightingShader->SetVec3("spotLight.direction", camera.GetDirection());
+	//lightingShader->SetVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
+	//lightingShader->SetVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
+	//lightingShader->SetVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+	//lightingShader->SetFloat("spotLight.constant", 1.0f);
+	//lightingShader->SetFloat("spotLight.linear", 0.09f);
+	//lightingShader->SetFloat("spotLight.quadratic", 0.032f);
+	//lightingShader->SetFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
+	//lightingShader->SetFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
 
 
-	//bind diffuse map
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, diffuseMap);
+	////bind diffuse map
+	//glActiveTexture(GL_TEXTURE0);
+	//glBindTexture(GL_TEXTURE_2D, diffuseMap);
 
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, specularMap);
-
-	glBindVertexArray(cubeVAO);
-	for (int i = 0; i < 10; i++)
-	{
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, cubePositions[i]);
-		float angle = 20.0f * i;
-		model = glm::rotate(model, glm::radians(angle), glm::vec3(1, 0.3f, 0.5f));
-		lightingShader->SetMat4("model", model);
-
-		glm::mat3 transInversemodel = glm::transpose(glm::inverse(model));
-		lightingShader->SetMat3("transposeInverseModel", transInversemodel);
-
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-	}
+	//glActiveTexture(GL_TEXTURE1);
+	//glBindTexture(GL_TEXTURE_2D, specularMap);
 
 	//glBindVertexArray(cubeVAO);
-	//glDrawArrays(GL_TRIANGLES, 0, 36);
+	//for (int i = 0; i < 10; i++)
+	//{
+	//	glm::mat4 model = glm::mat4(1.0f);
+	//	model = glm::translate(model, cubePositions[i]);
+	//	float angle = 20.0f * i;
+	//	model = glm::rotate(model, glm::radians(angle), glm::vec3(1, 0.3f, 0.5f));
+	//	lightingShader->SetMat4("model", model);
 
-	//light cube
-	lightCubeShader->Use();
-	lightCubeShader->SetMat4("view", camera.GetViewMatrix());
-	lightCubeShader->SetMat4("projection", camera.GetProjectionMatrix());
+	//	glm::mat3 transInversemodel = glm::transpose(glm::inverse(model));
+	//	lightingShader->SetMat3("transposeInverseModel", transInversemodel);
 
-	glBindVertexArray(lightVAO);
-	for (int i = 0; i < 4; i++)
-	{
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, pointLightPositions[i]);
-		model = glm::scale(model, glm::vec3(0.2f));
-		lightCubeShader->SetMat4("model", model);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-	}
+	//	glDrawArrays(GL_TRIANGLES, 0, 36);
+	//}
+
+	////glBindVertexArray(cubeVAO);
+	////glDrawArrays(GL_TRIANGLES, 0, 36);
+
+	////light cube
+	//lightCubeShader->Use();
+	//lightCubeShader->SetMat4("view", camera.GetViewMatrix());
+	//lightCubeShader->SetMat4("projection", camera.GetProjectionMatrix());
+
+	//glBindVertexArray(lightVAO);
+	//for (int i = 0; i < 4; i++)
+	//{
+	//	glm::mat4 model = glm::mat4(1.0f);
+	//	model = glm::translate(model, pointLightPositions[i]);
+	//	model = glm::scale(model, glm::vec3(0.2f));
+	//	lightCubeShader->SetMat4("model", model);
+	//	glDrawArrays(GL_TRIANGLES, 0, 36);
+	//}
 
 	// bind textures on corresponding texture units
 	/*glActiveTexture(GL_TEXTURE0);
@@ -304,6 +384,9 @@ void RealTimeRendererWindow::InitObjects()
 
 void RealTimeRendererWindow::initGLObjects()
 {
+
+	GPUScene::preloadGPU(ecs, cache);
+
 	//shaders
 
 	lightCubeShader = new Shader("lightCube.vert", "lightCube.frag");
@@ -397,9 +480,9 @@ void RealTimeRendererWindow::initGLObjects()
 	diffuseMap = loadTexture("container2.png");
 	specularMap = loadTexture("container2_specular.png");
 
-	lightingShader->Use();
-	lightingShader->SetInt("material.diffuse", 0);
-	lightingShader->SetInt("material.specular", 1);
+	//lightingShader->Use();
+	//lightingShader->SetInt("material.diffuse", 0);
+	//lightingShader->SetInt("material.specular", 1);
 
 	//stbi_set_flip_vertically_on_load(true);
 
@@ -540,20 +623,21 @@ std::shared_ptr<GPUScene::GPUGeometry> GPUScene::getOrCreateGeometry(GPUCache& c
 		return c.geomCache[md];
 	}
 
-	auto geom = std::make_shared<GPUGeometry>();
-	geom.get()->layout = layout;
+	auto geom = GPUGeometry();
+	geom.layout = layout;
 
-	glGenBuffers(1, &geom.get()->VBO);
+	glGenBuffers(1, &(geom.VBO));
 
-	glBindBuffer(GL_ARRAY_BUFFER, geom.get()->VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, geom.VBO);
 	glBufferData(GL_ARRAY_BUFFER, md.get()->verts.size() * sizeof(float), md.get()->verts.data(), GL_STATIC_DRAW);
 
-	geom.get()->vertexCount = (GLsizei)(md.get()->verts.size() * sizeof(float) / geom.get()->layout.stride);
+	geom.vertexCount = (GLsizei)(md.get()->verts.size() * sizeof(float) / geom.layout.stride);
 
-	return c.geomCache[md] = geom;
+	auto geomPointer = std::make_shared<GPUGeometry>(geom);
+	return c.geomCache[md] = geomPointer;
 }
 
-std::shared_ptr<GPUScene::Shader> GPUScene::getOrCreateShader(GPUCache& c, MaterialType type, const char* vertexPath, const char* fragmentPath)
+std::shared_ptr<Shader> GPUScene::getOrCreateShader(GPUCache& c, MaterialType type, const char* vertexPath, const char* fragmentPath)
 {
 	auto iter = c.shaderCache.find(type);
 	if (iter != c.shaderCache.end())
@@ -561,134 +645,197 @@ std::shared_ptr<GPUScene::Shader> GPUScene::getOrCreateShader(GPUCache& c, Mater
 		return c.shaderCache[type];
 	}
 
-	auto shader = std::make_shared<Shader>();
-	shader.get()->program = compileAndLinkShader(vertexPath, fragmentPath);
-
-	auto cacheUniform = [&](const char* name) {shader.get()->uniforms[name] = glGetUniformLocation(shader.get()->program, name); };
+	auto shader = std::make_shared<Shader>(vertexPath, fragmentPath);
 
 	switch (type)
 	{
 	case MaterialType::Color:
 	{
-		cacheUniform("view");
-		cacheUniform("projection");
-		cacheUniform("model");
-		cacheUniform("color");
+		shader.get()->CacheUniform("view");
+		shader.get()->CacheUniform("projection");
+		shader.get()->CacheUniform("model");
+		shader.get()->CacheUniform("color");
 	} break;
 	case MaterialType::Phong:
 	{
-		cacheUniform("view");
-		cacheUniform("projection");
-		cacheUniform("model");
+		shader.get()->CacheUniform("view");
+		shader.get()->CacheUniform("projection");
+		shader.get()->CacheUniform("model");
+		shader.get()->CacheUniform("transposeInverseModel");
+		shader.get()->CacheUniform("viewPos");
 
+		//can set once but since this same shader can be used for lots of objects with different vals its better to set each frame
+		shader.get()->CacheUniform("material.shininess");
+		shader.get()->CacheUniform("material.diffuse");
+		shader.get()->CacheUniform("material.specular");
 
+		//directional light
+		shader.get()->CacheUniform("dirLight.direction");
+		shader.get()->CacheUniform("dirLight.ambient");
+		shader.get()->CacheUniform("dirLight.diffuse");
+		shader.get()->CacheUniform("dirLight.specular");
 
+		//point lights
+		for (int i = 0; i < 4; i++)
+		{
+			std::string index = std::to_string(i);
+			shader.get()->CacheUniform(("pointLights[" + index + "].position").c_str());
+			shader.get()->CacheUniform(("pointLights[" + index + "].ambient").c_str());
+			shader.get()->CacheUniform(("pointLights[" + index + "].diffuse").c_str());
+			shader.get()->CacheUniform(("pointLights[" + index + "].specular").c_str());
+			shader.get()->CacheUniform(("pointLights[" + index + "].constant").c_str());
+			shader.get()->CacheUniform(("pointLights[" + index + "].linear").c_str());
+			shader.get()->CacheUniform(("pointLights[" + index + "].quadratic").c_str());
+		}
+
+		//spotlight
+		shader.get()->CacheUniform("spotLight.position");
+		shader.get()->CacheUniform("spotLight.direction");
+		shader.get()->CacheUniform("spotLight.ambient");
+		shader.get()->CacheUniform("spotLight.diffuse");
+		shader.get()->CacheUniform("spotLight.specular");
+		shader.get()->CacheUniform("spotLight.constant");
+		shader.get()->CacheUniform("spotLight.linear");
+		shader.get()->CacheUniform("spotLight.quadratic");
+		shader.get()->CacheUniform("spotLight.cutOff");
+		shader.get()->CacheUniform("spotLight.outerCutOff");
 	} break;
 	}
 
-	return std::shared_ptr<Shader>();
+	return c.shaderCache[type] = shader;
 }
 
-GLuint GPUScene::getOrCreateTexture(GPUCache& c, const std::string& path)
+std::shared_ptr<GLuint> GPUScene::getOrCreateTexture(GPUCache& c, const std::string& path)
 {
-	return GLuint();
+	if (path.empty()) return 0;
+	auto iter = c.textureCache.find(path);
+	if (iter != c.textureCache.end())
+	{
+		return c.textureCache[path];
+	}
+
+	GLuint texture;
+	glGenTextures(1, &texture);
+
+	int width;
+	int height;
+	int numComponents;
+	unsigned char* data = stbi_load(path.c_str(), &width, &height, &numComponents, 0);
+	if (data)
+	{
+		GLenum format;
+		if (numComponents == 1) format = GL_RED;
+		else if (numComponents == 3) format = GL_RGB;
+		else if (numComponents == 4) format = GL_RGBA;
+
+		glBindTexture(GL_TEXTURE_2D, texture);
+		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		stbi_image_free(data);
+	}
+	else
+	{
+		std::cout << "Texture failed to load at path: " << path << std::endl;
+		stbi_image_free(data);
+	}
+
+	auto texturePointer = std::make_shared<GLuint>(texture);
+	c.textureCache[path] = texturePointer;
+
+	return texturePointer;
 }
 
 std::shared_ptr<GPUScene::GPUMaterial> GPUScene::getOrCreateMaterial(GPUCache& c, const std::shared_ptr<ECS::MaterialData>& md)
 {
-	return std::shared_ptr<GPUMaterial>();
+	auto iter = c.materialCache.find(md);
+	if (iter != c.materialCache.end())
+	{
+		return c.materialCache[md];
+	}
+
+	auto material = std::make_shared<GPUMaterial>();
+	switch (md.get()->materialType)
+	{
+	case ECS::MaterialType::Color:
+	{
+		material.get()->type = MaterialType::Color;
+		material.get()->shader = getOrCreateShader(c, MaterialType::Color, "color.vert", "color.frag");
+		auto& d = std::get<ECS::ColorData>(md.get()->data);
+		material.get()->color = d.color;
+	} break;
+	case ECS::MaterialType::Phong:
+	{
+		material.get()->type = MaterialType::Phong;
+		material.get()->shader = getOrCreateShader(c, MaterialType::Phong, "lighting.vert", "lighting.frag");
+		auto& d = std::get<ECS::PhongData>(md.get()->data);
+		material.get()->diffuseTexture = getOrCreateTexture(c, d.diffuseTexturePath);
+		material.get()->specularTexture = getOrCreateTexture(c, d.specularTexturePath);
+		material.get()->shininess = d.shininess;
+	}break;
+	}
+
+	return c.materialCache[md] = material;
 }
 
 GLuint GPUScene::buildVAO(const GPUGeometry& g, const Shader& s)
 {
-	return GLuint();
+	GLuint vao = 0;
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
+
+	glBindBuffer(GL_ARRAY_BUFFER, g.VBO);
+	//if (g.ebo) glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g.ebo); //later for ebos
+
+	for (const auto& attr : g.layout.attrs)
+	{
+		glEnableVertexAttribArray(attr.location);
+		glVertexAttribPointer(attr.location, attr.size, attr.type, GL_FALSE, g.layout.stride, (void*)(attr.offset));
+	}
+
+	return vao;
 }
 
 GLuint GPUScene::getOrCreateVAO(GPUCache& c, const std::shared_ptr<GPUGeometry>& g, const std::shared_ptr<Shader>& s)
 {
-	return GLuint();
+	VAOKey key{ g.get()->VBO, g.get()->layout };
+
+	auto iter = c.vaoCache.find(key);
+	if (iter != c.vaoCache.end())
+	{
+		c.vaoCache[key];
+	}
+
+	VAOEntry entry{ buildVAO(*g, *s) };
+	c.vaoCache[key] = entry;
+
+	return entry.VAO;
 }
 
-GLuint GPUScene::compileAndLinkShader(std::string vertexPath, std::string fragmentPath)
+void GPUScene::preloadGPU(ECS::ECS& ecs, GPUCache& cache)
 {
-	std::string vertexCode;
-	std::string fragmentCode;
-	std::ifstream vShaderFile;
-	std::ifstream fShaderFile;
-
-	// ensure ifstream objects can throw exceptions:
-	vShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-	fShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-	try
+	for (auto& [entity, meshComp] : ecs.view<ECS::Mesh>())
 	{
-		// open files
-		vShaderFile.open(vertexPath);
-		fShaderFile.open(fragmentPath);
-		std::stringstream vShaderStream, fShaderStream;
-		// read file's buffer contents into streams
-		vShaderStream << vShaderFile.rdbuf();
-		fShaderStream << fShaderFile.rdbuf();
-		// close file handlers
-		vShaderFile.close();
-		fShaderFile.close();
-		// convert stream into string
-		vertexCode = vShaderStream.str();
-		fragmentCode = fShaderStream.str();
-	}
-	catch (std::ifstream::failure& e)
-	{
-		std::cout << "ERROR::SHADER::FILE_NOT_SUCCESSFULLY_READ: " << e.what() << std::endl;
-	}
+		auto& matComp = ecs.getComponent<ECS::Material>(entity);
 
-	const char* vShaderCode = vertexCode.c_str();
-	const char* fShaderCode = fragmentCode.c_str();
-	// 2. compile shaders
-	unsigned int vertex;
-	unsigned int fragment;
-	// vertex shader
-	vertex = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vertex, 1, &vShaderCode, NULL);
-	glCompileShader(vertex);
-	checkShaderCompileErrors(vertex, "VERTEX");
-	// fragment Shader
-	fragment = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragment, 1, &fShaderCode, NULL);
-	glCompileShader(fragment);
-	checkShaderCompileErrors(fragment, "FRAGMENT");
-
-	// shader Program
-	GLuint shaderID = glCreateProgram();
-	glAttachShader(shaderID, vertex);
-	glAttachShader(shaderID, fragment);
-	glLinkProgram(shaderID);
-	checkShaderCompileErrors(shaderID, "PROGRAM");
-	// delete the shaders as they're linked into our program now and no longer necessary
-	glDeleteShader(vertex);
-	glDeleteShader(fragment);
-
-	return shaderID;
-}
-
-void GPUScene::checkShaderCompileErrors(GLuint shader, std::string type)
-{
-	int success;
-	char infoLog[1024];
-	if (type != "PROGRAM")
-	{
-		glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-		if (!success)
+		VertexLayoutKey layout
 		{
-			glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-			std::cout << "ERROR::SHADER_COMPILATION_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
-		}
-	}
-	else
-	{
-		glGetProgramiv(shader, GL_LINK_STATUS, &success);
-		if (!success)
-		{
-			glGetProgramInfoLog(shader, 1024, NULL, infoLog);
-			std::cout << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
-		}
+			sizeof(float) * 8, //stride = pos(3) + norm(3) + text coords(2)
+			{
+			{0, 3, GL_FLOAT, 0},
+			{1, 3, GL_FLOAT, sizeof(float) * 3},
+			{2, 2, GL_FLOAT, sizeof(float) * 6}
+			}
+		};
+		auto geom = getOrCreateGeometry(cache, meshComp.data, layout);
+
+		auto gpuMat = getOrCreateMaterial(cache, matComp.data);
+
+		GLuint vao = getOrCreateVAO(cache, geom, gpuMat.get()->shader);
 	}
 }

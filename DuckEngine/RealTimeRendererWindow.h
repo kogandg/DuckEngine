@@ -17,6 +17,11 @@ namespace GPUScene
 		GLint size;
 		GLenum type; //GL_FLOAT, etc
 		unsigned int offset; //byte offset
+
+		bool operator==(const VertexAttrib& other) const noexcept
+		{
+			return location == other.location && size == other.size && type == other.type && offset == other.offset;
+		}
 	};
 
 	struct VertexLayoutKey
@@ -24,7 +29,27 @@ namespace GPUScene
 		GLsizei stride; //stride in bytes
 		std::vector<VertexAttrib> attrs;
 
-		bool operator==(const VertexLayoutKey&) const = default;
+		bool operator==(const VertexLayoutKey& other) const noexcept
+		{
+			return stride == other.stride && attrs == other.attrs;
+		}
+	};
+
+	struct VertexLayoutKeyHash
+	{
+		size_t operator()(const VertexLayoutKey& k) const noexcept
+		{
+			size_t h = std::hash<size_t>{}(k.stride);
+			for (auto& attr : k.attrs)
+			{
+				size_t ha = std::hash<GLuint>{}(attr.location) ^
+					(std::hash<GLint>{}(attr.size) << 1) ^
+					(std::hash<GLenum>{}(attr.type) << 2) ^
+					(std::hash<size_t>{}(attr.offset) << 3);
+				h ^= ha + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2); // hash combine
+			}
+			return h;
+		}
 	};
 
 	struct GPUGeometry
@@ -36,13 +61,10 @@ namespace GPUScene
 		VertexLayoutKey layout; // for VAO creation
 	};
 
-	struct Shader
+	/*struct GPUTexture
 	{
-		GLuint program = 0;
-
-		//cache the uniform locations used
-		std::unordered_map<std::string, GLint> uniforms;
-	};
+		GLuint id = 0;
+	};*/
 
 	enum class MaterialType
 	{
@@ -54,8 +76,8 @@ namespace GPUScene
 		MaterialType type;
 		std::shared_ptr<Shader> shader;
 
-		GLuint diffuseTexture = 0;
-		GLuint specularTexture = 0;
+		std::shared_ptr<GLuint> diffuseTexture;
+		std::shared_ptr<GLuint> specularTexture;
 
 		glm::vec3 color = glm::vec3(1.0f);
 		float shininess = 32.0f;
@@ -67,7 +89,10 @@ namespace GPUScene
 		//GLuint EBO;
 
 		VertexLayoutKey layout;
-		bool operator==(const VAOKey&) const = default;
+		bool operator==(const VAOKey& other) const noexcept
+		{
+			return VBO == other.VBO && layout == other.layout;
+		}
 	};
 
 	struct VAOEntry
@@ -88,20 +113,27 @@ namespace GPUScene
 
 		struct VAOKeyHash
 		{
-			size_t operator()(const VAOKey&) const noexcept;
+			size_t operator()(const VAOKey& k) const noexcept
+			{
+				size_t h1 = std::hash<GLuint>{}(k.VBO);
+				size_t h2 = VertexLayoutKeyHash{}(k.layout);
+				return h1 ^ (h2 << 1);
+			}
 		};
 		std::unordered_map<VAOKey, VAOEntry, VAOKeyHash> vaoCache;
 	};
 
 	std::shared_ptr<GPUGeometry> getOrCreateGeometry(GPUCache& c, const std::shared_ptr<ECS::MeshData>& md, const VertexLayoutKey& layout);
 	std::shared_ptr<Shader> getOrCreateShader(GPUCache& c, MaterialType type, const char* vertexPath, const char* fragmentPath);
-	GLuint getOrCreateTexture(GPUCache& c, const std::string& path);
+	std::shared_ptr<GLuint> getOrCreateTexture(GPUCache& c, const std::string& path);
 	std::shared_ptr<GPUMaterial> getOrCreateMaterial(GPUCache& c, const std::shared_ptr<ECS::MaterialData>& md);
 	GLuint buildVAO(const GPUGeometry& g, const Shader& s);
 	GLuint getOrCreateVAO(GPUCache& c, const std::shared_ptr<GPUGeometry>& g, const std::shared_ptr<Shader>& s);
 
 	GLuint compileAndLinkShader(std::string vertexPath, std::string fragmentPath);
 	void checkShaderCompileErrors(GLuint shader, std::string type);
+
+	void preloadGPU(ECS::ECS& ecs, GPUCache& cache);
 };
 
 class RealTimeRendererWindow : public Window
@@ -119,7 +151,7 @@ public:
 
 private:
 	ECS::ECS ecs;
-
+	GPUScene::GPUCache cache;
 
 	GLuint VBO;
 	GLuint cubeVAO;
