@@ -63,9 +63,9 @@ void RealTimeRendererWindow::Init()
 		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
 		}));
 
-	auto lightCubeMat = ECS::MaterialData(ECS::MaterialType::Color, ECS::ColorData(glm::vec3(1.0f)));
+	auto lightCubeMat = ECS::MaterialData(ECS::MaterialData::Type::Color, ECS::ColorData(glm::vec3(1.0f)));
 	auto lightCubeMaterial = std::make_shared<ECS::MaterialData>(lightCubeMat);
-	auto cubeMat = ECS::MaterialData(ECS::MaterialType::Phong, ECS::PhongData("container2.png", "container2_specular.png"));
+	auto cubeMat = ECS::MaterialData(ECS::MaterialData::Type::Phong, ECS::PhongData("container2.png", "container2_specular.png", 32.0f));
 	auto cubeMaterial = std::make_shared<ECS::MaterialData>(cubeMat);
 
 
@@ -76,14 +76,16 @@ void RealTimeRendererWindow::Init()
 	cubeMatComp.data = cubeMaterial;
 	for (int i = 0; i < 10; i++)
 	{
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, cubePositions[i]);
+		//glm::mat4 model = glm::mat4(1.0f);
+		//model = glm::translate(model, cubePositions[i]);
 		float angle = 20.0f * i;
-		model = glm::rotate(model, glm::radians(angle), glm::vec3(1, 0.3f, 0.5f));
+		//model = glm::rotate(model, glm::radians(angle), glm::vec3(1, 0.3f, 0.5f));
 
 		ECS::Transform transform;
-		transform.local = glm::mat4(1.0f);
-		transform.world = model;
+		transform.position = cubePositions[i];
+		transform.rotation = glm::angleAxis(glm::radians(angle), glm::normalize(glm::vec3(1, 0.3, 0.5f)));
+		//transform.local = glm::mat4(1.0f);
+		//transform.world = model;
 
 		auto cube = ecs.CreateEntity();
 
@@ -96,13 +98,15 @@ void RealTimeRendererWindow::Init()
 	lightCubeMatComp.data = lightCubeMaterial;
 	for (int i = 0; i < 4; i++)
 	{
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, pointLightPositions[i]);
-		model = glm::scale(model, glm::vec3(0.2f));
+		//glm::mat4 model = glm::mat4(1.0f);
+		//model = glm::translate(model, pointLightPositions[i]);
+		//model = glm::scale(model, glm::vec3(0.2f));
 
 		ECS::Transform transform;
-		transform.local = glm::mat4(1.0f);
-		transform.world = model;
+		transform.position = pointLightPositions[i];
+		transform.scale = glm::vec3(0.2f);
+		//transform.local = glm::mat4(1.0f);
+		//transform.world = model;
 
 		auto lightCube = ecs.CreateEntity();
 
@@ -110,6 +114,31 @@ void RealTimeRendererWindow::Init()
 		ecs.addComponent<ECS::Transform>(lightCube, transform);
 		ecs.addComponent<ECS::Material>(lightCube, lightCubeMatComp);
 	}
+
+
+	//lights
+	ECS::Transform directionalTransform;
+	directionalTransform.rotation = glm::quat(glm::vec3(-0.2f, -1.0f, -0.3f));
+	ECS::Light directionalLightComp;
+	directionalLightComp.type = ECS::Light::Type::Directional;
+	directionalLightComp.ambient = glm::vec3(0.05f, 0.05f, 0.05f);
+	directionalLightComp.diffuse = glm::vec3(0.4f, 0.4f, 0.4f);
+	directionalLightComp.specular = glm::vec3(0.5f, 0.5f, 0.5f);
+
+	directionalLight = ecs.CreateEntity();
+	ecs.addComponent<ECS::Light>(directionalLight, directionalLightComp);
+	ecs.addComponent<ECS::Transform>(directionalLight, directionalTransform);
+
+
+	ECS::Transform cameraTransform;
+	cameraTransform.position = glm::vec3(1.0f, 1.0f, 4.0f);
+	cameraTransform.rotation = glm::angleAxis(glm::radians(-101.0f), glm::vec3(0, 1, 0)) * glm::angleAxis(glm::radians(-12.5f), glm::vec3(1, 0, 0));
+	ECS::Camera cameraData;
+	cameraData.aspectRatio = width / height;
+	cameraData.fovY = 45.0f;
+	cameraEntity = ecs.CreateEntity();
+	ecs.addComponent<ECS::Camera>(cameraEntity, cameraData);
+	ecs.addComponent<ECS::Transform>(cameraEntity, cameraTransform);
 }
 
 void RealTimeRendererWindow::CleanUp()
@@ -159,6 +188,9 @@ void RealTimeRendererWindow::IdleCallback()
 	//camera.SetFOVY(45.0f);
 	camera.SetImageSize(width, height);
 	camera.UpdateCameraVectors();
+
+	transformSystem.update(ecs);
+	cameraSystem.update(ecs);
 }
 
 void RealTimeRendererWindow::DisplayCallback()
@@ -167,54 +199,57 @@ void RealTimeRendererWindow::DisplayCallback()
 
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
+	auto& cameraData = ecs.getComponent<ECS::Camera>(cameraEntity);
+
 	for (auto& [entity, meshComp] : ecs.view<ECS::Mesh>())
 	{
 		auto& matComp = ecs.getComponent<ECS::Material>(entity);
 		auto& transform = ecs.getComponent<ECS::Transform>(entity);
 
 		auto geom = cache.geomCache[meshComp.data];
-		auto gpuMat = cache.materialCache[matComp.data];
-		auto shader = gpuMat.get()->shader.get();
-		GLuint vao = GPUScene::getOrCreateVAO(cache, geom, gpuMat.get()->shader);
+		auto gpuMat = cache.materialCache[matComp.data].get();
+		auto shader = gpuMat->shader.get();
+		GLuint vao = GPUScene::getOrCreateVAO(cache, geom, gpuMat->shader);
 
 		shader->Use();
 		glBindVertexArray(vao);
 
 		//uniforms
-		switch (gpuMat.get()->type)
+		switch (gpuMat->type)
 		{
-		case GPUScene::MaterialType::Color:
+		case GPUScene::GPUMaterial::Type::Color:
 		{
-			shader->SetMat4("view", camera.GetViewMatrix());
-			shader->SetMat4("projection", camera.GetProjectionMatrix());
+			/*shader->SetMat4("view", camera.GetViewMatrix());
+			shader->SetMat4("projection", camera.GetProjectionMatrix());*/
+
+			shader->SetMat4("view", cameraData.view);
+			shader->SetMat4("projection", cameraData.projection);
 
 			shader->SetMat4("model", transform.world);
 
-			shader->SetVec3("color", glm::vec3(1.0f));
+			shader->SetVec3("color", gpuMat->color);
 		}break;
-		case GPUScene::MaterialType::Phong:
+		case GPUScene::GPUMaterial::Type::Phong:
 		{
-			shader->SetMat4("view", camera.GetViewMatrix());
-			shader->SetMat4("projection", camera.GetProjectionMatrix());
+			/*shader->SetMat4("view", camera.GetViewMatrix());
+			shader->SetMat4("projection", camera.GetProjectionMatrix());*/
+
+			shader->SetMat4("view", cameraData.view);
+			shader->SetMat4("projection", cameraData.projection);
 
 			shader->SetMat4("model", transform.world);
 			shader->SetMat3("transposeInverseModel", glm::transpose(glm::inverse(transform.world)));
 
-			shader->SetFloat("material.shininess", 32.0f);
-			shader->SetInt("material.diffuse", 0);
-			shader->SetInt("material.specular", 1);
+			shader->SetFloat("material.shininess", gpuMat->shininess);
+			shader->SetTexture("material.diffuse", 0, *gpuMat->diffuseTexture.get());
+			shader->SetTexture("material.specular", 1, *gpuMat->specularTexture.get());
 
-			//bind textures
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, diffuseMap);
-
-			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, specularMap);
-
-			shader->SetVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
-			shader->SetVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
-			shader->SetVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
-			shader->SetVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
+			auto dirLightData = ecs.getComponent<ECS::Light>(directionalLight);
+			auto quatRotation = ecs.getComponent<ECS::Transform>(directionalLight).rotation;
+			shader->SetVec3("dirLight.direction", glm::eulerAngles(quatRotation));
+			shader->SetVec3("dirLight.ambient", dirLightData.ambient);
+			shader->SetVec3("dirLight.diffuse", dirLightData.diffuse);
+			shader->SetVec3("dirLight.specular", dirLightData.specular);
 
 			//point lights
 			for (int i = 0; i < 4; i++)
@@ -246,107 +281,6 @@ void RealTimeRendererWindow::DisplayCallback()
 		glDrawArrays(GL_TRIANGLES, 0, geom.get()->vertexCount);
 	}
 
-	////cube
-	//lightingShader->Use();
-
-	//lightingShader->SetFloat("material.shininess", 32.0f);
-	//lightingShader->SetInt("material.diffuse", 0);
-	//lightingShader->SetInt("material.specular", 1);
-
-	//lightingShader->SetMat4("view", camera.GetViewMatrix());
-	//lightingShader->SetMat4("projection", camera.GetProjectionMatrix());
-	//lightingShader->SetVec3("viewPos", camera.GetLookFrom());
-
-	////directional light
-	//lightingShader->SetVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
-	//lightingShader->SetVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
-	//lightingShader->SetVec3("dirLight.diffuse", 0.4f, 0.4f, 0.4f);
-	//lightingShader->SetVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
-
-	////point lights
-	//for (int i = 0; i < 4; i++)
-	//{
-	//	std::string index = std::to_string(i);
-	//	lightingShader->SetVec3(("pointLights[" + index + "].position").c_str(), pointLightPositions[i]);
-	//	lightingShader->SetVec3(("pointLights[" + index + "].ambient").c_str(), 0.05f, 0.05f, 0.05f);
-	//	lightingShader->SetVec3(("pointLights[" + index + "].diffuse").c_str(), 0.8f, 0.8f, 0.8f);
-	//	lightingShader->SetVec3(("pointLights[" + index + "].specular").c_str(), 1.0f, 1.0f, 1.0f);
-	//	lightingShader->SetFloat(("pointLights[" + index + "].constant").c_str(), 1.0f);
-	//	lightingShader->SetFloat(("pointLights[" + index + "].linear").c_str(), 0.09f);
-	//	lightingShader->SetFloat(("pointLights[" + index + "].quadratic").c_str(), 0.032f);
-	//}
-
-	////spotlight
-	//lightingShader->SetVec3("spotLight.position", camera.GetLookFrom());
-	//lightingShader->SetVec3("spotLight.direction", camera.GetDirection());
-	//lightingShader->SetVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
-	//lightingShader->SetVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
-	//lightingShader->SetVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
-	//lightingShader->SetFloat("spotLight.constant", 1.0f);
-	//lightingShader->SetFloat("spotLight.linear", 0.09f);
-	//lightingShader->SetFloat("spotLight.quadratic", 0.032f);
-	//lightingShader->SetFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
-	//lightingShader->SetFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
-
-
-	////bind diffuse map
-	//glActiveTexture(GL_TEXTURE0);
-	//glBindTexture(GL_TEXTURE_2D, diffuseMap);
-
-	//glActiveTexture(GL_TEXTURE1);
-	//glBindTexture(GL_TEXTURE_2D, specularMap);
-
-	//glBindVertexArray(cubeVAO);
-	//for (int i = 0; i < 10; i++)
-	//{
-	//	glm::mat4 model = glm::mat4(1.0f);
-	//	model = glm::translate(model, cubePositions[i]);
-	//	float angle = 20.0f * i;
-	//	model = glm::rotate(model, glm::radians(angle), glm::vec3(1, 0.3f, 0.5f));
-	//	lightingShader->SetMat4("model", model);
-
-	//	glm::mat3 transInversemodel = glm::transpose(glm::inverse(model));
-	//	lightingShader->SetMat3("transposeInverseModel", transInversemodel);
-
-	//	glDrawArrays(GL_TRIANGLES, 0, 36);
-	//}
-
-	////glBindVertexArray(cubeVAO);
-	////glDrawArrays(GL_TRIANGLES, 0, 36);
-
-	////light cube
-	//lightCubeShader->Use();
-	//lightCubeShader->SetMat4("view", camera.GetViewMatrix());
-	//lightCubeShader->SetMat4("projection", camera.GetProjectionMatrix());
-
-	//glBindVertexArray(lightVAO);
-	//for (int i = 0; i < 4; i++)
-	//{
-	//	glm::mat4 model = glm::mat4(1.0f);
-	//	model = glm::translate(model, pointLightPositions[i]);
-	//	model = glm::scale(model, glm::vec3(0.2f));
-	//	lightCubeShader->SetMat4("model", model);
-	//	glDrawArrays(GL_TRIANGLES, 0, 36);
-	//}
-
-	// bind textures on corresponding texture units
-	/*glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, texture1);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, texture2);*/
-
-	/*glBindVertexArray(VAO);
-	for (int i = 0; i < 10; i++)
-	{
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, cubePositions[i]);
-		float angle = 20.0f * i;
-		model = glm::rotate(model, glm::radians(angle), glm::vec3(1, 0.3f, 0.5f));
-		shader->SetMat4("model", model);
-
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-	}*/
-
 
 	ImGui::SetNextWindowPos(ImVec2(0, 0));// , ImGuiCond_Always);
 	ImGui::SetNextWindowSize(ImVec2(225, 250));
@@ -358,11 +292,70 @@ void RealTimeRendererWindow::DisplayCallback()
 	auto camPitch = camera.GetPitch();
 	auto camYaw = camera.GetYaw();
 
+	auto camTestTrans = ecs.getComponent<ECS::Transform>(cameraEntity);
+	auto camTestPos = camTestTrans.position;
+	auto camTestDir = glm::eulerAngles(camTestTrans.rotation);
+
 	ImGui::Text("Pos = (%.2f, %.2f, %.2f)", camPos.x, camPos.y, camPos.z);
 	ImGui::Text("Dir = (%.2f, %.2f, %.2f)", camDir.x, camDir.y, camDir.z);
 	ImGui::Text("Right = (%.2f, %.2f, %.2f)", camRight.x, camRight.y, camRight.z);
 	ImGui::Text("Pitch = %.2f", camPitch);
 	ImGui::Text("Yaw = %.2f", camYaw);
+	
+	float pitch = -12.5f;
+	float yaw = -101.0f;
+
+	auto yawQuat = glm::angleAxis(glm::radians(yaw), glm::vec3(0, 1, 0));
+	auto pitchQuat = glm::angleAxis(glm::radians(pitch), glm::vec3(1, 0, 0));
+	auto resultQuat = yawQuat * pitchQuat;
+	auto front = resultQuat * glm::vec3(0.0, 0.0f, -1.0f);
+
+
+
+	float cy = cos(glm::radians(yaw) * 0.5f);
+	float sy = sin(glm::radians(yaw) * 0.5f);
+	float cp = cos(glm::radians(pitch) * 0.5f);
+	float sp = sin(glm::radians(pitch) * 0.5f);
+	
+	glm::vec3 trueDirection;
+	trueDirection.x = cy * cp;
+	trueDirection.y = sp;
+	trueDirection.z = sy * cp;
+	trueDirection = glm::normalize(trueDirection);
+
+	glm::vec3 testDir;
+	testDir.x = sy * cp;
+	testDir.y = sp;
+	testDir.z = -cy * cp;
+
+	glm::vec3 test2Dir;
+	test2Dir.x = sy * cp;
+	test2Dir.y = sp;
+	test2Dir.z = cp * cy;
+
+	auto yawQ = glm::angleAxis(glm::radians(yaw), glm::vec3(0, 1, 0));
+	auto right = glm::normalize(glm::cross(glm::vec3(0, 1, 0), yawQ * glm::vec3(0, 0, -1)));
+	auto pitchQ = glm::angleAxis(glm::radians(pitch), right);
+	auto orient = glm::normalize(pitchQ * yawQ);
+
+	auto dirQ = orient * glm::vec3(0, 0, -1);
+
+	glm::quat orientation = glm::rotation(glm::vec3(0, 0, -1), trueDirection);
+	auto testFinal = orientation * glm::vec3(0, 0, -1);
+
+	glm::quat testPleaseWork;
+	testPleaseWork.w = cy * cp;
+	testPleaseWork.x = sp * cy;
+	testPleaseWork.y = sy * cp;
+	testPleaseWork.z = -sy * sp;
+	auto testPlease = testPleaseWork * glm::vec3(0, 0, -1);
+
+
+
+	/*ImGui::Text("Test Pos = (%.2f, %.2f, %.2f)", camTestPos.x, camTestPos.y, camTestPos.z);
+	ImGui::Text("Test Dir = (%.2f, %.2f, %.2f)", camTestDir.x, camTestDir.y, camTestDir.z);
+	ImGui::Text("Test Dir = (%.2f, %.2f, %.2f)", front.x, front.y, front.z);*/
+	//ImGui::Text("Test Dir = (%.2f, %.2f, %.2f)", test3.x, test3.y, test3.z);
 
 	ImGui::End();
 
@@ -384,162 +377,7 @@ void RealTimeRendererWindow::InitObjects()
 
 void RealTimeRendererWindow::initGLObjects()
 {
-
 	GPUScene::preloadGPU(ecs, cache);
-
-	//shaders
-
-	lightCubeShader = new Shader("lightCube.vert", "lightCube.frag");
-	lightingShader = new Shader("lighting.vert", "lighting.frag");
-
-	float vertices[] = {
-		// positions          // normals           // texture coords
-		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
-		 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  0.0f,
-		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
-		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
-		-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  1.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
-
-		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
-		 0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  0.0f,
-		 0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
-		 0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
-		-0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  1.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
-
-		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
-		-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
-		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
-		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
-		-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
-		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
-
-		 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
-		 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
-		 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
-		 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
-		 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
-
-		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
-		 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  1.0f,
-		 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
-		 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  0.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
-
-		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,
-		 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  1.0f,
-		 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
-		 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
-		-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  0.0f,
-		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
-	};
-
-	//verts setup
-	glGenBuffers(1, &VBO);
-	//glGenBuffers(1, &EBO);
-
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	//cube setup
-	glGenVertexArrays(1, &cubeVAO);
-	glBindVertexArray(cubeVAO);
-
-	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-	int stride = 3 + 3 + 2;
-	//position attrib
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-
-	//normal attrib
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-
-	//tex coords attrib
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(6 * sizeof(float)));
-	glEnableVertexAttribArray(2);
-
-
-	//lightcube setup
-	glGenVertexArrays(1, &lightVAO);
-	glBindVertexArray(lightVAO);
-
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	//position attrib
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-
-	//texture
-	diffuseMap = loadTexture("container2.png");
-	specularMap = loadTexture("container2_specular.png");
-
-	//lightingShader->Use();
-	//lightingShader->SetInt("material.diffuse", 0);
-	//lightingShader->SetInt("material.specular", 1);
-
-	//stbi_set_flip_vertically_on_load(true);
-
-	//int texWidth;
-	//int texHeight;
-	//int texNumChannels;
-	//unsigned char* texData = stbi_load("container.jpg", &texWidth, &texHeight, &texNumChannels, 0);
-
-	//glGenTextures(1, &texture1);
-	//glBindTexture(GL_TEXTURE_2D, texture1);
-
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	//if (texData)
-	//{
-	//	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texWidth, texHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, texData);
-	//	glGenerateMipmap(GL_TEXTURE_2D);
-	//}
-	//else
-	//{
-	//	std::cout << "Failed to load texture" << std::endl;
-	//}
-
-	//stbi_image_free(texData);
-
-
-	////texture2
-	//texData = stbi_load("out12.png", &texWidth, &texHeight, &texNumChannels, 0);
-
-	//glGenTextures(1, &texture2);
-	//glBindTexture(GL_TEXTURE_2D, texture2);
-
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	//if (texData)
-	//{
-	//	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, texData);
-	//	glGenerateMipmap(GL_TEXTURE_2D);
-	//}
-	//else
-	//{
-	//	std::cout << "Failed to load texture" << std::endl;
-	//}
-
-	//stbi_image_free(texData);
-
-	////shader->Use();
-	////shader->SetInt("texture1", 0);
-	////shader->SetInt("texture2", 1);
-
-	//stbi_set_flip_vertically_on_load(false);//just in case anywhere else using loading
 }
 
 GLuint RealTimeRendererWindow::loadTexture(const char* path)
@@ -637,7 +475,7 @@ std::shared_ptr<GPUScene::GPUGeometry> GPUScene::getOrCreateGeometry(GPUCache& c
 	return c.geomCache[md] = geomPointer;
 }
 
-std::shared_ptr<Shader> GPUScene::getOrCreateShader(GPUCache& c, MaterialType type, const char* vertexPath, const char* fragmentPath)
+std::shared_ptr<Shader> GPUScene::getOrCreateShader(GPUCache& c, GPUMaterial::Type type, const char* vertexPath, const char* fragmentPath)
 {
 	auto iter = c.shaderCache.find(type);
 	if (iter != c.shaderCache.end())
@@ -649,14 +487,14 @@ std::shared_ptr<Shader> GPUScene::getOrCreateShader(GPUCache& c, MaterialType ty
 
 	switch (type)
 	{
-	case MaterialType::Color:
+	case GPUMaterial::Type::Color:
 	{
 		shader.get()->CacheUniform("view");
 		shader.get()->CacheUniform("projection");
 		shader.get()->CacheUniform("model");
 		shader.get()->CacheUniform("color");
 	} break;
-	case MaterialType::Phong:
+	case GPUMaterial::Type::Phong:
 	{
 		shader.get()->CacheUniform("view");
 		shader.get()->CacheUniform("projection");
@@ -760,19 +598,19 @@ std::shared_ptr<GPUScene::GPUMaterial> GPUScene::getOrCreateMaterial(GPUCache& c
 	}
 
 	auto material = std::make_shared<GPUMaterial>();
-	switch (md.get()->materialType)
+	switch (md.get()->type)
 	{
-	case ECS::MaterialType::Color:
+	case ECS::MaterialData::Type::Color:
 	{
-		material.get()->type = MaterialType::Color;
-		material.get()->shader = getOrCreateShader(c, MaterialType::Color, "color.vert", "color.frag");
+		material.get()->type = GPUMaterial::Type::Color;
+		material.get()->shader = getOrCreateShader(c, GPUMaterial::Type::Color, "color.vert", "color.frag");
 		auto& d = std::get<ECS::ColorData>(md.get()->data);
 		material.get()->color = d.color;
 	} break;
-	case ECS::MaterialType::Phong:
+	case ECS::MaterialData::Type::Phong:
 	{
-		material.get()->type = MaterialType::Phong;
-		material.get()->shader = getOrCreateShader(c, MaterialType::Phong, "lighting.vert", "lighting.frag");
+		material.get()->type = GPUMaterial::Type::Phong;
+		material.get()->shader = getOrCreateShader(c, GPUMaterial::Type::Phong, "lighting.vert", "lighting.frag");
 		auto& d = std::get<ECS::PhongData>(md.get()->data);
 		material.get()->diffuseTexture = getOrCreateTexture(c, d.diffuseTexturePath);
 		material.get()->specularTexture = getOrCreateTexture(c, d.specularTexturePath);

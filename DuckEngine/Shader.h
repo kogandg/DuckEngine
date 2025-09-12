@@ -39,6 +39,8 @@ public:
 	void SetMat3(const std::string& name, const glm::mat3& mat) const;
 	void SetMat4(const std::string& name, const glm::mat4& mat) const;
 
+	void SetTexture(const std::string& name, int location, GLuint texture) const;
+
 	void CacheUniform(const std::string& name);
 
 private:

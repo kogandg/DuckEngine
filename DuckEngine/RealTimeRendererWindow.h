@@ -66,14 +66,13 @@ namespace GPUScene
 		GLuint id = 0;
 	};*/
 
-	enum class MaterialType
-	{
-		Color, Phong
-	};
-
 	struct GPUMaterial
 	{
-		MaterialType type;
+		enum class Type
+		{
+			Color, Phong
+		};
+		Type type;
 		std::shared_ptr<Shader> shader;
 
 		std::shared_ptr<GLuint> diffuseTexture;
@@ -107,7 +106,7 @@ namespace GPUScene
 		//textures keyed by file path
 		std::unordered_map<std::string, std::shared_ptr<GLuint>> textureCache;
 
-		std::unordered_map<MaterialType, std::shared_ptr<Shader>> shaderCache;
+		std::unordered_map<GPUMaterial::Type, std::shared_ptr<Shader>> shaderCache;
 
 		std::unordered_map<std::shared_ptr<ECS::MaterialData>, std::shared_ptr<GPUMaterial>> materialCache;
 
@@ -124,14 +123,11 @@ namespace GPUScene
 	};
 
 	std::shared_ptr<GPUGeometry> getOrCreateGeometry(GPUCache& c, const std::shared_ptr<ECS::MeshData>& md, const VertexLayoutKey& layout);
-	std::shared_ptr<Shader> getOrCreateShader(GPUCache& c, MaterialType type, const char* vertexPath, const char* fragmentPath);
+	std::shared_ptr<Shader> getOrCreateShader(GPUCache& c, GPUMaterial::Type type, const char* vertexPath, const char* fragmentPath);
 	std::shared_ptr<GLuint> getOrCreateTexture(GPUCache& c, const std::string& path);
 	std::shared_ptr<GPUMaterial> getOrCreateMaterial(GPUCache& c, const std::shared_ptr<ECS::MaterialData>& md);
 	GLuint buildVAO(const GPUGeometry& g, const Shader& s);
 	GLuint getOrCreateVAO(GPUCache& c, const std::shared_ptr<GPUGeometry>& g, const std::shared_ptr<Shader>& s);
-
-	GLuint compileAndLinkShader(std::string vertexPath, std::string fragmentPath);
-	void checkShaderCompileErrors(GLuint shader, std::string type);
 
 	void preloadGPU(ECS::ECS& ecs, GPUCache& cache);
 };
@@ -151,7 +147,12 @@ public:
 
 private:
 	ECS::ECS ecs;
+	ECS::TransformSystem transformSystem;
+	ECS::CameraSystem cameraSystem;
 	GPUScene::GPUCache cache;
+
+	ECS::Entity directionalLight;
+	ECS::Entity cameraEntity;
 
 	GLuint VBO;
 	GLuint cubeVAO;

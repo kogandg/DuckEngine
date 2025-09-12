@@ -121,6 +121,13 @@ void Shader::SetMat4(const std::string& name, const glm::mat4& mat) const
     glUniformMatrix4fv(uniforms.at(name), 1, GL_FALSE, &mat[0][0]);
 }
 
+void Shader::SetTexture(const std::string& name, int location, GLuint texture) const
+{
+    SetInt(name, location);
+    glActiveTexture(GL_TEXTURE0 + location);
+    glBindTexture(GL_TEXTURE_2D, texture);
+}
+
 void Shader::CacheUniform(const std::string& name)
 {
     uniforms[name] = glGetUniformLocation(ID, name.c_str());

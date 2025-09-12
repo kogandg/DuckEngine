@@ -74,6 +74,7 @@ void main()
     vec3 result = vec3(0.0);
 
     result += CalcDirLight(dirLight, norm, viewDir);
+    FragColor = vec4(CalcDirLight(dirLight, norm, viewDir), 1.0);
 
     for(int i = 0; i < NR_POINT_LIGHTS; i++)
     {
@@ -82,7 +83,9 @@ void main()
 
     result += CalcSpotLight(spotLight, norm, FragPos, viewDir);
 
-    FragColor = vec4(result, 1.0);
+    //FragColor = vec4(result, 1.0);
+    
+    //FragColor = vec4(1.0);
 
     //FragColor = vec4(attenuation, attenuation, attenuation, 1.0);
     //FragColor = vec4(ambient, 1.0);
