@@ -8,6 +8,8 @@
 #include <array>
 #include "Camera.h"
 #include "Scene.h"
+#include "ECSRegistry.h"
+#include "GLFWInputMap.h"
 
 namespace GPUScene
 {
@@ -129,7 +131,7 @@ namespace GPUScene
 	GLuint buildVAO(const GPUGeometry& g, const Shader& s);
 	GLuint getOrCreateVAO(GPUCache& c, const std::shared_ptr<GPUGeometry>& g, const std::shared_ptr<Shader>& s);
 
-	void preloadGPU(ECS::ECS& ecs, GPUCache& cache);
+	void preloadGPU(ECS::ECSRegistry& registry, GPUCache& cache);
 };
 
 class RealTimeRendererWindow : public Window
@@ -146,13 +148,21 @@ public:
 	virtual void InitObjects();
 
 private:
-	ECS::ECS ecs;
+	ECS::ECSRegistry registry;
 	ECS::TransformSystem transformSystem;
 	ECS::CameraSystem cameraSystem;
 	GPUScene::GPUCache cache;
 
 	ECS::Entity directionalLight;
+
+
 	ECS::Entity cameraEntity;
+	ECS::CameraController cameraController;
+
+	ECS::DebugSystem debugSystem;
+
+	InputManager inputManager;
+	GLFWInputMap inputMap;
 
 	GLuint VBO;
 	GLuint cubeVAO;
@@ -188,10 +198,10 @@ private:
 
 	glm::vec3 lightPosition = glm::vec3(1.2f, 1.0f, 2.0f);
 
-	Camera camera;
+	//Camera camera;
 
-	float movementSpeed = 2.5f;
-	float mouseSensitivity = 0.1f;
+	//float movementSpeed = 2.5f;
+	//float mouseSensitivity = 0.1f;
 
 	float deltaTime = 0.0f;
 	float lastTime = 0.0f;
@@ -200,9 +210,13 @@ private:
 
 	GLuint loadTexture(const char* path);
 
-	bool firstMouse = true;
-	float lastX;
-	float lastY;
+	//bool firstMouse = true;
+	//float lastX;
+	//float lastY;
+	
+
 	virtual void onCursorPos(double currX, double currY) override;
+	virtual void onKey(int key, int scancode, int action, int mods) override;
+	virtual void onMouseButton(int button, int action, int mods) override;
 };
 

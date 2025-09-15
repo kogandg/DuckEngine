@@ -1,7 +1,7 @@
 #include "RealTimeRendererWindow.h"
 
 
-RealTimeRendererWindow::RealTimeRendererWindow(const char* title, int width, int height) : Window(title, width, height), camera(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(0.0f), 0.0f)
+RealTimeRendererWindow::RealTimeRendererWindow(const char* title, int width, int height) : Window(title, width, height)//, camera(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(0.0f), 0.0f)
 {
 
 }
@@ -12,11 +12,17 @@ void RealTimeRendererWindow::Init()
 	// Setup input callbacks
 	glfwSetWindowUserPointer(glfwWindow, this);
 
-	glfwSetInputMode(glfwWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	//glfwSetInputMode(glfwWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	inputMap.setWindow(glfwWindow);
 
 	// tell GL to only draw onto a pixel if the shape is closer to the viewer
 	glEnable(GL_DEPTH_TEST); // enable depth-testing
 	glDepthFunc(GL_LESS); // depth-testing interprets a smaller value as "closer"
+
+	if (glfwRawMouseMotionSupported())
+	{
+		glfwSetInputMode(glfwWindow, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+	}
 
 	auto cubeMesh = std::make_shared<ECS::MeshData>(ECS::MeshData({
 		// positions          // normals           // texture coords
@@ -87,11 +93,11 @@ void RealTimeRendererWindow::Init()
 		//transform.local = glm::mat4(1.0f);
 		//transform.world = model;
 
-		auto cube = ecs.CreateEntity();
+		auto cube = registry.CreateEntity();
 
-		ecs.addComponent<ECS::Mesh>(cube, mesh);
-		ecs.addComponent<ECS::Transform>(cube, transform);
-		ecs.addComponent<ECS::Material>(cube, cubeMatComp);
+		registry.addComponent<ECS::Mesh>(cube, mesh);
+		registry.addComponent<ECS::Transform>(cube, transform);
+		registry.addComponent<ECS::Material>(cube, cubeMatComp);
 	}
 
 	ECS::Material lightCubeMatComp;
@@ -108,11 +114,11 @@ void RealTimeRendererWindow::Init()
 		//transform.local = glm::mat4(1.0f);
 		//transform.world = model;
 
-		auto lightCube = ecs.CreateEntity();
+		auto lightCube = registry.CreateEntity();
 
-		ecs.addComponent<ECS::Mesh>(lightCube, mesh);
-		ecs.addComponent<ECS::Transform>(lightCube, transform);
-		ecs.addComponent<ECS::Material>(lightCube, lightCubeMatComp);
+		registry.addComponent<ECS::Mesh>(lightCube, mesh);
+		registry.addComponent<ECS::Transform>(lightCube, transform);
+		registry.addComponent<ECS::Material>(lightCube, lightCubeMatComp);
 	}
 
 
@@ -125,20 +131,24 @@ void RealTimeRendererWindow::Init()
 	directionalLightComp.diffuse = glm::vec3(0.4f, 0.4f, 0.4f);
 	directionalLightComp.specular = glm::vec3(0.5f, 0.5f, 0.5f);
 
-	directionalLight = ecs.CreateEntity();
-	ecs.addComponent<ECS::Light>(directionalLight, directionalLightComp);
-	ecs.addComponent<ECS::Transform>(directionalLight, directionalTransform);
+	directionalLight = registry.CreateEntity();
+	registry.addComponent<ECS::Light>(directionalLight, directionalLightComp);
+	registry.addComponent<ECS::Transform>(directionalLight, directionalTransform);
 
 
 	ECS::Transform cameraTransform;
-	cameraTransform.position = glm::vec3(1.0f, 1.0f, 4.0f);
+	cameraTransform.position = glm::vec3(0.0f, 0.0f, 3.0f);
 	cameraTransform.rotation = glm::angleAxis(glm::radians(-101.0f), glm::vec3(0, 1, 0)) * glm::angleAxis(glm::radians(-12.5f), glm::vec3(1, 0, 0));
 	ECS::Camera cameraData;
 	cameraData.aspectRatio = width / height;
 	cameraData.fovY = 45.0f;
-	cameraEntity = ecs.CreateEntity();
-	ecs.addComponent<ECS::Camera>(cameraEntity, cameraData);
-	ecs.addComponent<ECS::Transform>(cameraEntity, cameraTransform);
+	cameraEntity = registry.CreateEntity();
+	registry.addComponent<ECS::Camera>(cameraEntity, cameraData);
+	registry.addComponent<ECS::Transform>(cameraEntity, cameraTransform);
+
+	cameraController.pitch = 0.0f;
+	cameraController.yaw = -90.0f;
+	cameraController.init(registry.getComponent<ECS::Transform>(cameraEntity));
 }
 
 void RealTimeRendererWindow::CleanUp()
@@ -159,38 +169,25 @@ void RealTimeRendererWindow::IdleCallback()
 	deltaTime = currentTime - lastTime;
 	lastTime = currentTime;
 
-	float velocity = movementSpeed * deltaTime;
-	if (glfwGetKey(glfwWindow, GLFW_KEY_W) == GLFW_PRESS)
+	
+	if (inputManager.WasMousePressed(MouseButton::Right))
 	{
-		camera.SetLookFrom(camera.GetLookFrom() + (camera.GetDirection() * velocity));
+		inputMap.setCursorMode(CursorMode::Locked);
+		inputManager.UpdateCursorMode(CursorMode::Locked);
 	}
-	if (glfwGetKey(glfwWindow, GLFW_KEY_S) == GLFW_PRESS)
+	if (inputManager.WasMouseReleased(MouseButton::Right))
 	{
-		camera.SetLookFrom(camera.GetLookFrom() - (camera.GetDirection() * velocity));
-	}
-	if (glfwGetKey(glfwWindow, GLFW_KEY_D) == GLFW_PRESS)
-	{
-		auto oldLookFrom = camera.GetLookFrom();
-		camera.SetLookFrom(camera.GetLookFrom() + (camera.GetRight() * velocity));
-		auto newLookFrom = camera.GetLookFrom();
-
-		int count = 0;
-	}
-	if (glfwGetKey(glfwWindow, GLFW_KEY_A) == GLFW_PRESS)
-	{
-		camera.SetLookFrom(camera.GetLookFrom() - (camera.GetRight() * velocity));
+		inputMap.setCursorMode(CursorMode::Normal);
+		inputManager.UpdateCursorMode(CursorMode::Normal);
 	}
 
+	auto& transform = registry.getComponent<ECS::Transform>(cameraEntity);
+	cameraController.update(transform, inputManager, deltaTime);
 
-	//camera.SetLookFrom(glm::vec3(0.0f, 0.0f, 3.0f));
-	//camera.SetPitchYaw(0.f, -90.0f);
-	//camera.SetUp(glm::vec3(0.0f, 1.0f, 0.0f));
-	//camera.SetFOVY(45.0f);
-	camera.SetImageSize(width, height);
-	camera.UpdateCameraVectors();
+	transformSystem.update(registry);
+	cameraSystem.update(registry);
 
-	transformSystem.update(ecs);
-	cameraSystem.update(ecs);
+	inputManager.Update();
 }
 
 void RealTimeRendererWindow::DisplayCallback()
@@ -199,12 +196,13 @@ void RealTimeRendererWindow::DisplayCallback()
 
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
-	auto& cameraData = ecs.getComponent<ECS::Camera>(cameraEntity);
+	auto& cameraData = registry.getComponent<ECS::Camera>(cameraEntity);
+	cameraData.aspectRatio = (float)width / (float)height;
 
-	for (auto& [entity, meshComp] : ecs.view<ECS::Mesh>())
+	for (auto& [entity, meshComp] : registry.view<ECS::Mesh>())
 	{
-		auto& matComp = ecs.getComponent<ECS::Material>(entity);
-		auto& transform = ecs.getComponent<ECS::Transform>(entity);
+		auto& matComp = registry.getComponent<ECS::Material>(entity);
+		auto& transform = registry.getComponent<ECS::Transform>(entity);
 
 		auto geom = cache.geomCache[meshComp.data];
 		auto gpuMat = cache.materialCache[matComp.data].get();
@@ -244,8 +242,8 @@ void RealTimeRendererWindow::DisplayCallback()
 			shader->SetTexture("material.diffuse", 0, *gpuMat->diffuseTexture.get());
 			shader->SetTexture("material.specular", 1, *gpuMat->specularTexture.get());
 
-			auto dirLightData = ecs.getComponent<ECS::Light>(directionalLight);
-			auto quatRotation = ecs.getComponent<ECS::Transform>(directionalLight).rotation;
+			auto dirLightData = registry.getComponent<ECS::Light>(directionalLight);
+			auto quatRotation = registry.getComponent<ECS::Transform>(directionalLight).rotation;
 			shader->SetVec3("dirLight.direction", glm::eulerAngles(quatRotation));
 			shader->SetVec3("dirLight.ambient", dirLightData.ambient);
 			shader->SetVec3("dirLight.diffuse", dirLightData.diffuse);
@@ -264,17 +262,17 @@ void RealTimeRendererWindow::DisplayCallback()
 				shader->SetFloat(("pointLights[" + index + "].quadratic").c_str(), 0.032f);
 			}
 
-			//spotlight
-			shader->SetVec3("spotLight.position", camera.GetLookFrom());
-			shader->SetVec3("spotLight.direction", camera.GetDirection());
-			shader->SetVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
-			shader->SetVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
-			shader->SetVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
-			shader->SetFloat("spotLight.constant", 1.0f);
-			shader->SetFloat("spotLight.linear", 0.09f);
-			shader->SetFloat("spotLight.quadratic", 0.032f);
-			shader->SetFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
-			shader->SetFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
+			////spotlight
+			//shader->SetVec3("spotLight.position", camera.GetLookFrom());
+			//shader->SetVec3("spotLight.direction", camera.GetDirection());
+			//shader->SetVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
+			//shader->SetVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
+			//shader->SetVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+			//shader->SetFloat("spotLight.constant", 1.0f);
+			//shader->SetFloat("spotLight.linear", 0.09f);
+			//shader->SetFloat("spotLight.quadratic", 0.032f);
+			//shader->SetFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
+			//shader->SetFloat("spotLight.outerCutOff", glm::cos(glm::radians(15.0f)));
 		}break;
 		}
 
@@ -286,13 +284,13 @@ void RealTimeRendererWindow::DisplayCallback()
 	ImGui::SetNextWindowSize(ImVec2(225, 250));
 	ImGui::Begin("Camera info", nullptr);
 
-	auto camPos = camera.GetLookFrom();
+	/*auto camPos = camera.GetLookFrom();
 	auto camDir = camera.GetDirection();
 	auto camRight = camera.GetRight();
 	auto camPitch = camera.GetPitch();
 	auto camYaw = camera.GetYaw();
 
-	auto camTestTrans = ecs.getComponent<ECS::Transform>(cameraEntity);
+	auto camTestTrans = registry.getComponent<ECS::Transform>(cameraEntity);
 	auto camTestPos = camTestTrans.position;
 	auto camTestDir = glm::eulerAngles(camTestTrans.rotation);
 
@@ -300,56 +298,7 @@ void RealTimeRendererWindow::DisplayCallback()
 	ImGui::Text("Dir = (%.2f, %.2f, %.2f)", camDir.x, camDir.y, camDir.z);
 	ImGui::Text("Right = (%.2f, %.2f, %.2f)", camRight.x, camRight.y, camRight.z);
 	ImGui::Text("Pitch = %.2f", camPitch);
-	ImGui::Text("Yaw = %.2f", camYaw);
-	
-	float pitch = -12.5f;
-	float yaw = -101.0f;
-
-	auto yawQuat = glm::angleAxis(glm::radians(yaw), glm::vec3(0, 1, 0));
-	auto pitchQuat = glm::angleAxis(glm::radians(pitch), glm::vec3(1, 0, 0));
-	auto resultQuat = yawQuat * pitchQuat;
-	auto front = resultQuat * glm::vec3(0.0, 0.0f, -1.0f);
-
-
-
-	float cy = cos(glm::radians(yaw) * 0.5f);
-	float sy = sin(glm::radians(yaw) * 0.5f);
-	float cp = cos(glm::radians(pitch) * 0.5f);
-	float sp = sin(glm::radians(pitch) * 0.5f);
-	
-	glm::vec3 trueDirection;
-	trueDirection.x = cy * cp;
-	trueDirection.y = sp;
-	trueDirection.z = sy * cp;
-	trueDirection = glm::normalize(trueDirection);
-
-	glm::vec3 testDir;
-	testDir.x = sy * cp;
-	testDir.y = sp;
-	testDir.z = -cy * cp;
-
-	glm::vec3 test2Dir;
-	test2Dir.x = sy * cp;
-	test2Dir.y = sp;
-	test2Dir.z = cp * cy;
-
-	auto yawQ = glm::angleAxis(glm::radians(yaw), glm::vec3(0, 1, 0));
-	auto right = glm::normalize(glm::cross(glm::vec3(0, 1, 0), yawQ * glm::vec3(0, 0, -1)));
-	auto pitchQ = glm::angleAxis(glm::radians(pitch), right);
-	auto orient = glm::normalize(pitchQ * yawQ);
-
-	auto dirQ = orient * glm::vec3(0, 0, -1);
-
-	glm::quat orientation = glm::rotation(glm::vec3(0, 0, -1), trueDirection);
-	auto testFinal = orientation * glm::vec3(0, 0, -1);
-
-	glm::quat testPleaseWork;
-	testPleaseWork.w = cy * cp;
-	testPleaseWork.x = sp * cy;
-	testPleaseWork.y = sy * cp;
-	testPleaseWork.z = -sy * sp;
-	auto testPlease = testPleaseWork * glm::vec3(0, 0, -1);
-
+	ImGui::Text("Yaw = %.2f", camYaw);*/
 
 
 	/*ImGui::Text("Test Pos = (%.2f, %.2f, %.2f)", camTestPos.x, camTestPos.y, camTestPos.z);
@@ -357,7 +306,20 @@ void RealTimeRendererWindow::DisplayCallback()
 	ImGui::Text("Test Dir = (%.2f, %.2f, %.2f)", front.x, front.y, front.z);*/
 	//ImGui::Text("Test Dir = (%.2f, %.2f, %.2f)", test3.x, test3.y, test3.z);
 
+	auto mousePos = inputManager.GetMousePos();
+	auto mouseDelta = inputManager.GetMouseDelta();
+	ImGui::Text("Mouse Pos = (%.2f, %.2f)", mousePos.x, mousePos.y);
+	ImGui::Text("Mouse Delta = (%.2f, %.2f)", mouseDelta.x, mouseDelta.y);
+	ImGui::Text("Cursor mode = %s", inputManager.GetCursorMode() == CursorMode::Normal ? "normal" : "locked");
+
+	glm::vec3 forward = registry.getComponent<ECS::Transform>(cameraEntity).rotation * glm::vec3(0, 0, -1);
+	glm::vec3 right = registry.getComponent<ECS::Transform>(cameraEntity).rotation * glm::vec3(1, 0, 0);
+
+	ImGui::Text("Dir = (%.2f, %.2f, %.2f)", forward.x, forward.y, forward.z);
+
 	ImGui::End();
+
+	debugSystem.update(registry);
 
 	Window::End();
 }
@@ -366,18 +328,11 @@ void RealTimeRendererWindow::InitObjects()
 {
 	initGLObjects();
 	//camera.SetImageSize(width, height);
-	camera.SetLookFrom(glm::vec3(1.0f, 1.0f, 4.0f));
-	camera.SetPitchYaw(-12.5f, -101.0f);
-	camera.SetUp(glm::vec3(0.0f, 1.0f, 0.0f));
-	camera.SetFOVY(45.0f);
-	camera.SetImageSize(width, height);
-
-	camera.UpdateCameraVectors();
 }
 
 void RealTimeRendererWindow::initGLObjects()
 {
-	GPUScene::preloadGPU(ecs, cache);
+	GPUScene::preloadGPU(registry, cache);
 }
 
 GLuint RealTimeRendererWindow::loadTexture(const char* path)
@@ -418,39 +373,23 @@ GLuint RealTimeRendererWindow::loadTexture(const char* path)
 
 void RealTimeRendererWindow::onCursorPos(double currX, double currY)
 {
-	ImGui::SetCurrentContext(imguiContext);
-	ImGui_ImplGlfw_CursorPosCallback(glfwWindow, currX, currY);
+	Window::onCursorPos(currX, currY);
 
-	if (firstMouse)
-	{
-		lastX = currX;
-		lastY = currY;
-		firstMouse = false;
-	}
+	inputManager.onMouseMove(currX, currY);
+}
 
-	float xOffset = currX - lastX;
-	float yOffset = lastY - currY;
+void RealTimeRendererWindow::onKey(int key, int scancode, int action, int mods)
+{
+	Window::onKey(key, scancode, action, mods);
 
-	lastX = currX;
-	lastY = currY;
+	inputManager.onKeyEvent(inputMap.translateKey(key), inputMap.translateButtonAction(action));
+}
 
-	//mouse movement
-	xOffset *= mouseSensitivity;
-	yOffset *= mouseSensitivity;
+void RealTimeRendererWindow::onMouseButton(int button, int action, int mods)
+{
+	Window::onMouseButton(button, action, mods);
 
-	float newPitch = camera.GetPitch() + yOffset;
-	if (newPitch > 89.0f)
-	{
-		newPitch = 89.0f;
-	}
-	if (newPitch < -89.0f)
-	{
-		newPitch = -89.0f;
-	}
-
-	camera.SetPitchYaw(newPitch, camera.GetYaw() + xOffset);
-
-	camera.UpdateCameraVectors();
+	inputManager.onMouseButtonEvent(inputMap.translateMouseButton(button), inputMap.translateButtonAction(action));
 }
 
 std::shared_ptr<GPUScene::GPUGeometry> GPUScene::getOrCreateGeometry(GPUCache& c, const std::shared_ptr<ECS::MeshData>& md, const VertexLayoutKey& layout)
@@ -655,11 +594,11 @@ GLuint GPUScene::getOrCreateVAO(GPUCache& c, const std::shared_ptr<GPUGeometry>&
 	return entry.VAO;
 }
 
-void GPUScene::preloadGPU(ECS::ECS& ecs, GPUCache& cache)
+void GPUScene::preloadGPU(ECS::ECSRegistry& registry, GPUCache& cache)
 {
-	for (auto& [entity, meshComp] : ecs.view<ECS::Mesh>())
+	for (auto& [entity, meshComp] : registry.view<ECS::Mesh>())
 	{
-		auto& matComp = ecs.getComponent<ECS::Material>(entity);
+		auto& matComp = registry.getComponent<ECS::Material>(entity);
 
 		VertexLayoutKey layout
 		{

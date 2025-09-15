@@ -105,6 +105,8 @@ bool Window::Begin()
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 
+	//glfwPollEvents();
+
 	return true;
 }
 
