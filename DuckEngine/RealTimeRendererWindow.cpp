@@ -169,7 +169,7 @@ void RealTimeRendererWindow::IdleCallback()
 	deltaTime = currentTime - lastTime;
 	lastTime = currentTime;
 
-	
+
 	if (inputManager.WasMousePressed(MouseButton::Right))
 	{
 		inputMap.setCursorMode(CursorMode::Locked);
@@ -204,10 +204,12 @@ void RealTimeRendererWindow::DisplayCallback()
 		auto& matComp = registry.getComponent<ECS::Material>(entity);
 		auto& transform = registry.getComponent<ECS::Transform>(entity);
 
-		auto geom = cache.geomCache[meshComp.data];
-		auto gpuMat = cache.materialCache[matComp.data].get();
+		auto geom = cache.GetGeometry(meshComp.data);
+		auto gpuMat = cache.GetMaterial(matComp.data).get();
+		auto shaderSig = cache.GetRequiredSignature(*gpuMat);
 		auto shader = gpuMat->shader.get();
-		GLuint vao = GPUScene::getOrCreateVAO(cache, geom, gpuMat->shader);
+
+		GLuint vao = *cache.GetVAO(*geom.get(), shaderSig);
 
 		shader->Use();
 		glBindVertexArray(vao);
@@ -215,7 +217,7 @@ void RealTimeRendererWindow::DisplayCallback()
 		//uniforms
 		switch (gpuMat->type)
 		{
-		case GPUScene::GPUMaterial::Type::Color:
+		case GPUMaterial::Type::Color:
 		{
 			/*shader->SetMat4("view", camera.GetViewMatrix());
 			shader->SetMat4("projection", camera.GetProjectionMatrix());*/
@@ -227,7 +229,7 @@ void RealTimeRendererWindow::DisplayCallback()
 
 			shader->SetVec3("color", gpuMat->color);
 		}break;
-		case GPUScene::GPUMaterial::Type::Phong:
+		case GPUMaterial::Type::Phong:
 		{
 			/*shader->SetMat4("view", camera.GetViewMatrix());
 			shader->SetMat4("projection", camera.GetProjectionMatrix());*/
@@ -280,8 +282,8 @@ void RealTimeRendererWindow::DisplayCallback()
 	}
 
 
-	ImGui::SetNextWindowPos(ImVec2(0, 0));// , ImGuiCond_Always);
-	ImGui::SetNextWindowSize(ImVec2(225, 250));
+	ImGui::SetNextWindowPos(ImVec2(width - 225, 0), ImGuiCond_Once);
+	ImGui::SetNextWindowSize(ImVec2(225, 250), ImGuiCond_Once);
 	ImGui::Begin("Camera info", nullptr);
 
 	/*auto camPos = camera.GetLookFrom();
@@ -319,7 +321,7 @@ void RealTimeRendererWindow::DisplayCallback()
 
 	ImGui::End();
 
-	debugSystem.update(registry);
+	drawDebugUI(registry, cache);
 
 	Window::End();
 }
@@ -332,43 +334,92 @@ void RealTimeRendererWindow::InitObjects()
 
 void RealTimeRendererWindow::initGLObjects()
 {
-	GPUScene::preloadGPU(registry, cache);
+	cache.PreloadGPU(registry);
 }
 
-GLuint RealTimeRendererWindow::loadTexture(const char* path)
+
+void RealTimeRendererWindow::drawDebugUI(ECS::ECSRegistry& registry, GPUCache& cache)
 {
-	GLuint textureID;
-	glGenTextures(1, &textureID);
+	ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Once);
+	ImGui::Begin("Scene");
 
-	int width;
-	int height;
-	int numComponents;
-	unsigned char* data = stbi_load(path, &width, &height, &numComponents, 0);
-	if (data)
+	for (auto& e : registry.getEntities())
 	{
-		GLenum format;
-		if (numComponents == 1) format = GL_RED;
-		else if (numComponents == 3) format = GL_RGB;
-		else if (numComponents == 4) format = GL_RGBA;
-
-		glBindTexture(GL_TEXTURE_2D, textureID);
-		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
-
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-		stbi_image_free(data);
-	}
-	else
-	{
-		std::cout << "Texture failed to load at path: " << path << std::endl;
-		stbi_image_free(data);
+		if (registry.hasComponent<ECS::Hierarchy>(e))
+		{
+			auto& h = registry.getComponent<ECS::Hierarchy>(e);
+			if (h.parent != ECS::INVALID_ENTITY) continue;
+		}
+		drawEntityNode(registry, e);
 	}
 
-	return textureID;
+	ImGui::End();
+}
+
+void RealTimeRendererWindow::drawEntityNode(ECS::ECSRegistry& registry, ECS::Entity e)
+{
+	ImGui::PushID(e);
+
+	bool open = ImGui::TreeNodeEx(("Entity " + std::to_string(e)).c_str(), ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth);
+
+	if (open)
+	{
+		if (registry.hasComponent<ECS::Transform>(e))
+		{
+			auto& t = registry.getComponent<ECS::Transform>(e);
+			if (ImGui::TreeNode("Transform"))
+			{
+				drawTransform(t);
+				ImGui::TreePop();
+			}
+		}
+
+		if (registry.hasComponent<ECS::Material>(e))
+		{
+			auto& m = registry.getComponent<ECS::Material>(e);
+			if (ImGui::TreeNode("Material"))
+			{
+				drawMaterial(m);
+				ImGui::TreePop();
+			}
+		}
+
+		ImGui::TreePop();
+	}
+
+	ImGui::PopID();
+}
+
+void RealTimeRendererWindow::drawTransform(ECS::Transform& t)
+{
+	bool dirty = false;
+	if (ImGui::DragFloat3("Position", &t.position[0], 0.1f)) t.dirty = true;
+
+	glm::vec3 euler = glm::degrees(glm::eulerAngles(t.rotation));
+	if (ImGui::DragFloat3("Rotation", &euler[0], 1.0f))
+	{
+		t.rotation = glm::quat(glm::radians(euler));
+		t.dirty = true;
+	}
+
+	if (ImGui::DragFloat3("Scale", &t.scale[0], 0.1f)) t.dirty = true;
+}
+
+void RealTimeRendererWindow::drawMaterial(ECS::Material& m)
+{
+	switch (m.data.get()->type)
+	{
+	case ECS::MaterialData::Type::Color:
+	{
+		auto& c = std::get<ECS::ColorData>(m.data.get()->data);
+		ImGui::ColorEdit3("Color", &c.color[0]);
+	}
+	break;
+	case ECS::MaterialData::Type::Phong:
+	{
+	}
+	break;
+	}
 }
 
 void RealTimeRendererWindow::onCursorPos(double currX, double currY)
@@ -390,229 +441,4 @@ void RealTimeRendererWindow::onMouseButton(int button, int action, int mods)
 	Window::onMouseButton(button, action, mods);
 
 	inputManager.onMouseButtonEvent(inputMap.translateMouseButton(button), inputMap.translateButtonAction(action));
-}
-
-std::shared_ptr<GPUScene::GPUGeometry> GPUScene::getOrCreateGeometry(GPUCache& c, const std::shared_ptr<ECS::MeshData>& md, const VertexLayoutKey& layout)
-{
-	auto iter = c.geomCache.find(md);
-	if (iter != c.geomCache.end())
-	{
-		return c.geomCache[md];
-	}
-
-	auto geom = GPUGeometry();
-	geom.layout = layout;
-
-	glGenBuffers(1, &(geom.VBO));
-
-	glBindBuffer(GL_ARRAY_BUFFER, geom.VBO);
-	glBufferData(GL_ARRAY_BUFFER, md.get()->verts.size() * sizeof(float), md.get()->verts.data(), GL_STATIC_DRAW);
-
-	geom.vertexCount = (GLsizei)(md.get()->verts.size() * sizeof(float) / geom.layout.stride);
-
-	auto geomPointer = std::make_shared<GPUGeometry>(geom);
-	return c.geomCache[md] = geomPointer;
-}
-
-std::shared_ptr<Shader> GPUScene::getOrCreateShader(GPUCache& c, GPUMaterial::Type type, const char* vertexPath, const char* fragmentPath)
-{
-	auto iter = c.shaderCache.find(type);
-	if (iter != c.shaderCache.end())
-	{
-		return c.shaderCache[type];
-	}
-
-	auto shader = std::make_shared<Shader>(vertexPath, fragmentPath);
-
-	switch (type)
-	{
-	case GPUMaterial::Type::Color:
-	{
-		shader.get()->CacheUniform("view");
-		shader.get()->CacheUniform("projection");
-		shader.get()->CacheUniform("model");
-		shader.get()->CacheUniform("color");
-	} break;
-	case GPUMaterial::Type::Phong:
-	{
-		shader.get()->CacheUniform("view");
-		shader.get()->CacheUniform("projection");
-		shader.get()->CacheUniform("model");
-		shader.get()->CacheUniform("transposeInverseModel");
-		shader.get()->CacheUniform("viewPos");
-
-		//can set once but since this same shader can be used for lots of objects with different vals its better to set each frame
-		shader.get()->CacheUniform("material.shininess");
-		shader.get()->CacheUniform("material.diffuse");
-		shader.get()->CacheUniform("material.specular");
-
-		//directional light
-		shader.get()->CacheUniform("dirLight.direction");
-		shader.get()->CacheUniform("dirLight.ambient");
-		shader.get()->CacheUniform("dirLight.diffuse");
-		shader.get()->CacheUniform("dirLight.specular");
-
-		//point lights
-		for (int i = 0; i < 4; i++)
-		{
-			std::string index = std::to_string(i);
-			shader.get()->CacheUniform(("pointLights[" + index + "].position").c_str());
-			shader.get()->CacheUniform(("pointLights[" + index + "].ambient").c_str());
-			shader.get()->CacheUniform(("pointLights[" + index + "].diffuse").c_str());
-			shader.get()->CacheUniform(("pointLights[" + index + "].specular").c_str());
-			shader.get()->CacheUniform(("pointLights[" + index + "].constant").c_str());
-			shader.get()->CacheUniform(("pointLights[" + index + "].linear").c_str());
-			shader.get()->CacheUniform(("pointLights[" + index + "].quadratic").c_str());
-		}
-
-		//spotlight
-		shader.get()->CacheUniform("spotLight.position");
-		shader.get()->CacheUniform("spotLight.direction");
-		shader.get()->CacheUniform("spotLight.ambient");
-		shader.get()->CacheUniform("spotLight.diffuse");
-		shader.get()->CacheUniform("spotLight.specular");
-		shader.get()->CacheUniform("spotLight.constant");
-		shader.get()->CacheUniform("spotLight.linear");
-		shader.get()->CacheUniform("spotLight.quadratic");
-		shader.get()->CacheUniform("spotLight.cutOff");
-		shader.get()->CacheUniform("spotLight.outerCutOff");
-	} break;
-	}
-
-	return c.shaderCache[type] = shader;
-}
-
-std::shared_ptr<GLuint> GPUScene::getOrCreateTexture(GPUCache& c, const std::string& path)
-{
-	if (path.empty()) return 0;
-	auto iter = c.textureCache.find(path);
-	if (iter != c.textureCache.end())
-	{
-		return c.textureCache[path];
-	}
-
-	GLuint texture;
-	glGenTextures(1, &texture);
-
-	int width;
-	int height;
-	int numComponents;
-	unsigned char* data = stbi_load(path.c_str(), &width, &height, &numComponents, 0);
-	if (data)
-	{
-		GLenum format;
-		if (numComponents == 1) format = GL_RED;
-		else if (numComponents == 3) format = GL_RGB;
-		else if (numComponents == 4) format = GL_RGBA;
-
-		glBindTexture(GL_TEXTURE_2D, texture);
-		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
-
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-		stbi_image_free(data);
-	}
-	else
-	{
-		std::cout << "Texture failed to load at path: " << path << std::endl;
-		stbi_image_free(data);
-	}
-
-	auto texturePointer = std::make_shared<GLuint>(texture);
-	c.textureCache[path] = texturePointer;
-
-	return texturePointer;
-}
-
-std::shared_ptr<GPUScene::GPUMaterial> GPUScene::getOrCreateMaterial(GPUCache& c, const std::shared_ptr<ECS::MaterialData>& md)
-{
-	auto iter = c.materialCache.find(md);
-	if (iter != c.materialCache.end())
-	{
-		return c.materialCache[md];
-	}
-
-	auto material = std::make_shared<GPUMaterial>();
-	switch (md.get()->type)
-	{
-	case ECS::MaterialData::Type::Color:
-	{
-		material.get()->type = GPUMaterial::Type::Color;
-		material.get()->shader = getOrCreateShader(c, GPUMaterial::Type::Color, "color.vert", "color.frag");
-		auto& d = std::get<ECS::ColorData>(md.get()->data);
-		material.get()->color = d.color;
-	} break;
-	case ECS::MaterialData::Type::Phong:
-	{
-		material.get()->type = GPUMaterial::Type::Phong;
-		material.get()->shader = getOrCreateShader(c, GPUMaterial::Type::Phong, "lighting.vert", "lighting.frag");
-		auto& d = std::get<ECS::PhongData>(md.get()->data);
-		material.get()->diffuseTexture = getOrCreateTexture(c, d.diffuseTexturePath);
-		material.get()->specularTexture = getOrCreateTexture(c, d.specularTexturePath);
-		material.get()->shininess = d.shininess;
-	}break;
-	}
-
-	return c.materialCache[md] = material;
-}
-
-GLuint GPUScene::buildVAO(const GPUGeometry& g, const Shader& s)
-{
-	GLuint vao = 0;
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-
-	glBindBuffer(GL_ARRAY_BUFFER, g.VBO);
-	//if (g.ebo) glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g.ebo); //later for ebos
-
-	for (const auto& attr : g.layout.attrs)
-	{
-		glEnableVertexAttribArray(attr.location);
-		glVertexAttribPointer(attr.location, attr.size, attr.type, GL_FALSE, g.layout.stride, (void*)(attr.offset));
-	}
-
-	return vao;
-}
-
-GLuint GPUScene::getOrCreateVAO(GPUCache& c, const std::shared_ptr<GPUGeometry>& g, const std::shared_ptr<Shader>& s)
-{
-	VAOKey key{ g.get()->VBO, g.get()->layout };
-
-	auto iter = c.vaoCache.find(key);
-	if (iter != c.vaoCache.end())
-	{
-		c.vaoCache[key];
-	}
-
-	VAOEntry entry{ buildVAO(*g, *s) };
-	c.vaoCache[key] = entry;
-
-	return entry.VAO;
-}
-
-void GPUScene::preloadGPU(ECS::ECSRegistry& registry, GPUCache& cache)
-{
-	for (auto& [entity, meshComp] : registry.view<ECS::Mesh>())
-	{
-		auto& matComp = registry.getComponent<ECS::Material>(entity);
-
-		VertexLayoutKey layout
-		{
-			sizeof(float) * 8, //stride = pos(3) + norm(3) + text coords(2)
-			{
-			{0, 3, GL_FLOAT, 0},
-			{1, 3, GL_FLOAT, sizeof(float) * 3},
-			{2, 2, GL_FLOAT, sizeof(float) * 6}
-			}
-		};
-		auto geom = getOrCreateGeometry(cache, meshComp.data, layout);
-
-		auto gpuMat = getOrCreateMaterial(cache, matComp.data);
-
-		GLuint vao = getOrCreateVAO(cache, geom, gpuMat.get()->shader);
-	}
 }

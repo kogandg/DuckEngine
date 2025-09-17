@@ -11,128 +11,7 @@
 #include "ECSRegistry.h"
 #include "GLFWInputMap.h"
 
-namespace GPUScene
-{
-	struct VertexAttrib
-	{
-		GLuint location; //glsl layout location
-		GLint size;
-		GLenum type; //GL_FLOAT, etc
-		unsigned int offset; //byte offset
-
-		bool operator==(const VertexAttrib& other) const noexcept
-		{
-			return location == other.location && size == other.size && type == other.type && offset == other.offset;
-		}
-	};
-
-	struct VertexLayoutKey
-	{
-		GLsizei stride; //stride in bytes
-		std::vector<VertexAttrib> attrs;
-
-		bool operator==(const VertexLayoutKey& other) const noexcept
-		{
-			return stride == other.stride && attrs == other.attrs;
-		}
-	};
-
-	struct VertexLayoutKeyHash
-	{
-		size_t operator()(const VertexLayoutKey& k) const noexcept
-		{
-			size_t h = std::hash<size_t>{}(k.stride);
-			for (auto& attr : k.attrs)
-			{
-				size_t ha = std::hash<GLuint>{}(attr.location) ^
-					(std::hash<GLint>{}(attr.size) << 1) ^
-					(std::hash<GLenum>{}(attr.type) << 2) ^
-					(std::hash<size_t>{}(attr.offset) << 3);
-				h ^= ha + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2); // hash combine
-			}
-			return h;
-		}
-	};
-
-	struct GPUGeometry
-	{
-		GLuint VBO = 0;
-		//GLuint EBO = 0;     // 0 if not indexed
-		//GLsizei indexCount = 0;
-		GLsizei vertexCount = 0;
-		VertexLayoutKey layout; // for VAO creation
-	};
-
-	/*struct GPUTexture
-	{
-		GLuint id = 0;
-	};*/
-
-	struct GPUMaterial
-	{
-		enum class Type
-		{
-			Color, Phong
-		};
-		Type type;
-		std::shared_ptr<Shader> shader;
-
-		std::shared_ptr<GLuint> diffuseTexture;
-		std::shared_ptr<GLuint> specularTexture;
-
-		glm::vec3 color = glm::vec3(1.0f);
-		float shininess = 32.0f;
-	};
-
-	struct VAOKey
-	{
-		GLuint VBO;
-		//GLuint EBO;
-
-		VertexLayoutKey layout;
-		bool operator==(const VAOKey& other) const noexcept
-		{
-			return VBO == other.VBO && layout == other.layout;
-		}
-	};
-
-	struct VAOEntry
-	{
-		GLuint VAO = 0;
-	};
-
-	struct GPUCache
-	{
-		std::unordered_map<std::shared_ptr<ECS::MeshData>, std::shared_ptr<GPUGeometry>> geomCache;
-
-		//textures keyed by file path
-		std::unordered_map<std::string, std::shared_ptr<GLuint>> textureCache;
-
-		std::unordered_map<GPUMaterial::Type, std::shared_ptr<Shader>> shaderCache;
-
-		std::unordered_map<std::shared_ptr<ECS::MaterialData>, std::shared_ptr<GPUMaterial>> materialCache;
-
-		struct VAOKeyHash
-		{
-			size_t operator()(const VAOKey& k) const noexcept
-			{
-				size_t h1 = std::hash<GLuint>{}(k.VBO);
-				size_t h2 = VertexLayoutKeyHash{}(k.layout);
-				return h1 ^ (h2 << 1);
-			}
-		};
-		std::unordered_map<VAOKey, VAOEntry, VAOKeyHash> vaoCache;
-	};
-
-	std::shared_ptr<GPUGeometry> getOrCreateGeometry(GPUCache& c, const std::shared_ptr<ECS::MeshData>& md, const VertexLayoutKey& layout);
-	std::shared_ptr<Shader> getOrCreateShader(GPUCache& c, GPUMaterial::Type type, const char* vertexPath, const char* fragmentPath);
-	std::shared_ptr<GLuint> getOrCreateTexture(GPUCache& c, const std::string& path);
-	std::shared_ptr<GPUMaterial> getOrCreateMaterial(GPUCache& c, const std::shared_ptr<ECS::MaterialData>& md);
-	GLuint buildVAO(const GPUGeometry& g, const Shader& s);
-	GLuint getOrCreateVAO(GPUCache& c, const std::shared_ptr<GPUGeometry>& g, const std::shared_ptr<Shader>& s);
-
-	void preloadGPU(ECS::ECSRegistry& registry, GPUCache& cache);
-};
+#include "GPUCache.h"
 
 class RealTimeRendererWindow : public Window
 {
@@ -151,7 +30,7 @@ private:
 	ECS::ECSRegistry registry;
 	ECS::TransformSystem transformSystem;
 	ECS::CameraSystem cameraSystem;
-	GPUScene::GPUCache cache;
+	GPUCache cache;
 
 	ECS::Entity directionalLight;
 
@@ -159,16 +38,12 @@ private:
 	ECS::Entity cameraEntity;
 	ECS::CameraController cameraController;
 
-	ECS::DebugSystem debugSystem;
-
 	InputManager inputManager;
 	GLFWInputMap inputMap;
 
 	GLuint VBO;
 	GLuint cubeVAO;
 	GLuint lightVAO;
-	//GLuint EBO;
-	//GLuint shaderProgram;
 
 	Shader* lightingShader;
 	Shader* lightCubeShader;
@@ -198,22 +73,17 @@ private:
 
 	glm::vec3 lightPosition = glm::vec3(1.2f, 1.0f, 2.0f);
 
-	//Camera camera;
-
-	//float movementSpeed = 2.5f;
-	//float mouseSensitivity = 0.1f;
-
 	float deltaTime = 0.0f;
 	float lastTime = 0.0f;
 
 	void initGLObjects();
 
-	GLuint loadTexture(const char* path);
-
-	//bool firstMouse = true;
-	//float lastX;
-	//float lastY;
-	
+	void drawDebugUI(ECS::ECSRegistry& registry, GPUCache& cache);
+	void drawEntityNode(ECS::ECSRegistry& registry, ECS::Entity e);
+	void drawTransform(ECS::Transform& t);
+	void drawMaterial(ECS::Material& m);
+	void drawLight(ECS::Light& l);
+	void drawCamera(ECS::Camera& c);
 
 	virtual void onCursorPos(double currX, double currY) override;
 	virtual void onKey(int key, int scancode, int action, int mods) override;

@@ -102,7 +102,7 @@ int main()
 
 	
 
-	RealTimeRendererWindow* openGLWindow = new RealTimeRendererWindow("OpenGL Renderer", 800, 600);
+	RealTimeRendererWindow* openGLWindow = new RealTimeRendererWindow("OpenGL Renderer", 1000, 750);
 	openGLWindow->Init();
 	
 	initGLEW();

@@ -317,7 +317,7 @@ namespace ECS
 		void updateRotation(Transform& transform);
 	};
 
-	struct DebugSystem
+	/*struct DebugSystem
 	{
 		void update(ECSRegistry& registry);
 
@@ -327,6 +327,6 @@ namespace ECS
 		void drawMaterial(Material& t);
 		void drawLight(Light& l);
 		void drawCamera(Camera& c);
-	};
+	};*/
 };
 

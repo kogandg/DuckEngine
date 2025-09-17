@@ -51,26 +51,59 @@ void ECS::CameraController::updateRotation(Transform& transform)
 	transform.dirty = true;
 }
 
-void ECS::DebugSystem::update(ECSRegistry& registry)
-{
-	ImGui::Begin("Scene");
-
-	for (auto& e : registry.getEntities())
-	{
-		if (registry.hasComponent<Hierarchy>(e))
-		{
-			auto& h = registry.getComponent<Hierarchy>(e);
-			if (h.parent != INVALID_ENTITY) continue;
-		}
-		drawEntityNode(registry, e);
-	}
-
-	ImGui::End();
-}
-
-void ECS::DebugSystem::drawEntityNode(ECSRegistry& registry, Entity e)
-{
-	ImGui::PushID(e);
-
-	ImGui::PopID();
-}
+//void ECS::DebugSystem::update(ECSRegistry& registry)
+//{
+//	ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Once);
+//	ImGui::Begin("Scene");
+//
+//	for (auto& e : registry.getEntities())
+//	{
+//		if (registry.hasComponent<Hierarchy>(e))
+//		{
+//			auto& h = registry.getComponent<Hierarchy>(e);
+//			if (h.parent != INVALID_ENTITY) continue;
+//		}
+//		drawEntityNode(registry, e);
+//	}
+//
+//	ImGui::End();
+//}
+//
+//void ECS::DebugSystem::drawEntityNode(ECSRegistry& registry, Entity e)
+//{
+//	ImGui::PushID(e);
+//
+//	bool open = ImGui::TreeNodeEx(("Entity " + std::to_string(e)).c_str(), ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth);
+//	
+//	if (open)
+//	{
+//		if (registry.hasComponent<Transform>(e))
+//		{
+//			auto& t = registry.getComponent<Transform>(e);
+//			if (ImGui::TreeNode("Transform"))
+//			{
+//				drawTransform(t);
+//				ImGui::TreePop();
+//			}
+//		}
+//
+//		ImGui::TreePop();
+//	}
+//
+//	ImGui::PopID();
+//}
+//
+//void ECS::DebugSystem::drawTransform(Transform& t)
+//{
+//	bool dirty = false;
+//	if (ImGui::DragFloat3("Position", &t.position[0], 0.1f)) t.dirty = true;
+//
+//	glm::vec3 euler = glm::degrees(glm::eulerAngles(t.rotation));
+//	if (ImGui::DragFloat3("Rotation", &euler[0], 1.0f))
+//	{
+//		t.rotation = glm::quat(glm::radians(euler));
+//		t.dirty = true;
+//	}
+//
+//	if(ImGui::DragFloat3("Scale", &t.scale[0], 0.1f)) t.dirty = true;
+//}

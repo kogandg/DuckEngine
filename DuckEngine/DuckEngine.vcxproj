@@ -141,6 +141,7 @@
     <ClCompile Include="DirectionalLight.cpp" />
     <ClCompile Include="ECSRegistry.cpp" />
     <ClCompile Include="EmbreeGeometry.cpp" />
+    <ClCompile Include="GPUCache.cpp" />
     <ClCompile Include="ImageWindow.cpp" />
     <ClCompile Include="imgui\imgui.cpp" />
     <ClCompile Include="imgui\imgui_demo.cpp" />
@@ -187,6 +188,7 @@
     <ClInclude Include="EmbreeGeometry.h" />
     <ClInclude Include="Geometry.h" />
     <ClInclude Include="GLFWInputMap.h" />
+    <ClInclude Include="GPUCache.h" />
     <ClInclude Include="ImageWindow.h" />
     <ClInclude Include="imgui\imconfig.h" />
     <ClInclude Include="imgui\imgui.h" />
