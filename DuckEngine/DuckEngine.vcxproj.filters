@@ -177,7 +177,13 @@
     <ClCompile Include="InputManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GPUCache.cpp">
+    <ClCompile Include="AssetManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GPUResourceManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GLRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -314,7 +320,16 @@
     <ClInclude Include="InputEnums.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="GPUCache.h">
+    <ClInclude Include="AssetManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GPUResourceManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UBOData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GLRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -341,34 +356,46 @@
     <None Include="scene7.txt">
       <Filter>Resource Files\scenes\1</Filter>
     </None>
-    <None Include="vertexShader.vert">
+    <None Include="default.vert">
       <Filter>Resource Files\shaders</Filter>
     </None>
-    <None Include="fragShader.frag">
+    <None Include="default.frag">
       <Filter>Resource Files\shaders</Filter>
     </None>
-    <None Include="texture.vert">
+    <None Include="shaders\color.frag">
       <Filter>Resource Files\shaders</Filter>
     </None>
-    <None Include="texture.frag">
+    <None Include="shaders\color.vert">
       <Filter>Resource Files\shaders</Filter>
     </None>
-    <None Include="lightCube.vert">
+    <None Include="shaders\default.frag">
       <Filter>Resource Files\shaders</Filter>
     </None>
-    <None Include="lightCube.frag">
+    <None Include="shaders\default.vert">
       <Filter>Resource Files\shaders</Filter>
     </None>
-    <None Include="lighting.vert">
+    <None Include="shaders\lightCube.frag">
       <Filter>Resource Files\shaders</Filter>
     </None>
-    <None Include="lighting.frag">
+    <None Include="shaders\lightCube.vert">
       <Filter>Resource Files\shaders</Filter>
     </None>
-    <None Include="color.vert">
+    <None Include="shaders\lighting.frag">
       <Filter>Resource Files\shaders</Filter>
     </None>
-    <None Include="color.frag">
+    <None Include="shaders\lighting.vert">
+      <Filter>Resource Files\shaders</Filter>
+    </None>
+    <None Include="shaders\texture.frag">
+      <Filter>Resource Files\shaders</Filter>
+    </None>
+    <None Include="shaders\texture.vert">
+      <Filter>Resource Files\shaders</Filter>
+    </None>
+    <None Include="shaders\vertexShader.vert">
+      <Filter>Resource Files\shaders</Filter>
+    </None>
+    <None Include="shaders\fragShader.frag">
       <Filter>Resource Files\shaders</Filter>
     </None>
   </ItemGroup>

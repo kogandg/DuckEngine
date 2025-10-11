@@ -9,6 +9,14 @@
 #include <string>
 #include "InputManager.h"
 
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
+#include <stdexcept>
+
+#include "AssetManager.h"
+
 namespace ECS
 {
 	using Entity = unsigned int;
@@ -85,7 +93,7 @@ namespace ECS
 		}
 
 	private:
-		Entity nextEntity = Entity{ 1 };
+		Entity nextEntity = 1;
 		std::vector<Entity> entities;
 		std::vector<std::function<void(Entity)>> removeFuncs;
 
@@ -111,26 +119,30 @@ namespace ECS
 	};
 
 	//components
+	struct Hierarchy : public IComponent
+	{
+		Entity parent = INVALID_ENTITY;
+		std::vector<Entity> children;
+	};
+
 	struct Transform : public IComponent
 	{
 		glm::vec3 position = glm::vec3(0.0f);
 		glm::quat rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f); // maybe should be vec3 rotation rather than quaternion
 		glm::vec3 scale = glm::vec3(1.0f);
-
+	
 		glm::mat4 local = glm::mat4(1.0f);
 		glm::mat4 world = glm::mat4(1.0f);
+
+		glm::vec3 worldPosition = glm::vec3(0.0f);
+		glm::vec3 worldDirection = glm::vec3(0.0f);
 
 		bool dirty = true;
 	};
 
-	struct MeshData
-	{
-		std::vector<float> verts;
-	};
-
 	struct Mesh : public IComponent
 	{
-		std::shared_ptr<MeshData> data;
+		MeshID meshID;
 	};
 	template<>
 	struct ComponentDependencies<Mesh>
@@ -138,34 +150,45 @@ namespace ECS
 		using type = std::tuple<Transform>;
 	};
 
-	struct ColorData
-	{
-		glm::vec3 color;
-	};
+	//struct MaterialData
+	//{
+	//	enum class Type
+	//	{
+	//		Color,
+	//		Phong
+	//	};
+	//	Type type;//unlit, phong, pbr, etc
 
-	struct PhongData
-	{
-		std::string diffuseTexturePath;
-		std::string specularTexturePath;
-		float shininess;
-	};
 
-	struct MaterialData
-	{
-		enum class Type
-		{
-			Color,
-			Phong
-		};
-		Type type;
+	//	//std::variant<ColorData, PhongData, MaterialData> data;
 
-		std::variant<ColorData, PhongData> data;
-	};
+	//	/*glm::vec3 diffuseColor = glm::vec3(1.0f);
+	//	glm::vec3 specularColor = glm::vec3(1.0f);
+	//	float shininess = 32.0f;*/
+
+	//	std::unordered_map<std::string, TextureInfo> textures;
+	//	std::unordered_map<std::string, float> scalars;
+	//	std::unordered_map<std::string, glm::vec3> vectors;
+
+	//	bool dirty = true;
+	//};
 
 	struct Material : public IComponent
 	{
-		std::shared_ptr<MaterialData> data;
+		MaterialID materialID;
+
+		//void makeMaterialUnique();
 	};
+
+	/*struct Model : public IComponent
+	{
+		std::string name;
+	};
+	template<>
+	struct ComponentDependencies<Model>
+	{
+		using type = std::tuple<Transform, Hierarchy>;
+	};*/
 
 	struct PointData
 	{
@@ -208,13 +231,6 @@ namespace ECS
 	struct ComponentDependencies<Light>
 	{
 		using type = std::tuple<Transform>;
-	};
-
-
-	struct Hierarchy : public IComponent
-	{
-		Entity parent = INVALID_ENTITY;
-		std::vector<Entity> children;
 	};
 
 	struct Camera : public IComponent
@@ -271,6 +287,10 @@ namespace ECS
 			t.local = T * R * S;
 
 			t.world = t.local;
+
+			t.worldPosition = glm::vec3(t.world[3]);
+			t.worldDirection = glm::normalize(glm::vec3(t.world * glm::vec4(0, 0, -1, 0)));
+
 			t.dirty = false;
 		}
 
@@ -281,6 +301,8 @@ namespace ECS
 			{
 				auto& parentTransform = registry.getComponent<Transform>(h.parent);
 				t.world = parentTransform.world * t.local;
+				t.worldPosition = glm::vec3(t.world[3]);
+				t.worldDirection = glm::normalize(glm::vec3(t.world * glm::vec4(0, 0, -1, 0)));
 			}
 
 			for (Entity child : h.children)
@@ -313,20 +335,10 @@ namespace ECS
 		void init(Transform& transform);
 		void update(Transform& transform, InputManager& input, float dt);
 
+		glm::vec3 getFront();
+
 	private:
 		void updateRotation(Transform& transform);
 	};
-
-	/*struct DebugSystem
-	{
-		void update(ECSRegistry& registry);
-
-	private:
-		void drawEntityNode(ECSRegistry& registry, Entity e);
-		void drawTransform(Transform& t);
-		void drawMaterial(Material& t);
-		void drawLight(Light& l);
-		void drawCamera(Camera& c);
-	};*/
 };
 

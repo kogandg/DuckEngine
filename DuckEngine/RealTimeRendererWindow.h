@@ -11,7 +11,8 @@
 #include "ECSRegistry.h"
 #include "GLFWInputMap.h"
 
-#include "GPUCache.h"
+#include "GLRenderer.h"
+
 
 class RealTimeRendererWindow : public Window
 {
@@ -30,7 +31,7 @@ private:
 	ECS::ECSRegistry registry;
 	ECS::TransformSystem transformSystem;
 	ECS::CameraSystem cameraSystem;
-	GPUCache cache;
+	//GPUCache cache;
 
 	ECS::Entity directionalLight;
 
@@ -41,15 +42,10 @@ private:
 	InputManager inputManager;
 	GLFWInputMap inputMap;
 
-	GLuint VBO;
-	GLuint cubeVAO;
-	GLuint lightVAO;
 
-	Shader* lightingShader;
-	Shader* lightCubeShader;
-	
-	GLuint diffuseMap;
-	GLuint specularMap;
+	GLRenderer renderer;
+	AssetManager assetManager;
+
 
 	std::array<glm::vec3, 10> cubePositions = { {
 		glm::vec3(0.0f,  0.0f,  0.0f),
@@ -78,12 +74,12 @@ private:
 
 	void initGLObjects();
 
-	void drawDebugUI(ECS::ECSRegistry& registry, GPUCache& cache);
-	void drawEntityNode(ECS::ECSRegistry& registry, ECS::Entity e);
+	/*void drawDebugUI(ECS::ECSRegistry& registry, GPUCache& cache);
+	void drawEntityNode(ECS::ECSRegistry& registry, ECS::Entity e, GPUCache& cache);
 	void drawTransform(ECS::Transform& t);
-	void drawMaterial(ECS::Material& m);
+	void drawMaterial(ECS::Material& m, ECS::ECSRegistry& registry, GPUCache& cache);
 	void drawLight(ECS::Light& l);
-	void drawCamera(ECS::Camera& c);
+	void drawCamera(ECS::Camera& c);*/
 
 	virtual void onCursorPos(double currX, double currY) override;
 	virtual void onKey(int key, int scancode, int action, int mods) override;
