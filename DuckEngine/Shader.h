@@ -42,9 +42,15 @@ public:
 	void SetTexture(const std::string& name, int location, GLuint texture) const;
 
 	void CacheUniform(const std::string& name);
+	void CacheUniforms();
+
+	inline bool ContainsUniform(const std::string& name) { return uniforms.contains(name); }
+
+	std::vector<std::string>& GetActiveSamplerUniforms() { return activeSamplerUniforms; }
 
 private:
 	void checkCompileErrors(unsigned int shader, std::string type);
 	std::unordered_map<std::string, GLint> uniforms;
+	std::vector<std::string> activeSamplerUniforms;
 };
 

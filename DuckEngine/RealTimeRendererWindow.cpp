@@ -3,7 +3,7 @@
 
 RealTimeRendererWindow::RealTimeRendererWindow(const char* title, int width, int height) : Window(title, width, height), renderer(assetManager, registry)//, camera(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(0.0f), 0.0f)
 {
-	
+
 }
 
 void RealTimeRendererWindow::Init()
@@ -123,7 +123,79 @@ void RealTimeRendererWindow::Init()
 		registry.addComponent<ECS::Light>(lightCube, light);
 	}*/
 
-	/*
+	assetManager.LoadDefaultTexture();
+
+	auto cubeModel = assetManager.LoadModel("resources/backpack/backpack.obj");
+	for (MeshID meshID : cubeModel)
+	{
+		auto entity = registry.CreateEntity();
+		ECS::Mesh meshComp;
+		meshComp.meshID = meshID;
+		registry.addComponent<ECS::Mesh>(entity, meshComp);
+		MaterialID matID = assetManager.GetMeshMaterial(meshID);
+		auto matData = assetManager.GetMaterial(matID);
+
+		//matData->type = "unlit";
+		ECS::Material matComp;
+		matComp.materialID = matID;
+		registry.addComponent<ECS::Material>(entity, matComp);
+	}
+
+	ECS::Transform cameraTransform;
+	cameraTransform.position = glm::vec3(0.0f, 0.0f, 3.0f);
+	ECS::Camera cameraData;
+	cameraData.aspectRatio = width / height;
+	cameraData.fovY = 45.0f;
+	cameraEntity = registry.CreateEntity();
+	registry.addComponent<ECS::Camera>(cameraEntity, cameraData);
+	registry.addComponent<ECS::Transform>(cameraEntity, cameraTransform);
+	registry.addComponent<ECS::Hierarchy>(cameraEntity, ECS::Hierarchy());
+	cameraController.pitch = 0.0f;
+	cameraController.yaw = -90.0f;
+	cameraController.init(cameraTransform);
+
+	//spotlight
+	/*auto sle = registry.CreateEntity();
+	{
+		ECS::Light s;
+		s.type = ECS::Light::Type::Spot;
+		s.ambient = glm::vec3(0.0f);
+		s.diffuse = glm::vec3(1.0f);
+		s.specular = glm::vec3(1.0f);
+		ECS::SpotData sd;
+		sd.constant = 1.0f;
+		sd.linear = 0.09f;
+		sd.quadratic = 0.032f;
+		sd.cutOff = glm::cos(glm::radians(12.5f));
+		sd.outerCutOff = glm::cos(glm::radians(15.0f));
+		s.data = sd;
+
+		registry.addComponent<ECS::Light>(sle, s);
+
+		ECS::Hierarchy sh;
+		sh.parent = cameraEntity;
+		registry.addComponent<ECS::Hierarchy>(sle, sh);
+
+		auto& ch = registry.getComponent<ECS::Hierarchy>(cameraEntity);
+		ch.children.push_back(sle);
+	}*/
+	
+	//directional light
+	auto dle = registry.CreateEntity();
+	{
+		ECS::Transform directionalTransform;
+		directionalTransform.rotation = glm::quat(glm::vec3(-0.2f, -1.0f, -0.3f));
+		ECS::Light directionalLightComp;
+		directionalLightComp.type = ECS::Light::Type::Directional;
+		directionalLightComp.ambient = glm::vec3(0.05f, 0.05f, 0.05f);
+		directionalLightComp.diffuse = glm::vec3(0.4f, 0.4f, 0.4f);
+		directionalLightComp.specular = glm::vec3(0.5f, 0.5f, 0.5f);
+
+		registry.addComponent<ECS::Light>(dle, directionalLightComp);
+		registry.addComponent<ECS::Transform>(dle, directionalTransform);
+	}
+
+	//point lights
 	for (int i = 0; i < pointLightPositions.size(); i++)
 	{
 		ECS::Transform transform;
@@ -144,95 +216,6 @@ void RealTimeRendererWindow::Init()
 		registry.addComponent<ECS::Transform>(lightEnt, transform);
 		registry.addComponent<ECS::Light>(lightEnt, light);
 	}
-
-
-	//lights
-	ECS::Transform directionalTransform;
-	directionalTransform.rotation = glm::quat(glm::vec3(-0.2f, -1.0f, -0.3f));
-	ECS::Light directionalLightComp;
-	directionalLightComp.type = ECS::Light::Type::Directional;
-	directionalLightComp.ambient = glm::vec3(0.05f, 0.05f, 0.05f);
-	directionalLightComp.diffuse = glm::vec3(0.4f, 0.4f, 0.4f);
-	directionalLightComp.specular = glm::vec3(0.5f, 0.5f, 0.5f);
-
-	directionalLight = registry.CreateEntity();
-	registry.addComponent<ECS::Light>(directionalLight, directionalLightComp);
-	registry.addComponent<ECS::Transform>(directionalLight, directionalTransform);
-
-	ECS::Transform cameraTransform;
-	cameraTransform.position = glm::vec3(0.0f, 0.0f, 3.0f);
-	ECS::Camera cameraData;
-	cameraData.aspectRatio = width / height;
-	cameraData.fovY = 45.0f;
-	cameraEntity = registry.CreateEntity();
-	registry.addComponent<ECS::Camera>(cameraEntity, cameraData);
-	registry.addComponent<ECS::Transform>(cameraEntity, cameraTransform);
-
-
-	cameraController.pitch = 0.0f;
-	cameraController.yaw = -90.0f;
-	cameraController.init(registry.getComponent<ECS::Transform>(cameraEntity));
-
-	registry.addComponent<ECS::Hierarchy>(cameraEntity, ECS::Hierarchy());
-
-	//spotlight
-	auto se = registry.CreateEntity();
-	{
-		ECS::Light s;
-		s.type = ECS::Light::Type::Spot;
-		s.ambient = glm::vec3(0.0f);
-		s.diffuse = glm::vec3(1.0f);
-		s.specular = glm::vec3(1.0f);
-		ECS::SpotData sd;
-		sd.constant = 1.0f;
-		sd.linear = 0.09f;
-		sd.quadratic = 0.032f;
-		sd.cutOff = glm::cos(glm::radians(12.5f));
-		sd.outerCutOff = glm::cos(glm::radians(15.0f));
-		s.data = sd;
-
-		registry.addComponent<ECS::Light>(se, s);
-
-		ECS::Hierarchy sh;
-		sh.parent = cameraEntity;
-		registry.addComponent<ECS::Hierarchy>(se, sh);
-	}
-
-	auto& ch = registry.getComponent<ECS::Hierarchy>(cameraEntity);
-	ch.children.push_back(se);
-
-	auto modelTestEntity = registry.CreateEntity();
-	ECS::loadModel("resources/dragon/dragon.obj", registry, modelTestEntity);
-
-	int count = 0;
-	*/
-
-	auto cubeModel = assetManager.LoadModel("resources/backpack/backpack.obj");
-	for (MeshID meshID : cubeModel)
-	{
-		auto entity = registry.CreateEntity();
-		ECS::Mesh meshComp;
-		meshComp.meshID = meshID;
-		registry.addComponent<ECS::Mesh>(entity, meshComp);
-		MaterialID matID = assetManager.GetMeshMaterial(meshID);
-		auto matData = assetManager.GetMaterial(matID);
-		matData->type = "default";
-		ECS::Material matComp;
-		matComp.materialID = matID;
-		registry.addComponent<ECS::Material>(entity, matComp);
-	}
-
-	ECS::Transform cameraTransform;
-	cameraTransform.position = glm::vec3(0.0f, 0.0f, 3.0f);
-	ECS::Camera cameraData;
-	cameraData.aspectRatio = width / height;
-	cameraData.fovY = 45.0f;
-	cameraEntity = registry.CreateEntity();
-	registry.addComponent<ECS::Camera>(cameraEntity, cameraData);
-	registry.addComponent<ECS::Transform>(cameraEntity, cameraTransform);
-	cameraController.pitch = 0.0f;
-	cameraController.yaw = -90.0f;
-	cameraController.init(cameraTransform);
 }
 
 void RealTimeRendererWindow::CleanUp()
@@ -280,9 +263,12 @@ void RealTimeRendererWindow::DisplayCallback()
 	auto& cameraData = registry.getComponent<ECS::Camera>(cameraEntity);
 	cameraData.aspectRatio = (float)width / (float)height;
 
-	renderer.SetCamera(cameraData.view, cameraData.projection);
+	auto& camTransform = registry.getComponent<ECS::Transform>(cameraEntity);
 
-	renderer.RenderScene();
+	renderer.SetCamera(cameraData.view, cameraData.projection);
+	renderer.UpdateLightsUBO();
+
+	renderer.RenderScene(camTransform.position);
 
 	/*
 	//ubos

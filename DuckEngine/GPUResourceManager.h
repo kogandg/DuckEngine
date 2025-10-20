@@ -22,9 +22,11 @@ struct GPUTexture
 struct GPUMaterial
 {
 	std::string type; // for shader selection
+	std::unordered_map<std::string, float> scalars;
+	std::unordered_map<std::string, glm::vec3> vectors;
 	std::unordered_map<std::string, std::shared_ptr<GPUTexture>> textures;
-	glm::vec3 baseColor = glm::vec3(1.0f);
-	float shininess = 32.0f;
+	//glm::vec3 baseColor = glm::vec3(1.0f);
+	//float shininess = 32.0f;
 };
 
 struct GPUUBO
@@ -44,6 +46,8 @@ public:
 
 	std::shared_ptr<GPUTexture> UploadTexture(TextureID id, const TextureAsset& texture);
 	std::shared_ptr<GPUTexture> GetTexture(TextureID id) const;
+	//inline std::shared_ptr<GPUTexture> GetDefaultTexture() const { return GetTexture(INVALID_TEXTURE); }
+	inline GLuint GetDefaultTextureID() const { return defaultTextureID; }
 
 	std::shared_ptr<GPUMaterial> CreateMaterial(MaterialID id, const MaterialAsset& material);
 	std::shared_ptr<GPUMaterial> GetMaterial(MaterialID id) const;
@@ -63,6 +67,8 @@ private:
 	std::unordered_map<TextureID, std::shared_ptr<GPUTexture>> textureCache;
 	std::unordered_map<MaterialID, std::shared_ptr<GPUMaterial>> materialCache;
 	std::unordered_map<std::string, std::shared_ptr<Shader>> shaderCache;
+
+	GLuint defaultTextureID = 0;
 
 	std::unordered_map<std::string, GPUUBO> ubos;
 

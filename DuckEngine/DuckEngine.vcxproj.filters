@@ -356,12 +356,6 @@
     <None Include="scene7.txt">
       <Filter>Resource Files\scenes\1</Filter>
     </None>
-    <None Include="default.vert">
-      <Filter>Resource Files\shaders</Filter>
-    </None>
-    <None Include="default.frag">
-      <Filter>Resource Files\shaders</Filter>
-    </None>
     <None Include="shaders\color.frag">
       <Filter>Resource Files\shaders</Filter>
     </None>
@@ -396,6 +390,18 @@
       <Filter>Resource Files\shaders</Filter>
     </None>
     <None Include="shaders\fragShader.frag">
+      <Filter>Resource Files\shaders</Filter>
+    </None>
+    <None Include="shaders\unlit.frag">
+      <Filter>Resource Files\shaders</Filter>
+    </None>
+    <None Include="shaders\unlit.vert">
+      <Filter>Resource Files\shaders</Filter>
+    </None>
+    <None Include="shaders\phong.frag">
+      <Filter>Resource Files\shaders</Filter>
+    </None>
+    <None Include="shaders\phong.vert">
       <Filter>Resource Files\shaders</Filter>
     </None>
   </ItemGroup>

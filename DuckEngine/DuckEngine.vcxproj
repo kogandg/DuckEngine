@@ -233,8 +233,6 @@
     <ClInclude Include="WindowManager.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="default.frag" />
-    <None Include="default.vert" />
     <None Include="imgui\imgui.natstepfilter" />
     <None Include="scene4-ambient.txt" />
     <None Include="scene4-diffuse.txt" />
@@ -252,8 +250,12 @@
     <None Include="shaders\lightCube.vert" />
     <None Include="shaders\lighting.frag" />
     <None Include="shaders\lighting.vert" />
+    <None Include="shaders\phong.frag" />
+    <None Include="shaders\phong.vert" />
     <None Include="shaders\texture.frag" />
     <None Include="shaders\texture.vert" />
+    <None Include="shaders\unlit.frag" />
+    <None Include="shaders\unlit.vert" />
     <None Include="shaders\vertexShader.vert" />
   </ItemGroup>
   <ItemGroup>

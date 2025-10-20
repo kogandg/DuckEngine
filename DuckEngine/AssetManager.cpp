@@ -1,5 +1,7 @@
 #include "AssetManager.h"
 
+#include <filesystem>
+
 //Helper to convert aiColor3D to glm::vec3
 static glm::vec3 ToVec3(const aiColor3D& color)
 {
@@ -21,7 +23,7 @@ std::vector<MeshID> AssetManager::LoadModel(const std::string& path)
 	std::vector<MaterialID> localToGlobalMaterialMap(scene->mNumMaterials, INVALID_MATERIAL);
 	for (unsigned int i = 0; i < scene->mNumMaterials; i++)
 	{
-		MaterialID globalID = LoadMaterial(scene->mMaterials[i], scene);
+		MaterialID globalID = LoadMaterial(scene->mMaterials[i], scene, path);
 		localToGlobalMaterialMap[i] = globalID;
 	}
 
@@ -31,10 +33,12 @@ std::vector<MeshID> AssetManager::LoadModel(const std::string& path)
 
 TextureID AssetManager::LoadTexture(const std::string& path)
 {
+	stbi_set_flip_vertically_on_load(true);
 	int width;
 	int height;
 	int channels;
 	unsigned char* data = stbi_load(path.c_str(), &width, &height, &channels, 0);
+	stbi_set_flip_vertically_on_load(false);
 	if (!data)
 	{
 		std::cout << "Failed to load texture: " << path << std::endl;
@@ -84,7 +88,18 @@ TextureID AssetManager::LoadEmbeddedTexture(const aiTexture* texture, const std:
 	return id;
 }
 
-MaterialID AssetManager::LoadMaterial(const aiMaterial* material, const aiScene* scene)
+void AssetManager::LoadDefaultTexture()
+{
+	auto tex = std::make_shared<TextureAsset>();
+	tex->width = 1;
+	tex->height = 1;
+	tex->channels = 4;
+	tex->pixels = { 255, 255, 255, 255 }; // White pixel
+	tex->name = "DEFAULT_WHITE_TEXTURE";
+	textures[INVALID_TEXTURE] = tex;
+}
+
+MaterialID AssetManager::LoadMaterial(const aiMaterial* material, const aiScene* scene, const std::string& path)
 {
 	if (!material) return INVALID_MATERIAL;
 
@@ -106,37 +121,69 @@ MaterialID AssetManager::LoadMaterial(const aiMaterial* material, const aiScene*
 		}
 	}
 
+	//vectors
 	aiColor3D color(1.0f, 1.0f, 1.0f);
 	if (material->Get(AI_MATKEY_COLOR_DIFFUSE, color) == aiReturn_SUCCESS)
 	{
-		mat->baseColor = ToVec3(color);
+		mat->vectors["baseColor"] = ToVec3(color);
+	}
+	if (material->Get(AI_MATKEY_COLOR_SPECULAR, color) == aiReturn_SUCCESS)
+	{
+		mat->vectors["specularColor"] = ToVec3(color);
+	}
+	if (material->Get(AI_MATKEY_COLOR_AMBIENT, color) == aiReturn_SUCCESS)
+	{
+		mat->vectors["ambientColor"] = ToVec3(color);
+	}
+	if (material->Get(AI_MATKEY_COLOR_EMISSIVE, color) == aiReturn_SUCCESS)
+	{
+		mat->vectors["emissiveColor"] = ToVec3(color);
 	}
 
-	//load diffuse texture/base color texture
-	if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0)
+	//scalars
+	float shininess = 0.0f;
+	if (material->Get(AI_MATKEY_SHININESS, shininess) == aiReturn_SUCCESS)
 	{
-		aiString texPath;
-		material->GetTexture(aiTextureType_DIFFUSE, 0, &texPath);
-		std::string texName = texPath.C_Str();
+		mat->scalars["shininess"] = shininess;
+	}
+	float opacity = 1.0f;
+	if (material->Get(AI_MATKEY_OPACITY, opacity) == aiReturn_SUCCESS)
+	{
+		mat->scalars["opacity"] = opacity;
+	}
 
-		TextureID texID = INVALID_TEXTURE;
-		if (texName.length() > 0)
+	//textures
+	auto loadTextureHelper = [&](aiTextureType type, const std::string& name) {
+		if (material->GetTextureCount(type) > 0)
 		{
-			if (texName[0] == '*')
+			aiString texPath;
+			material->GetTexture(type, 0, &texPath);
+			std::string texName = texPath.C_Str();
+			TextureID texID = INVALID_TEXTURE;
+			if (!texName.empty())
 			{
-				int texIndex = std::stoi(texName.c_str() + 1);
-				if (texIndex > 0 && texIndex < scene->mNumTextures)
+				if (texName[0] == '*')
 				{
-					texID = LoadEmbeddedTexture(scene->mTextures[texIndex], texName);
+					int texIndex = std::stoi(texName.c_str() + 1);
+					if (texIndex >= 0 && texIndex < scene->mNumTextures)
+						texID = LoadEmbeddedTexture(scene->mTextures[texIndex], texName);
+				}
+				else
+				{
+					std::string fullTexPath = getTextureFullPath(path, texName);
+					texID = LoadTexture(fullTexPath);
 				}
 			}
-			else
-			{
-				texID = LoadTexture(texName);
-			}
+			if (texID != INVALID_TEXTURE)
+				mat->textures[name] = texID;
 		}
-		mat->baseTexture = texID;
-	}
+		};
+
+	loadTextureHelper(aiTextureType_DIFFUSE, "baseTexture");
+	loadTextureHelper(aiTextureType_SPECULAR, "specularTexture");
+	loadTextureHelper(aiTextureType_NORMALS, "normalTexture");
+	loadTextureHelper(aiTextureType_HEIGHT, "heightTexture");
+	loadTextureHelper(aiTextureType_EMISSIVE, "emissiveTexture");
 
 	materials[id] = mat;
 	return id;
@@ -176,13 +223,13 @@ std::vector<MeshID> AssetManager::processNode(aiNode* node, const aiScene* scene
 	std::vector<MeshID> meshIDs;
 	if (!node || !scene) return meshIDs;
 
-	for (unsigned int i = 0; i < node->mNumMeshes; i++) 
+	for (unsigned int i = 0; i < node->mNumMeshes; i++)
 	{
 		aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
 		MeshID id = processMesh(mesh, scene, matMap);
 		if (id != INVALID_MESH) meshIDs.push_back(id);
 	}
-	for (unsigned int i = 0; i < node->mNumChildren; ++i) 
+	for (unsigned int i = 0; i < node->mNumChildren; ++i)
 	{
 		auto childIDs = processNode(node->mChildren[i], scene, matMap);
 		meshIDs.insert(meshIDs.end(), childIDs.begin(), childIDs.end());
@@ -228,6 +275,13 @@ MeshID AssetManager::processMesh(aiMesh* mesh, const aiScene* scene, const std::
 		matID = matMap[mesh->mMaterialIndex];
 	}
 	meshMaterialLinks[id] = matID;
-	
+
 	return id;
+}
+
+std::string AssetManager::getTextureFullPath(const std::string& modelPath, const std::string& textureRelativePath)
+{
+	std::filesystem::path modelFile(modelPath);
+	std::filesystem::path textureFile = modelFile.parent_path() / textureRelativePath;
+	return textureFile.string();
 }

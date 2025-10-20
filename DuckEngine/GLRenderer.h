@@ -12,14 +12,19 @@ public:
     //~GLRenderer();
 
     void Initialize();
-    void RenderScene();
+    void RenderScene(const glm::vec3& camPos);
     //void Resize(int width, int height);
     void SetCamera(const glm::mat4& view, const glm::mat4& projection);
+
+    void UpdateLightsUBO();
 
 private:
     AssetManager& assetManager;
     ECS::ECSRegistry& ecs;
     GPUResourceManager gpuResourceManager;
 
-    void RenderEntity(ECS::Entity entity);
+    void renderEntity(ECS::Entity entity, const glm::vec3& camPos);
+    void bindMaterial(std::shared_ptr<Shader> shader, const GPUMaterial& material);
+
+
 };

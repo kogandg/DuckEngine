@@ -24,6 +24,7 @@ void ECS::CameraController::update(Transform& transform, InputManager& input, fl
 
 	glm::vec3 forward = transform.rotation * glm::vec3(0, 0, -1);
 	glm::vec3 right = transform.rotation * glm::vec3(1, 0, 0);
+	glm::vec3 up = transform.rotation * glm::vec3(0, 1, 0);
 
 	float velocity = movementSpeed * dt;
 
@@ -31,6 +32,8 @@ void ECS::CameraController::update(Transform& transform, InputManager& input, fl
 	if (input.IsKeyDown(Key::S)) transform.position -= forward * velocity;
 	if (input.IsKeyDown(Key::A)) transform.position -= right * velocity;
 	if (input.IsKeyDown(Key::D)) transform.position += right * velocity;
+	if (input.IsKeyDown(Key::Space)) transform.position += up * velocity;
+	if (input.IsKeyDown(Key::Control)) transform.position -= up * velocity;
 
 	transform.dirty = true;
 }

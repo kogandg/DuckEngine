@@ -108,13 +108,15 @@ std::shared_ptr<GPUMaterial> GPUResourceManager::CreateMaterial(MaterialID id, c
 	gpuMat->type = material.type;
 	//gpuMat->shader = std::make_shared<Shader>("shaders/default.vert", "shaders/default.frag");
 
-	gpuMat->baseColor = material.baseColor;
-	gpuMat->shininess = 32.0f;
+	gpuMat->scalars = material.scalars;
+	gpuMat->vectors = material.vectors;
 	
-	if (material.baseTexture != INVALID_TEXTURE) {
-		auto tex = GetTexture(material.baseTexture);
-		if (tex) gpuMat->textures["base"] = tex;
+	for (auto textureID : material.textures)
+	{
+		auto tex = GetTexture(textureID.second);
+		if (tex) gpuMat->textures[textureID.first] = tex;
 	}
+
 	materialCache[id] = gpuMat;
 	return gpuMat;
 }
@@ -133,7 +135,11 @@ void GPUResourceManager::LoadFromAssetManager(const AssetManager& assets)
 	}
 	for (const auto& [id, tex] : assets.GetAllTextures()) 
 	{
-		UploadTexture(id, *tex);
+		auto gpuTex = UploadTexture(id, *tex);
+		if (id == INVALID_TEXTURE)
+		{
+			defaultTextureID = gpuTex->id;
+		}
 	}
 	for (const auto& [id, mat] : assets.GetAllMaterials()) 
 	{
@@ -144,9 +150,13 @@ void GPUResourceManager::LoadFromAssetManager(const AssetManager& assets)
 void GPUResourceManager::LoadDefaultShaders()
 {
 	shaderCache["default"] = std::make_shared<Shader>("shaders/default.vert", "shaders/default.frag");
-	shaderCache["default"]->CacheUniform("model");
-	//shaderCache["unlit"] = std::make_shared<Shader>("shaders/lighting.vert", "shaders/lighting.frag");
-	//shaderCache["phong"] = std::make_shared<Shader>("shaders/phong.vert", "shaders/phong.frag");
+	shaderCache["unlit"] = std::make_shared<Shader>("shaders/unlit.vert", "shaders/unlit.frag");
+	shaderCache["phong"] = std::make_shared<Shader>("shaders/phong.vert", "shaders/phong.frag");
+
+	for (const auto& [name, shader] : shaderCache)
+	{
+		shader->CacheUniforms();
+	}
 }
 
 bool GPUResourceManager::AddShader(const std::string& type, const std::string& vertexPath, const std::string& fragmentPath)

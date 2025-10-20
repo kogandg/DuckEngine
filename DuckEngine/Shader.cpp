@@ -133,6 +133,26 @@ void Shader::CacheUniform(const std::string& name)
     uniforms[name] = glGetUniformLocation(ID, name.c_str());
 }
 
+void Shader::CacheUniforms()
+{
+    GLint count;
+	glGetProgramiv(ID, GL_ACTIVE_UNIFORMS, &count);
+    for (int i = 0; i < count; i++)
+    {
+        char name[256];
+        GLsizei length;
+        GLint size;
+        GLenum type;
+        glGetActiveUniform(ID, (GLuint)i, sizeof(name), &length, &size, &type, name);
+        uniforms[name] = glGetUniformLocation(ID, name);
+
+        if (type == GL_SAMPLER_2D || type == GL_SAMPLER_CUBE)
+        {
+			activeSamplerUniforms.push_back(std::string(name));
+        }
+	}
+}
+
 void Shader::checkCompileErrors(unsigned int shader, std::string type)
 {
     int success;

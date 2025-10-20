@@ -59,8 +59,13 @@ struct MaterialAsset
 	//shaderPath, baseTexPath, baseColor
 	std::string name;
 	std::string type; // for shader selection
-	glm::vec3 baseColor = glm::vec3(1.0f);
-	TextureID baseTexture = INVALID_TEXTURE;
+
+	std::unordered_map<std::string, float> scalars;
+	std::unordered_map<std::string, glm::vec3> vectors;
+	std::unordered_map<std::string, TextureID> textures;
+
+	//glm::vec3 baseColor = glm::vec3(1.0f);
+	//TextureID baseTexture = INVALID_TEXTURE;
 };
 
 
@@ -84,7 +89,9 @@ public:
 	TextureID LoadTexture(const std::string& path);
 	TextureID LoadEmbeddedTexture(const aiTexture* texture, const std::string& name);
 
-	MaterialID LoadMaterial(const aiMaterial* material, const aiScene* scene);
+	void LoadDefaultTexture();
+
+	MaterialID LoadMaterial(const aiMaterial* material, const aiScene* scene, const std::string& path);
 
 	inline void SetMeshMaterial(MeshID mesh, MaterialID material);// { meshMaterialLinks[mesh] = material; }//maybe add checks for contains
 	MaterialID GetMeshMaterial(MeshID mesh);// { return meshMaterialLinks[mesh]; }
@@ -110,4 +117,6 @@ private:
 
 	std::vector<MeshID> processNode(aiNode* node, const aiScene* scene, const std::vector<MaterialID>& matMap);
 	MeshID processMesh(aiMesh* mesh, const aiScene* scene, const std::vector<MaterialID>& matMap);
+
+	std::string getTextureFullPath(const std::string& modelPath, const std::string& textureRelativePath);
 };
