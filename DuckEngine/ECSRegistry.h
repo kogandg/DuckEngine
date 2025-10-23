@@ -335,8 +335,6 @@ namespace ECS
 		void init(Transform& transform);
 		void update(Transform& transform, InputManager& input, float dt);
 
-		glm::vec3 getFront();
-
 	private:
 		void updateRotation(Transform& transform);
 	};

@@ -149,7 +149,7 @@ void RealTimeRendererWindow::Init()
 	registry.addComponent<ECS::Transform>(cameraEntity, cameraTransform);
 	registry.addComponent<ECS::Hierarchy>(cameraEntity, ECS::Hierarchy());
 	cameraController.pitch = 0.0f;
-	cameraController.yaw = -90.0f;
+	cameraController.yaw = 0.0f;//-90.0f;
 	cameraController.init(cameraTransform);
 
 	//spotlight
@@ -380,10 +380,10 @@ void RealTimeRendererWindow::DisplayCallback()
 	ImGui::Text("Mouse Delta = (%.2f, %.2f)", mouseDelta.x, mouseDelta.y);
 	ImGui::Text("Cursor mode = %s", inputManager.GetCursorMode() == CursorMode::Normal ? "normal" : "locked");
 
-	glm::vec3 forward = registry.getComponent<ECS::Transform>(cameraEntity).rotation * glm::vec3(0, 0, -1);
+	/*glm::vec3 forward = registry.getComponent<ECS::Transform>(cameraEntity).rotation * glm::vec3(0, 0, -1);
 	glm::vec3 right = registry.getComponent<ECS::Transform>(cameraEntity).rotation * glm::vec3(1, 0, 0);
 
-	ImGui::Text("Dir = (%.2f, %.2f, %.2f)", forward.x, forward.y, forward.z);
+	ImGui::Text("Dir = (%.2f, %.2f, %.2f)", forward.x, forward.y, forward.z);*/
 
 	ImGui::End();
 

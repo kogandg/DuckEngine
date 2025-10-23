@@ -15,7 +15,7 @@ void ECS::CameraController::update(Transform& transform, InputManager& input, fl
 	if (input.IsMouseDown(MouseButton::Right))
 	{
 		glm::vec2 delta = input.GetMouseDelta() * mouseSensitivity;
-		yaw += delta.x;
+		yaw -= delta.x;
 		pitch += delta.y;
 		pitch = glm::clamp(pitch, -89.0f, 89.0f);
 
@@ -38,25 +38,14 @@ void ECS::CameraController::update(Transform& transform, InputManager& input, fl
 	transform.dirty = true;
 }
 
-glm::vec3 ECS::CameraController::getFront()
-{
-	float cy = cos(glm::radians(yaw));
-	float sy = sin(glm::radians(yaw));
-	float cp = cos(glm::radians(pitch));
-	float sp = sin(glm::radians(pitch));
-
-	glm::vec3 trueDirection;
-	trueDirection.x = cy * cp;
-	trueDirection.y = sp;
-	trueDirection.z = sy * cp;
-	trueDirection = glm::normalize(trueDirection);
-
-	return trueDirection;
-}
-
 void ECS::CameraController::updateRotation(Transform& transform)
 {
-	float cy = cos(glm::radians(yaw));
+	glm::quat qYaw = glm::angleAxis(glm::radians(yaw), glm::vec3(0.0f, 1.0f, 0.0f));
+	glm::quat qPitch = glm::angleAxis(glm::radians(pitch), glm::vec3(1.0f, 0.0f, 0.0f));
+	transform.rotation = qYaw * qPitch;
+	transform.dirty = true;
+
+	/*float cy = cos(glm::radians(yaw));
 	float sy = sin(glm::radians(yaw));
 	float cp = cos(glm::radians(pitch));
 	float sp = sin(glm::radians(pitch));
@@ -68,7 +57,7 @@ void ECS::CameraController::updateRotation(Transform& transform)
 	trueDirection = glm::normalize(trueDirection);
 
 	transform.rotation = glm::rotation(glm::vec3(0, 0, -1), trueDirection);
-	transform.dirty = true;
+	transform.dirty = true;*/
 }
 
 //void ECS::Material::makeMaterialUnique()
