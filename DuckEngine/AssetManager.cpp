@@ -88,15 +88,91 @@ TextureID AssetManager::LoadEmbeddedTexture(const aiTexture* texture, const std:
 	return id;
 }
 
-void AssetManager::LoadDefaultTexture()
+TextureID AssetManager::GenerateDefaultTexture(glm::ivec4 value)
 {
+	TextureID id = nextTextureID++;
 	auto tex = std::make_shared<TextureAsset>();
 	tex->width = 1;
 	tex->height = 1;
 	tex->channels = 4;
-	tex->pixels = { 255, 255, 255, 255 }; // White pixel
-	tex->name = "DEFAULT_WHITE_TEXTURE";
-	textures[INVALID_TEXTURE] = tex;
+	tex->pixels = {(unsigned char)value.r, (unsigned char)value.g, (unsigned char)value.b, (unsigned char)value.a}; // White pixel
+	tex->name = "DEFAULT_TEXTURE";
+	textures[id] = tex;
+	return id;
+}
+
+MeshID AssetManager::GeneratePlaneMesh()
+{
+	MeshID id = nextMeshID++;
+	std::shared_ptr<MeshAsset> mesh = std::make_shared<MeshAsset>();
+	mesh->vertices = {
+		//Positions           //Normals           //TexCoords   //Tangents          //Bitangents
+		{{-0.5f, 0.0f, 0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1.0f}},
+		{{ 0.5f, 0.0f, 0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1.0f}},
+		{{ 0.5f, 0.0f,  -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1.0f}},
+		{{-0.5f, 0.0f,  -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1.0f}}
+	};
+	mesh->indices = {
+		0, 1, 2,
+		0, 2, 3
+	};
+	mesh->name = "Generated_Plane_Mesh";
+	meshes[id] = mesh;
+	return id;
+}
+
+MeshID AssetManager::GeneratePlaneMesh(float width, float height, int segmentsX, int segmentsY)
+{
+	MeshID id = nextMeshID++;
+	std::shared_ptr<MeshAsset> mesh = std::make_shared<MeshAsset>();
+
+	float halfWidth = width / 2.0f;
+	float halfHeight = height / 2.0f;
+
+	float dx = width / (float)segmentsX;
+	float dy = height / (float)segmentsY;
+
+	float du = 1.0f / (float)segmentsX;
+	float dv = 1.0f / (float)segmentsY;
+
+	for (int y = 0; y <= segmentsY; y++)
+	{
+		for (int x = 0; x <= segmentsX; x++)
+		{
+			Vertex vertex;
+			vertex.position = glm::vec3(-halfWidth + x * dx, 0.0f, -halfHeight + y * dy);
+			vertex.normal = glm::vec3(0.0f, 1.0f, 0.0f);
+			vertex.texCoords = glm::vec2(x * du, y * dv);
+			vertex.tangent = glm::vec3(1.0f, 0.0f, 0.0f);
+			vertex.bitangent = glm::vec3(0.0f, 0.0f, -1.0f);
+			mesh->vertices.push_back(vertex);
+		}
+	}
+
+	for (int y = 0; y < segmentsY; y++)
+	{
+		for (int x = 0; x < segmentsX; x++)
+		{
+			int row1 = y * (segmentsX + 1);
+			int row2 = (y + 1) * (segmentsX + 1);
+			mesh->indices.push_back(row1 + x);
+			mesh->indices.push_back(row1 + x + 1);
+			mesh->indices.push_back(row2 + x + 1);
+			mesh->indices.push_back(row1 + x);
+			mesh->indices.push_back(row2 + x + 1);
+			mesh->indices.push_back(row2 + x);
+		}
+	}
+
+	mesh->name = "Generated_Plane_Mesh";
+	meshes[id] = mesh;
+	return id;
+}
+
+MeshID AssetManager::LoadCubeMesh()
+{
+	auto mesh = LoadModel("resources/cube/cube.obj");
+	return MeshID();
 }
 
 MaterialID AssetManager::LoadMaterial(const aiMaterial* material, const aiScene* scene, const std::string& path)

@@ -53,6 +53,7 @@ public:
 	std::shared_ptr<GPUMaterial> GetMaterial(MaterialID id) const;
 
 	void LoadFromAssetManager(const AssetManager& assets);
+	void LoadDefaultResources(AssetManager& assets);
 
 	void LoadDefaultShaders();
 	bool AddShader(const std::string& type, const std::string& vertexPath, const std::string& fragmentPath);

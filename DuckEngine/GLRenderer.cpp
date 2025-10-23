@@ -9,6 +9,7 @@ void GLRenderer::Initialize()
 	gpuResourceManager.LoadDefaultShaders();
 
 	gpuResourceManager.LoadFromAssetManager(assetManager);
+	gpuResourceManager.LoadDefaultResources(assetManager);
 	gpuResourceManager.CreateUBO("CameraData", sizeof(UBOData::Camera), 0);//binding point 0
 	gpuResourceManager.CreateUBO("LightsData", sizeof(UBOData::Lights), 1);//binding point 1
 }

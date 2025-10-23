@@ -123,8 +123,6 @@ void RealTimeRendererWindow::Init()
 		registry.addComponent<ECS::Light>(lightCube, light);
 	}*/
 
-	assetManager.LoadDefaultTexture();
-
 	auto cubeModel = assetManager.LoadModel("resources/backpack/backpack.obj");
 	for (MeshID meshID : cubeModel)
 	{

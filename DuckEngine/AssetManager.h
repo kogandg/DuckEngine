@@ -89,7 +89,10 @@ public:
 	TextureID LoadTexture(const std::string& path);
 	TextureID LoadEmbeddedTexture(const aiTexture* texture, const std::string& name);
 
-	void LoadDefaultTexture();
+	TextureID GenerateDefaultTexture(glm::ivec4 value = glm::ivec4(255));
+	MeshID GeneratePlaneMesh();
+	MeshID GeneratePlaneMesh(float width, float height, int segmentsX, int segmentsY);
+	MeshID LoadCubeMesh();
 
 	MaterialID LoadMaterial(const aiMaterial* material, const aiScene* scene, const std::string& path);
 

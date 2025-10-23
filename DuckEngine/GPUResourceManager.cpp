@@ -135,16 +135,20 @@ void GPUResourceManager::LoadFromAssetManager(const AssetManager& assets)
 	}
 	for (const auto& [id, tex] : assets.GetAllTextures()) 
 	{
-		auto gpuTex = UploadTexture(id, *tex);
-		if (id == INVALID_TEXTURE)
-		{
-			defaultTextureID = gpuTex->id;
-		}
+		UploadTexture(id, *tex);
 	}
 	for (const auto& [id, mat] : assets.GetAllMaterials()) 
 	{
 		CreateMaterial(id, *mat);
 	}
+}
+
+void GPUResourceManager::LoadDefaultResources(AssetManager& assets)
+{
+	TextureID defaultTexID = assets.GenerateDefaultTexture(glm::ivec4(255, 255, 255, 255));
+	auto defaultTex = assets.GetTexture(defaultTexID);
+	auto gpuTex = UploadTexture(defaultTexID, *defaultTex);
+	defaultTextureID = gpuTex->id;
 }
 
 void GPUResourceManager::LoadDefaultShaders()
