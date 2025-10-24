@@ -21,6 +21,9 @@ void RealTimeRendererWindow::Init()
 
 	glDisable(GL_CULL_FACE);
 
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	if (glfwRawMouseMotionSupported())
 	{
 		glfwSetInputMode(glfwWindow, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
@@ -123,20 +126,101 @@ void RealTimeRendererWindow::Init()
 		registry.addComponent<ECS::Light>(lightCube, light);
 	}*/
 
-	auto cubeModel = assetManager.LoadModel("resources/backpack/backpack.obj");
-	for (MeshID meshID : cubeModel)
+	//auto cubeModel = assetManager.LoadModel("resources/backpack/backpack.obj");
+	//for (MeshID meshID : cubeModel)
+	//{
+	//	auto entity = registry.CreateEntity();
+	//	ECS::Mesh meshComp;
+	//	meshComp.meshID = meshID;
+	//	registry.addComponent<ECS::Mesh>(entity, meshComp);
+	//	MaterialID matID = assetManager.GetMeshMaterial(meshID);
+	//	auto matData = assetManager.GetMaterial(matID);
+
+	//	//matData->type = "unlit";
+	//	ECS::Material matComp;
+	//	matComp.materialID = matID;
+	//	registry.addComponent<ECS::Material>(entity, matComp);
+	//}
+
 	{
+		auto floorMesh = assetManager.GeneratePlaneMesh();
 		auto entity = registry.CreateEntity();
 		ECS::Mesh meshComp;
-		meshComp.meshID = meshID;
+		meshComp.meshID = floorMesh;
 		registry.addComponent<ECS::Mesh>(entity, meshComp);
-		MaterialID matID = assetManager.GetMeshMaterial(meshID);
-		auto matData = assetManager.GetMaterial(matID);
 
-		//matData->type = "unlit";
+		MaterialAsset floorMatData;
+		floorMatData.textures["baseTexture"] = assetManager.LoadTexture("resources/default.png");
+		floorMatData.vectors["baseColor"] = glm::vec3(1.0f);
+		floorMatData.scalars["opacity"] = 1.0f;
+		floorMatData.type = "unlit";
+
+		MaterialID floorMatID = assetManager.AddMaterial(floorMatData);
 		ECS::Material matComp;
-		matComp.materialID = matID;
+		matComp.materialID = floorMatID;
 		registry.addComponent<ECS::Material>(entity, matComp);
+
+		auto& transform = registry.addComponent<ECS::Transform>(entity, ECS::Transform());
+		transform.scale = glm::vec3(10.0f, 1.0f, 10.0f);
+		transform.position = glm::vec3(0.0f, -0.5f, 0.0f);
+	}
+
+	{
+		auto cubeModel = assetManager.LoadCubeMesh();
+
+		
+		ECS::Mesh meshComp;
+		meshComp.meshID = cubeModel;
+		MaterialID cubeMatID = assetManager.GetMeshMaterial(cubeModel);
+		auto matData = assetManager.GetMaterial(cubeMatID);
+		matData->type = "unlit";
+		ECS::Material matComp;
+		matComp.materialID = cubeMatID;
+
+		auto cube1 = registry.CreateEntity();
+		registry.addComponent<ECS::Mesh>(cube1, meshComp);
+		registry.addComponent<ECS::Material>(cube1, matComp);
+		auto& transform1 = registry.addComponent<ECS::Transform>(cube1, ECS::Transform());
+		transform1.position = glm::vec3(-1.0f, 0.0f, -1.0f);
+
+		auto cube2 = registry.CreateEntity();
+		registry.addComponent<ECS::Mesh>(cube2, meshComp);
+		registry.addComponent<ECS::Material>(cube2, matComp);
+		auto& transform2 = registry.addComponent<ECS::Transform>(cube2, ECS::Transform());
+		transform2.position = glm::vec3(2.0f, 0.0f, 0.0f);
+	}
+
+	{
+		std::vector<glm::vec3> vegetation;
+		vegetation.push_back(glm::vec3(-1.5f, 0.0f, -0.48f));
+		vegetation.push_back(glm::vec3(1.5f, 0.0f, 0.51f));
+		vegetation.push_back(glm::vec3(0.0f, 0.0f, 0.7f));
+		vegetation.push_back(glm::vec3(-0.3f, 0.0f, -2.3f));
+		vegetation.push_back(glm::vec3(0.5f, 0.0f, -0.6f));
+
+		auto vegMesh = assetManager.GeneratePlaneMesh();
+		ECS::Mesh meshComp;
+		meshComp.meshID = vegMesh;
+
+		MaterialAsset vegMatData;
+		vegMatData.textures["baseTexture"] = assetManager.LoadTexture("resources/blending_transparent_window.png");
+		vegMatData.vectors["baseColor"] = glm::vec3(1.0f);
+		vegMatData.scalars["opacity"] = 1.0f;
+		vegMatData.type = "unlit";
+
+		MaterialID vegMatID = assetManager.AddMaterial(vegMatData);
+		ECS::Material matComp;
+		matComp.materialID = vegMatID;
+
+		for (int i = 0; i < vegetation.size(); i++)
+		{
+			auto entity = registry.CreateEntity();
+			registry.addComponent<ECS::Mesh>(entity, meshComp);
+			registry.addComponent<ECS::Material>(entity, matComp);
+			auto& transform = registry.addComponent<ECS::Transform>(entity, ECS::Transform());
+			transform.position = vegetation[i];
+			transform.rotation = glm::angleAxis(glm::radians(-90.0f), glm::vec3(1, 0, 0));
+		}
 	}
 
 	ECS::Transform cameraTransform;

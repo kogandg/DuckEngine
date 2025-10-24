@@ -95,7 +95,7 @@ TextureID AssetManager::GenerateDefaultTexture(glm::ivec4 value)
 	tex->width = 1;
 	tex->height = 1;
 	tex->channels = 4;
-	tex->pixels = {(unsigned char)value.r, (unsigned char)value.g, (unsigned char)value.b, (unsigned char)value.a}; // White pixel
+	tex->pixels = { (unsigned char)value.r, (unsigned char)value.g, (unsigned char)value.b, (unsigned char)value.a }; // White pixel
 	tex->name = "DEFAULT_TEXTURE";
 	textures[id] = tex;
 	return id;
@@ -107,10 +107,10 @@ MeshID AssetManager::GeneratePlaneMesh()
 	std::shared_ptr<MeshAsset> mesh = std::make_shared<MeshAsset>();
 	mesh->vertices = {
 		//Positions           //Normals           //TexCoords   //Tangents          //Bitangents
-		{{-0.5f, 0.0f, 0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1.0f}},
-		{{ 0.5f, 0.0f, 0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1.0f}},
-		{{ 0.5f, 0.0f,  -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1.0f}},
-		{{-0.5f, 0.0f,  -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1.0f}}
+		{{-0.5f, 0.0f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1.0f}},
+		{{0.5f, 0.0f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1.0f}},
+		{{0.5f, 0.0f, 0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1.0f}},
+		{{-0.5f, 0.0f, 0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1.0f}}
 	};
 	mesh->indices = {
 		0, 1, 2,
@@ -171,8 +171,8 @@ MeshID AssetManager::GeneratePlaneMesh(float width, float height, int segmentsX,
 
 MeshID AssetManager::LoadCubeMesh()
 {
-	auto mesh = LoadModel("resources/cube/cube.obj");
-	return MeshID();
+	auto mesh = LoadModel("resources/cube/cube.obj")[0];
+	return mesh;
 }
 
 MaterialID AssetManager::LoadMaterial(const aiMaterial* material, const aiScene* scene, const std::string& path)
@@ -261,6 +261,14 @@ MaterialID AssetManager::LoadMaterial(const aiMaterial* material, const aiScene*
 	loadTextureHelper(aiTextureType_HEIGHT, "heightTexture");
 	loadTextureHelper(aiTextureType_EMISSIVE, "emissiveTexture");
 
+	materials[id] = mat;
+	return id;
+}
+
+MaterialID AssetManager::AddMaterial(const MaterialAsset& material)
+{
+	MaterialID id = nextMaterialID++;
+	auto mat = std::make_shared<MaterialAsset>(material);
 	materials[id] = mat;
 	return id;
 }

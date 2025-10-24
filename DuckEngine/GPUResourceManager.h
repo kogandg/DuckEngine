@@ -19,14 +19,28 @@ struct GPUTexture
 	int channels = 0;
 };
 
+
+enum class BlendMode : int
+{
+	Opaque = 0,
+	Mask = 1, //alpha test and discard
+	Blend = 2 //alpha blend
+};
+
 struct GPUMaterial
 {
 	std::string type; // for shader selection
 	std::unordered_map<std::string, float> scalars;
 	std::unordered_map<std::string, glm::vec3> vectors;
 	std::unordered_map<std::string, std::shared_ptr<GPUTexture>> textures;
-	//glm::vec3 baseColor = glm::vec3(1.0f);
-	//float shininess = 32.0f;
+
+	BlendMode blendMode = BlendMode::Opaque;
+	float alphaCutoff = 0.01f;
+
+	inline bool IsTransparent() const
+	{
+		return blendMode == BlendMode::Blend;
+	}
 };
 
 struct GPUUBO

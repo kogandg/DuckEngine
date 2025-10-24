@@ -95,6 +95,7 @@ public:
 	MeshID LoadCubeMesh();
 
 	MaterialID LoadMaterial(const aiMaterial* material, const aiScene* scene, const std::string& path);
+	MaterialID AddMaterial(const MaterialAsset& material);
 
 	inline void SetMeshMaterial(MeshID mesh, MaterialID material);// { meshMaterialLinks[mesh] = material; }//maybe add checks for contains
 	MaterialID GetMeshMaterial(MeshID mesh);// { return meshMaterialLinks[mesh]; }

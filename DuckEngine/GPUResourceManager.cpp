@@ -47,9 +47,14 @@ GLuint GPUResourceManager::createTexture2D(const TextureAsset& texture)
 	glBindTexture(GL_TEXTURE_2D, texID);
 
 	GLenum format;
+	GLint borderBehavior = GL_REPEAT;
 	if (texture.channels == 1) format = GL_RED;
 	else if (texture.channels == 3) format = GL_RGB;
-	else if (texture.channels == 4) format = GL_RGBA;
+	else if (texture.channels == 4)
+	{
+		format = GL_RGBA;
+		borderBehavior = GL_CLAMP_TO_EDGE;
+	}
 	else
 	{
 		std::cout << "Unsupported texture format with " << texture.channels << " channels." << std::endl;
@@ -57,8 +62,10 @@ GLuint GPUResourceManager::createTexture2D(const TextureAsset& texture)
 	}
 
 	glTexImage2D(GL_TEXTURE_2D, 0, format, texture.width, texture.height, 0, format, GL_UNSIGNED_BYTE, texture.pixels.data());
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, borderBehavior);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, borderBehavior);
+
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glGenerateMipmap(GL_TEXTURE_2D);
@@ -110,11 +117,47 @@ std::shared_ptr<GPUMaterial> GPUResourceManager::CreateMaterial(MaterialID id, c
 
 	gpuMat->scalars = material.scalars;
 	gpuMat->vectors = material.vectors;
-	
+
 	for (auto textureID : material.textures)
 	{
 		auto tex = GetTexture(textureID.second);
 		if (tex) gpuMat->textures[textureID.first] = tex;
+	}
+
+	float opacity = 1.0f;
+	auto itOpacity = gpuMat->scalars.find("opacity");
+	if(itOpacity != gpuMat->scalars.end())
+	{
+		opacity = itOpacity->second;
+	}
+
+	float alphaCutoff = 0.01f;
+	auto itAlphaCutoff = gpuMat->scalars.find("alphaCutoff");
+	if (itAlphaCutoff != gpuMat->scalars.end())
+	{
+		alphaCutoff = itAlphaCutoff->second;
+	}
+
+	bool hasAlphaTexture = false;
+	auto itBaseTex = gpuMat->textures.find("baseTexture");
+	if (itBaseTex != gpuMat->textures.end() && itBaseTex->second)
+	{
+		int channels = itBaseTex->second->channels;
+		if (channels == 4) hasAlphaTexture = true;
+	}
+
+	if (itAlphaCutoff != gpuMat->scalars.end())
+	{
+		gpuMat->blendMode = BlendMode::Mask;
+		gpuMat->alphaCutoff = alphaCutoff;
+	}
+	else if (opacity < 1.0f || hasAlphaTexture)
+	{
+		gpuMat->blendMode = BlendMode::Blend;
+	}
+	else
+	{
+		gpuMat->blendMode = BlendMode::Opaque;
 	}
 
 	materialCache[id] = gpuMat;
@@ -129,15 +172,15 @@ std::shared_ptr<GPUMaterial> GPUResourceManager::GetMaterial(MaterialID id) cons
 
 void GPUResourceManager::LoadFromAssetManager(const AssetManager& assets)
 {
-	for (const auto& [id, mesh] : assets.GetAllMeshes()) 
+	for (const auto& [id, mesh] : assets.GetAllMeshes())
 	{
 		UploadMesh(id, *mesh);
 	}
-	for (const auto& [id, tex] : assets.GetAllTextures()) 
+	for (const auto& [id, tex] : assets.GetAllTextures())
 	{
 		UploadTexture(id, *tex);
 	}
-	for (const auto& [id, mat] : assets.GetAllMaterials()) 
+	for (const auto& [id, mat] : assets.GetAllMaterials())
 	{
 		CreateMaterial(id, *mat);
 	}

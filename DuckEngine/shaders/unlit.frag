@@ -12,6 +12,8 @@ struct Material
     sampler2D emissiveTexture;
 
     float opacity;
+
+    float alphaCutoff;
 };
 
 uniform Material material;
@@ -20,11 +22,16 @@ void main()
 {
     vec3 color = vec3(0.0);
 
-    vec3 base = material.baseColor * texture(material.baseTexture, vTexCoord).rgb;
+    vec4 baseTex = texture(material.baseTexture, vTexCoord);
+
+    float finalAlpha = material.opacity * baseTex.a;
+    if(finalAlpha <= material.alphaCutoff) discard;
+
+    vec3 base = material.baseColor * baseTex.rgb;
     vec3 emissive = material.emissiveColor * texture(material.emissiveTexture, vTexCoord).rgb;
 
     color += base;
     color += emissive;
 
-    FragColor = vec4(color, material.opacity);
+    FragColor = vec4(color, finalAlpha);
 }

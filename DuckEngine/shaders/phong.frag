@@ -50,6 +50,8 @@ struct Material
     sampler2D emissiveTexture;
 
     float opacity;
+
+    float alphaCutoff;
 };
 
 uniform Material material;
@@ -78,13 +80,17 @@ void main()
 {
     vec3 result = vec3(0.0);
 
+    vec4 baseTex = texture(material.baseTexture, vTexCoord);
+
+    float finalAlpha = material.opacity * baseTex.a;
+    if(finalAlpha <= material.alphaCutoff) discard;
+
+    vec3 baseDiffuse = material.baseColor * baseTex.rgb;
+    vec3 baseSpecular = material.specularColor * texture(material.specularTexture, vTexCoord).rgb;
+    vec3 baseEmissive = material.emissiveColor * texture(material.emissiveTexture, vTexCoord).rgb;
 
     vec3 normal = normalize(vNormal);
     vec3 viewDir = normalize(viewPos - vFragPos);
-
-    vec3 baseDiffuse = material.baseColor * vec3(texture(material.baseTexture, vTexCoord));
-    vec3 baseSpecular = material.specularColor * vec3(texture(material.specularTexture, vTexCoord));
-    vec3 baseEmissive = material.emissiveColor * texture(material.emissiveTexture, vTexCoord).rgb;
 
     for(int i = 0; i < numLights[0]; i++)
     {
@@ -103,7 +109,8 @@ void main()
     }
 
     result += baseEmissive;
-    FragColor = vec4(result, material.opacity);
+
+    FragColor = vec4(result, finalAlpha);
 }
 
 vec3 CalcDirLight(Light light, vec3 normal, vec3 viewDir, vec3 baseDiffuse, vec3 baseSpecular)
