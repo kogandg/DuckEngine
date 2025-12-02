@@ -4,7 +4,17 @@
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
 # Ignore the resources folder
-resources/
+/DuckEngine/resources/fonts/
+/DuckEngine/resources/models/
+/DuckEngine/resources/scenes/
+/DuckEngine/resources/textures/
+
+!/DuckEngine/resources/shaders/
+
+
+# Igonre vcpkg
+vcpkg_installed
+
 
 # User-specific files
 *.rsuser

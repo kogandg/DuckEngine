@@ -13,426 +13,390 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Header Files\imgui">
-      <UniqueIdentifier>{447f2406-3674-4a5b-87bf-745f517e5be0}</UniqueIdentifier>
+    <Filter Include="Header Files\Embree">
+      <UniqueIdentifier>{7905c300-d19c-4c22-8fb2-1df81d226421}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\imgui">
-      <UniqueIdentifier>{d4e015fb-ac1f-4981-818a-833e90911689}</UniqueIdentifier>
+    <Filter Include="Header Files\Embree\Lights">
+      <UniqueIdentifier>{974258b2-151b-47c6-94d4-b5774900f8c3}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\stb">
-      <UniqueIdentifier>{3f0041e3-db91-457c-a5ca-dbc8cd089b2f}</UniqueIdentifier>
+    <Filter Include="Header Files\Embree\Scene">
+      <UniqueIdentifier>{cc150f16-3486-4657-91bf-52809edb0407}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Resource Files\fonts">
-      <UniqueIdentifier>{ef495e04-b159-421d-af7f-49a3ad1e0085}</UniqueIdentifier>
+    <Filter Include="Header Files\Graphics">
+      <UniqueIdentifier>{17ff3a68-d112-4398-9483-f839885b49b2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\geometry">
-      <UniqueIdentifier>{8a0f38d2-5ba3-4cbd-9be2-c6a7db88308d}</UniqueIdentifier>
+    <Filter Include="Header Files\Graphics\Buffers">
+      <UniqueIdentifier>{ad939bbe-49f6-4009-9719-0a8b7d7ce42e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\geometry">
-      <UniqueIdentifier>{99d4059d-2bdc-44e1-9c3a-e4c3e5dd3733}</UniqueIdentifier>
+    <Filter Include="Header Files\Integrators">
+      <UniqueIdentifier>{c3241818-4744-4da6-bc79-d5eca64cc179}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\windows">
-      <UniqueIdentifier>{60ebe306-12e1-4e8f-8bf6-85cfc48b187e}</UniqueIdentifier>
+    <Filter Include="Header Files\Core">
+      <UniqueIdentifier>{bf74bb2c-c82a-4501-970d-9c91ca428d53}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\windows">
-      <UniqueIdentifier>{91ec3956-f644-449d-b381-58e8c070f687}</UniqueIdentifier>
+    <Filter Include="Header Files\Window">
+      <UniqueIdentifier>{c448dc3c-b7ff-43f6-bc96-537e3308c3e1}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\integrators">
-      <UniqueIdentifier>{5029a52d-a5bf-453e-b353-be8569781aeb}</UniqueIdentifier>
+    <Filter Include="Header Files\Scene">
+      <UniqueIdentifier>{9648486d-13c2-4152-bdf7-df6e5526bacd}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\integrators">
-      <UniqueIdentifier>{72630e72-dec6-486d-8acf-05a03b62496d}</UniqueIdentifier>
+    <Filter Include="Source Files\Core">
+      <UniqueIdentifier>{eec533b8-9293-463c-a6b0-0fd2d64db332}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Resource Files\scenes">
-      <UniqueIdentifier>{aa69fda0-5bbb-4a0e-8079-cab18e6a0abd}</UniqueIdentifier>
+    <Filter Include="Source Files\Embree">
+      <UniqueIdentifier>{49fa4bc1-fa1e-405a-af2b-eb96ac3fa733}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Resource Files\scenes\1">
-      <UniqueIdentifier>{53378665-46ac-44b7-af15-76d18690b7e8}</UniqueIdentifier>
+    <Filter Include="Source Files\Graphics">
+      <UniqueIdentifier>{6b8757bb-9ee0-4ee1-8d78-d476930d5a69}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\sceneObjects">
-      <UniqueIdentifier>{2a715300-1c4f-4522-89bf-decd0617e71f}</UniqueIdentifier>
+    <Filter Include="Source Files\Integrators">
+      <UniqueIdentifier>{34a002a6-2250-4279-85cc-dc6ec730a446}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\sceneObjects">
-      <UniqueIdentifier>{2689608e-2757-4560-b390-e67c4ea5192e}</UniqueIdentifier>
+    <Filter Include="Source Files\Scene">
+      <UniqueIdentifier>{f310de3e-ea87-4ef3-b280-8586520993d3}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\sceneObjects\lights">
-      <UniqueIdentifier>{f1649c1b-0a94-4947-8ef5-001a01169fcc}</UniqueIdentifier>
+    <Filter Include="Source Files\Window">
+      <UniqueIdentifier>{9e4e3478-c432-48c5-8a25-46b5bcbb554d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\sceneObjects\lights">
-      <UniqueIdentifier>{17dfb298-b3d5-4d9c-924b-905b5df1ffe2}</UniqueIdentifier>
+    <Filter Include="Source Files\Embree\Lights">
+      <UniqueIdentifier>{13a84cfb-47a3-45f8-91d6-010f2d72999f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Resource Files\shaders">
-      <UniqueIdentifier>{b0bf7d21-23d2-4b59-9ea8-78b1029cbe08}</UniqueIdentifier>
+    <Filter Include="Source Files\Embree\Scene">
+      <UniqueIdentifier>{5ee1d10d-063b-446f-9231-eaa1f34c317f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Graphics\Buffers">
+      <UniqueIdentifier>{955c3556-685d-47bf-80d4-62303e7490ea}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Shaders">
+      <UniqueIdentifier>{09e8f66e-59e7-4081-9def-86d8e9241302}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Fonts">
+      <UniqueIdentifier>{8ebf14c0-5a0c-4ec4-bba4-1d9447703ad7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="External">
+      <UniqueIdentifier>{d5919646-f5f8-479c-860d-b999c42ce921}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="External\stb">
+      <UniqueIdentifier>{3e4ad149-54c8-414f-8b6c-be35996703ce}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Scenes">
+      <UniqueIdentifier>{8439355e-84be-4f76-9fde-0abf66335f24}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Textures">
+      <UniqueIdentifier>{dcbfd689-ac88-4cf8-9b08-133eb1b8bf68}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="imgui\imgui.cpp">
-      <Filter>Source Files\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="imgui\imgui_demo.cpp">
-      <Filter>Source Files\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="imgui\imgui_draw.cpp">
-      <Filter>Source Files\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="imgui\imgui_impl_glfw.cpp">
-      <Filter>Source Files\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="imgui\imgui_impl_opengl3.cpp">
-      <Filter>Source Files\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="imgui\imgui_stdlib.cpp">
-      <Filter>Source Files\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="imgui\imgui_tables.cpp">
-      <Filter>Source Files\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="imgui\imgui_widgets.cpp">
-      <Filter>Source Files\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="OfflineRenderer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Scene.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="EmbreeGeometry.cpp">
-      <Filter>Source Files\geometry</Filter>
-    </ClCompile>
-    <ClCompile Include="Triangle.cpp">
-      <Filter>Source Files\geometry</Filter>
-    </ClCompile>
-    <ClCompile Include="ImageWindow.cpp">
-      <Filter>Source Files\windows</Filter>
-    </ClCompile>
-    <ClCompile Include="OfflineRendererWindow.cpp">
-      <Filter>Source Files\windows</Filter>
-    </ClCompile>
-    <ClCompile Include="SelectionWindow.cpp">
-      <Filter>Source Files\windows</Filter>
-    </ClCompile>
-    <ClCompile Include="Window.cpp">
-      <Filter>Source Files\windows</Filter>
-    </ClCompile>
-    <ClCompile Include="WindowManager.cpp">
-      <Filter>Source Files\windows</Filter>
-    </ClCompile>
-    <ClCompile Include="Sphere.cpp">
-      <Filter>Source Files\geometry</Filter>
-    </ClCompile>
-    <ClCompile Include="Material.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RayTracerIntegrator.cpp">
-      <Filter>Source Files\integrators</Filter>
-    </ClCompile>
-    <ClCompile Include="SceneLoader.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Cube.cpp">
-      <Filter>Source Files\geometry</Filter>
-    </ClCompile>
-    <ClCompile Include="Tokenizer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderTarget.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Integrator.cpp">
-      <Filter>Source Files\integrators</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderableObject.cpp">
-      <Filter>Source Files\sceneObjects</Filter>
-    </ClCompile>
-    <ClCompile Include="SceneObject.cpp">
-      <Filter>Source Files\sceneObjects</Filter>
-    </ClCompile>
-    <ClCompile Include="Camera.cpp">
-      <Filter>Source Files\sceneObjects</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectionalLight.cpp">
-      <Filter>Source Files\sceneObjects\lights</Filter>
-    </ClCompile>
-    <ClCompile Include="PointLight.cpp">
-      <Filter>Source Files\sceneObjects\lights</Filter>
-    </ClCompile>
-    <ClCompile Include="ThreadPool.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RealTimeRendererWindow.cpp">
-      <Filter>Source Files\windows</Filter>
-    </ClCompile>
-    <ClCompile Include="Shader.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="stb_impl.cpp">
-      <Filter>Header Files\stb</Filter>
-    </ClCompile>
-    <ClCompile Include="ECSRegistry.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="InputManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="AssetManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GPUResourceManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GLRenderer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="imgui\imconfig.h">
-      <Filter>Header Files\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui\imgui.h">
-      <Filter>Header Files\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui\imgui_impl_glfw.h">
-      <Filter>Header Files\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui\imgui_impl_opengl3.h">
-      <Filter>Header Files\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui\imgui_impl_opengl3_loader.h">
-      <Filter>Header Files\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui\imgui_internal.h">
-      <Filter>Header Files\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui\imgui_stdlib.h">
-      <Filter>Header Files\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui\imstb_rectpack.h">
-      <Filter>Header Files\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui\imstb_textedit.h">
-      <Filter>Header Files\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui\imstb_truetype.h">
-      <Filter>Header Files\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="stb\stb_image.h">
-      <Filter>Header Files\stb</Filter>
-    </ClInclude>
-    <ClInclude Include="stb\stb_image_write.h">
-      <Filter>Header Files\stb</Filter>
-    </ClInclude>
-    <ClInclude Include="OfflineRenderer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Scene.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Intersection.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="EmbreeGeometry.h">
-      <Filter>Header Files\geometry</Filter>
-    </ClInclude>
-    <ClInclude Include="Geometry.h">
-      <Filter>Header Files\geometry</Filter>
-    </ClInclude>
-    <ClInclude Include="Triangle.h">
-      <Filter>Header Files\geometry</Filter>
-    </ClInclude>
-    <ClInclude Include="ImageWindow.h">
-      <Filter>Header Files\windows</Filter>
-    </ClInclude>
-    <ClInclude Include="OfflineRendererWindow.h">
-      <Filter>Header Files\windows</Filter>
-    </ClInclude>
-    <ClInclude Include="SelectionWindow.h">
-      <Filter>Header Files\windows</Filter>
-    </ClInclude>
-    <ClInclude Include="Window.h">
-      <Filter>Header Files\windows</Filter>
-    </ClInclude>
-    <ClInclude Include="WindowManager.h">
-      <Filter>Header Files\windows</Filter>
-    </ClInclude>
-    <ClInclude Include="Sphere.h">
-      <Filter>Header Files\geometry</Filter>
-    </ClInclude>
-    <ClInclude Include="Material.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Integrator.h">
-      <Filter>Header Files\integrators</Filter>
-    </ClInclude>
-    <ClInclude Include="RayTracerIntegrator.h">
-      <Filter>Header Files\integrators</Filter>
-    </ClInclude>
-    <ClInclude Include="SceneLoader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Cube.h">
-      <Filter>Header Files\geometry</Filter>
-    </ClInclude>
-    <ClInclude Include="Tokenizer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderTarget.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderableObject.h">
-      <Filter>Header Files\sceneObjects</Filter>
-    </ClInclude>
-    <ClInclude Include="SceneObject.h">
-      <Filter>Header Files\sceneObjects</Filter>
-    </ClInclude>
-    <ClInclude Include="Camera.h">
-      <Filter>Header Files\sceneObjects</Filter>
-    </ClInclude>
-    <ClInclude Include="Light.h">
-      <Filter>Header Files\sceneObjects\lights</Filter>
-    </ClInclude>
-    <ClInclude Include="PointLight.h">
-      <Filter>Header Files\sceneObjects\lights</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectionalLight.h">
-      <Filter>Header Files\sceneObjects\lights</Filter>
-    </ClInclude>
-    <ClInclude Include="ThreadPool.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RealTimeRendererWindow.h">
-      <Filter>Header Files\windows</Filter>
-    </ClInclude>
-    <ClInclude Include="Shader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ECSRegistry.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="InputManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GLFWInputMap.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="InputEnums.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="AssetManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GPUResourceManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="UBOData.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GLRenderer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="imgui\imgui.natstepfilter" />
-    <None Include="scene4-ambient.txt">
-      <Filter>Resource Files\scenes\1</Filter>
+    <None Include="vcpkg.json" />
+    <None Include="resources\shaders\color.frag">
+      <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="scene4-diffuse.txt">
-      <Filter>Resource Files\scenes\1</Filter>
+    <None Include="resources\shaders\color.vert">
+      <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="scene4-emission.txt">
-      <Filter>Resource Files\scenes\1</Filter>
+    <None Include="resources\shaders\default.frag">
+      <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="scene4-specular.txt">
-      <Filter>Resource Files\scenes\1</Filter>
+    <None Include="resources\shaders\default.vert">
+      <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="scene5.txt">
-      <Filter>Resource Files\scenes\1</Filter>
+    <None Include="resources\shaders\fragShader.frag">
+      <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="scene6.txt">
-      <Filter>Resource Files\scenes\1</Filter>
+    <None Include="resources\shaders\lightCube.frag">
+      <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="scene7.txt">
-      <Filter>Resource Files\scenes\1</Filter>
+    <None Include="resources\shaders\lightCube.vert">
+      <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="shaders\color.frag">
-      <Filter>Resource Files\shaders</Filter>
+    <None Include="resources\shaders\lighting.frag">
+      <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="shaders\color.vert">
-      <Filter>Resource Files\shaders</Filter>
+    <None Include="resources\shaders\lighting.vert">
+      <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="shaders\default.frag">
-      <Filter>Resource Files\shaders</Filter>
+    <None Include="resources\shaders\phong.frag">
+      <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="shaders\default.vert">
-      <Filter>Resource Files\shaders</Filter>
+    <None Include="resources\shaders\phong.vert">
+      <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="shaders\lightCube.frag">
-      <Filter>Resource Files\shaders</Filter>
+    <None Include="resources\shaders\texture.frag">
+      <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="shaders\lightCube.vert">
-      <Filter>Resource Files\shaders</Filter>
+    <None Include="resources\shaders\texture.vert">
+      <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="shaders\lighting.frag">
-      <Filter>Resource Files\shaders</Filter>
+    <None Include="resources\shaders\unlit.frag">
+      <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="shaders\lighting.vert">
-      <Filter>Resource Files\shaders</Filter>
+    <None Include="resources\shaders\unlit.vert">
+      <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="shaders\texture.frag">
-      <Filter>Resource Files\shaders</Filter>
-    </None>
-    <None Include="shaders\texture.vert">
-      <Filter>Resource Files\shaders</Filter>
-    </None>
-    <None Include="shaders\vertexShader.vert">
-      <Filter>Resource Files\shaders</Filter>
-    </None>
-    <None Include="shaders\fragShader.frag">
-      <Filter>Resource Files\shaders</Filter>
-    </None>
-    <None Include="shaders\unlit.frag">
-      <Filter>Resource Files\shaders</Filter>
-    </None>
-    <None Include="shaders\unlit.vert">
-      <Filter>Resource Files\shaders</Filter>
-    </None>
-    <None Include="shaders\phong.frag">
-      <Filter>Resource Files\shaders</Filter>
-    </None>
-    <None Include="shaders\phong.vert">
-      <Filter>Resource Files\shaders</Filter>
+    <None Include="resources\shaders\vertexShader.vert">
+      <Filter>Resource Files\Shaders</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Natvis Include="imgui\imgui.natvis" />
+    <ClInclude Include="include\embree\lights\DirectionalLight.h">
+      <Filter>Header Files\Embree\Lights</Filter>
+    </ClInclude>
+    <ClInclude Include="include\embree\lights\Light.h">
+      <Filter>Header Files\Embree\Lights</Filter>
+    </ClInclude>
+    <ClInclude Include="include\embree\lights\PointLight.h">
+      <Filter>Header Files\Embree\Lights</Filter>
+    </ClInclude>
+    <ClInclude Include="include\embree\scene\Camera.h">
+      <Filter>Header Files\Embree\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="include\embree\scene\RenderableObject.h">
+      <Filter>Header Files\Embree\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="include\embree\scene\Scene.h">
+      <Filter>Header Files\Embree\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="include\embree\scene\SceneLoader.h">
+      <Filter>Header Files\Embree\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="include\embree\scene\SceneObject.h">
+      <Filter>Header Files\Embree\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="include\embree\Cube.h">
+      <Filter>Header Files\Embree</Filter>
+    </ClInclude>
+    <ClInclude Include="include\embree\EmbreeGeometry.h">
+      <Filter>Header Files\Embree</Filter>
+    </ClInclude>
+    <ClInclude Include="include\embree\Geometry.h">
+      <Filter>Header Files\Embree</Filter>
+    </ClInclude>
+    <ClInclude Include="include\embree\Intersection.h">
+      <Filter>Header Files\Embree</Filter>
+    </ClInclude>
+    <ClInclude Include="include\embree\Material.h">
+      <Filter>Header Files\Embree</Filter>
+    </ClInclude>
+    <ClInclude Include="include\embree\Sphere.h">
+      <Filter>Header Files\Embree</Filter>
+    </ClInclude>
+    <ClInclude Include="include\embree\Triangle.h">
+      <Filter>Header Files\Embree</Filter>
+    </ClInclude>
+    <ClInclude Include="include\graphics\buffers\GPUResourceManager.h">
+      <Filter>Header Files\Graphics\Buffers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\graphics\buffers\UBOData.h">
+      <Filter>Header Files\Graphics\Buffers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\graphics\GLRenderer.h">
+      <Filter>Header Files\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="include\graphics\OfflineRenderer.h">
+      <Filter>Header Files\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="include\graphics\RenderTarget.h">
+      <Filter>Header Files\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="include\graphics\Shader.h">
+      <Filter>Header Files\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="include\integrators\Integrator.h">
+      <Filter>Header Files\Integrators</Filter>
+    </ClInclude>
+    <ClInclude Include="include\integrators\RayTracerIntegrator.h">
+      <Filter>Header Files\Integrators</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core\ThreadPool.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\core\Tokenizer.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\window\GLFWInputMap.h">
+      <Filter>Header Files\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="include\window\ImageWindow.h">
+      <Filter>Header Files\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="include\window\InputEnums.h">
+      <Filter>Header Files\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="include\window\InputManager.h">
+      <Filter>Header Files\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="include\window\OfflineRendererWindow.h">
+      <Filter>Header Files\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="include\window\RealTimeRendererWindow.h">
+      <Filter>Header Files\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="include\window\SelectionWindow.h">
+      <Filter>Header Files\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="include\window\Window.h">
+      <Filter>Header Files\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="include\window\WindowManager.h">
+      <Filter>Header Files\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="include\scene\AssetManager.h">
+      <Filter>Header Files\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="include\scene\ECSRegistry.h">
+      <Filter>Header Files\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="external\stb\stb_image.h">
+      <Filter>External\stb</Filter>
+    </ClInclude>
+    <ClInclude Include="external\stb\stb_image_write.h">
+      <Filter>External\stb</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="out12.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="container.jpg">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="container2.png">
-      <Filter>Resource Files</Filter>
-    </Image>
+    <ClCompile Include="src\core\ThreadPool.cpp">
+      <Filter>Source Files\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\Tokenizer.cpp">
+      <Filter>Source Files\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\embree\Cube.cpp">
+      <Filter>Source Files\Embree</Filter>
+    </ClCompile>
+    <ClCompile Include="src\embree\EmbreeGeometry.cpp">
+      <Filter>Source Files\Embree</Filter>
+    </ClCompile>
+    <ClCompile Include="src\embree\Material.cpp">
+      <Filter>Source Files\Embree</Filter>
+    </ClCompile>
+    <ClCompile Include="src\embree\Sphere.cpp">
+      <Filter>Source Files\Embree</Filter>
+    </ClCompile>
+    <ClCompile Include="src\embree\Triangle.cpp">
+      <Filter>Source Files\Embree</Filter>
+    </ClCompile>
+    <ClCompile Include="src\embree\lights\DirectionalLight.cpp">
+      <Filter>Source Files\Embree\Lights</Filter>
+    </ClCompile>
+    <ClCompile Include="src\embree\lights\PointLight.cpp">
+      <Filter>Source Files\Embree\Lights</Filter>
+    </ClCompile>
+    <ClCompile Include="src\embree\scene\Camera.cpp">
+      <Filter>Source Files\Embree\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="src\embree\scene\RenderableObject.cpp">
+      <Filter>Source Files\Embree\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="src\embree\scene\Scene.cpp">
+      <Filter>Source Files\Embree\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="src\embree\scene\SceneLoader.cpp">
+      <Filter>Source Files\Embree\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="src\embree\scene\SceneObject.cpp">
+      <Filter>Source Files\Embree\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="src\graphics\buffers\GPUResourceManager.cpp">
+      <Filter>Source Files\Graphics\Buffers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\graphics\GLRenderer.cpp">
+      <Filter>Source Files\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="src\graphics\OfflineRenderer.cpp">
+      <Filter>Source Files\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="src\graphics\RenderTarget.cpp">
+      <Filter>Source Files\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="src\graphics\Shader.cpp">
+      <Filter>Source Files\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="src\integrators\Integrator.cpp">
+      <Filter>Source Files\Integrators</Filter>
+    </ClCompile>
+    <ClCompile Include="src\integrators\RayTracerIntegrator.cpp">
+      <Filter>Source Files\Integrators</Filter>
+    </ClCompile>
+    <ClCompile Include="src\window\ImageWindow.cpp">
+      <Filter>Source Files\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="src\window\InputManager.cpp">
+      <Filter>Source Files\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="src\window\OfflineRendererWindow.cpp">
+      <Filter>Source Files\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="src\window\RealTimeRendererWindow.cpp">
+      <Filter>Source Files\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="src\window\SelectionWindow.cpp">
+      <Filter>Source Files\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="src\window\Window.cpp">
+      <Filter>Source Files\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="src\window\WindowManager.cpp">
+      <Filter>Source Files\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="src\scene\AssetManager.cpp">
+      <Filter>Source Files\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="src\scene\ECSRegistry.cpp">
+      <Filter>Source Files\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="src\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="external\stb\stb_impl.cpp">
+      <Filter>External\stb</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Font Include="fonts\DroidSans.ttf">
-      <Filter>Resource Files\fonts</Filter>
+    <Font Include="resources\fonts\DroidSans.ttf">
+      <Filter>Resource Files\Fonts</Filter>
     </Font>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="scene1.txt">
-      <Filter>Resource Files\scenes\1</Filter>
+    <Text Include="resources\scenes\scene1.txt">
+      <Filter>Resource Files\Scenes</Filter>
     </Text>
-    <Text Include="scene2.txt">
-      <Filter>Resource Files\scenes\1</Filter>
+    <Text Include="resources\scenes\scene2.txt">
+      <Filter>Resource Files\Scenes</Filter>
     </Text>
-    <Text Include="scene3.txt">
-      <Filter>Resource Files\scenes\1</Filter>
+    <Text Include="resources\scenes\scene3.txt">
+      <Filter>Resource Files\Scenes</Filter>
     </Text>
+    <Text Include="resources\scenes\scene4-ambient.txt">
+      <Filter>Resource Files\Scenes</Filter>
+    </Text>
+    <Text Include="resources\scenes\scene4-diffuse.txt">
+      <Filter>Resource Files\Scenes</Filter>
+    </Text>
+    <Text Include="resources\scenes\scene4-emission.txt">
+      <Filter>Resource Files\Scenes</Filter>
+    </Text>
+    <Text Include="resources\scenes\scene4-specular.txt">
+      <Filter>Resource Files\Scenes</Filter>
+    </Text>
+    <Text Include="resources\scenes\scene5.txt">
+      <Filter>Resource Files\Scenes</Filter>
+    </Text>
+    <Text Include="resources\scenes\scene6.txt">
+      <Filter>Resource Files\Scenes</Filter>
+    </Text>
+    <Text Include="resources\scenes\scene7.txt">
+      <Filter>Resource Files\Scenes</Filter>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="resources\textures\blending_transparent_window.png">
+      <Filter>Resource Files\Textures</Filter>
+    </Image>
+    <Image Include="resources\textures\default.png">
+      <Filter>Resource Files\Textures</Filter>
+    </Image>
+    <Image Include="resources\textures\grass.png">
+      <Filter>Resource Files\Textures</Filter>
+    </Image>
   </ItemGroup>
 </Project>

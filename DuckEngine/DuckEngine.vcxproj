@@ -71,6 +71,9 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Label="Vcpkg">
+    <VcpkgEnableManifest>true</VcpkgEnableManifest>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -105,14 +108,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Program Files\Assimp\include;C:\Users\denni\Documents\libraries\glm;C:\Users\denni\Documents\libraries\embree-4.3.3.x64.windows\include;C:\Users\denni\Documents\libraries\glew-2.1.0\include;C:\Users\denni\Documents\libraries\imgui-docking;C:\Users\denni\Documents\libraries\glfw-3.4.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)external;$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\denni\Documents\libraries\embree-4.3.3.x64.windows\bin;C:\Users\denni\Documents\libraries\glew-2.1.0\lib\Release\x64;C:\Users\denni\Documents\libraries\glfw-3.4.bin.WIN64\lib-vc2022;C:\Program Files\Assimp\lib\x64;C:\Program Files\Assimp\bin\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>glfw3.lib;opengl32.lib;user32.lib;gdi32.lib;shell32.lib;glew32.lib;C:\Users\denni\Documents\libraries\embree-4.3.3.x64.windows\lib\embree4.lib;C:\Program Files\Assimp\lib\x64\assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -136,143 +139,119 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="AssetManager.cpp" />
-    <ClCompile Include="Camera.cpp" />
-    <ClCompile Include="Cube.cpp" />
-    <ClCompile Include="DirectionalLight.cpp" />
-    <ClCompile Include="ECSRegistry.cpp" />
-    <ClCompile Include="EmbreeGeometry.cpp" />
-    <ClCompile Include="GLRenderer.cpp" />
-    <ClCompile Include="GPUResourceManager.cpp" />
-    <ClCompile Include="ImageWindow.cpp" />
-    <ClCompile Include="imgui\imgui.cpp" />
-    <ClCompile Include="imgui\imgui_demo.cpp" />
-    <ClCompile Include="imgui\imgui_draw.cpp" />
-    <ClCompile Include="imgui\imgui_impl_glfw.cpp" />
-    <ClCompile Include="imgui\imgui_impl_opengl3.cpp" />
-    <ClCompile Include="imgui\imgui_stdlib.cpp" />
-    <ClCompile Include="imgui\imgui_tables.cpp" />
-    <ClCompile Include="imgui\imgui_widgets.cpp" />
-    <ClCompile Include="InputManager.cpp" />
-    <ClCompile Include="Integrator.cpp" />
-    <ClCompile Include="main.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-      </ExcludedFromBuild>
+    <None Include="resources\shaders\color.frag" />
+    <None Include="resources\shaders\color.vert" />
+    <None Include="resources\shaders\default.frag" />
+    <None Include="resources\shaders\default.vert" />
+    <None Include="resources\shaders\fragShader.frag" />
+    <None Include="resources\shaders\lightCube.frag" />
+    <None Include="resources\shaders\lightCube.vert" />
+    <None Include="resources\shaders\lighting.frag" />
+    <None Include="resources\shaders\lighting.vert" />
+    <None Include="resources\shaders\phong.frag" />
+    <None Include="resources\shaders\phong.vert" />
+    <None Include="resources\shaders\texture.frag" />
+    <None Include="resources\shaders\texture.vert" />
+    <None Include="resources\shaders\unlit.frag" />
+    <None Include="resources\shaders\unlit.vert" />
+    <None Include="resources\shaders\vertexShader.vert" />
+    <None Include="vcpkg.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="external\stb\stb_image.h" />
+    <ClInclude Include="external\stb\stb_image_write.h" />
+    <ClInclude Include="include\core\ThreadPool.h" />
+    <ClInclude Include="include\core\Tokenizer.h" />
+    <ClInclude Include="include\embree\Cube.h" />
+    <ClInclude Include="include\embree\EmbreeGeometry.h" />
+    <ClInclude Include="include\embree\Geometry.h" />
+    <ClInclude Include="include\embree\Intersection.h" />
+    <ClInclude Include="include\embree\lights\DirectionalLight.h" />
+    <ClInclude Include="include\embree\lights\Light.h" />
+    <ClInclude Include="include\embree\lights\PointLight.h" />
+    <ClInclude Include="include\embree\Material.h" />
+    <ClInclude Include="include\embree\scene\Camera.h" />
+    <ClInclude Include="include\embree\scene\RenderableObject.h" />
+    <ClInclude Include="include\embree\scene\Scene.h" />
+    <ClInclude Include="include\embree\scene\SceneLoader.h" />
+    <ClInclude Include="include\embree\scene\SceneObject.h" />
+    <ClInclude Include="include\embree\Sphere.h" />
+    <ClInclude Include="include\embree\Triangle.h" />
+    <ClInclude Include="include\graphics\buffers\GPUResourceManager.h" />
+    <ClInclude Include="include\graphics\buffers\UBOData.h" />
+    <ClInclude Include="include\graphics\GLRenderer.h" />
+    <ClInclude Include="include\graphics\OfflineRenderer.h" />
+    <ClInclude Include="include\graphics\RenderTarget.h" />
+    <ClInclude Include="include\graphics\Shader.h" />
+    <ClInclude Include="include\integrators\Integrator.h" />
+    <ClInclude Include="include\integrators\RayTracerIntegrator.h" />
+    <ClInclude Include="include\scene\AssetManager.h" />
+    <ClInclude Include="include\scene\ECSRegistry.h" />
+    <ClInclude Include="include\window\GLFWInputMap.h" />
+    <ClInclude Include="include\window\ImageWindow.h" />
+    <ClInclude Include="include\window\InputEnums.h" />
+    <ClInclude Include="include\window\InputManager.h" />
+    <ClInclude Include="include\window\OfflineRendererWindow.h" />
+    <ClInclude Include="include\window\RealTimeRendererWindow.h" />
+    <ClInclude Include="include\window\SelectionWindow.h" />
+    <ClInclude Include="include\window\Window.h" />
+    <ClInclude Include="include\window\WindowManager.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="external\stb\stb_impl.cpp" />
+    <ClCompile Include="src\core\ThreadPool.cpp" />
+    <ClCompile Include="src\core\Tokenizer.cpp" />
+    <ClCompile Include="src\embree\Cube.cpp" />
+    <ClCompile Include="src\embree\EmbreeGeometry.cpp" />
+    <ClCompile Include="src\embree\lights\DirectionalLight.cpp" />
+    <ClCompile Include="src\embree\lights\PointLight.cpp" />
+    <ClCompile Include="src\embree\Material.cpp" />
+    <ClCompile Include="src\embree\scene\Camera.cpp" />
+    <ClCompile Include="src\embree\scene\RenderableObject.cpp" />
+    <ClCompile Include="src\embree\scene\Scene.cpp" />
+    <ClCompile Include="src\embree\scene\SceneLoader.cpp" />
+    <ClCompile Include="src\embree\scene\SceneObject.cpp" />
+    <ClCompile Include="src\embree\Sphere.cpp" />
+    <ClCompile Include="src\embree\Triangle.cpp" />
+    <ClCompile Include="src\graphics\buffers\GPUResourceManager.cpp" />
+    <ClCompile Include="src\graphics\GLRenderer.cpp" />
+    <ClCompile Include="src\graphics\OfflineRenderer.cpp" />
+    <ClCompile Include="src\graphics\RenderTarget.cpp" />
+    <ClCompile Include="src\graphics\Shader.cpp" />
+    <ClCompile Include="src\integrators\Integrator.cpp" />
+    <ClCompile Include="src\integrators\RayTracerIntegrator.cpp" />
+    <ClCompile Include="src\main.cpp">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)external;$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClCompile Include="Material.cpp" />
-    <ClCompile Include="OfflineRenderer.cpp" />
-    <ClCompile Include="OfflineRendererWindow.cpp" />
-    <ClCompile Include="PointLight.cpp" />
-    <ClCompile Include="RayTracerIntegrator.cpp" />
-    <ClCompile Include="RealTimeRendererWindow.cpp" />
-    <ClCompile Include="RenderableObject.cpp" />
-    <ClCompile Include="RenderTarget.cpp" />
-    <ClCompile Include="Scene.cpp" />
-    <ClCompile Include="SceneLoader.cpp" />
-    <ClCompile Include="SceneObject.cpp" />
-    <ClCompile Include="SelectionWindow.cpp" />
-    <ClCompile Include="Shader.cpp" />
-    <ClCompile Include="Sphere.cpp" />
-    <ClCompile Include="stb_impl.cpp" />
-    <ClCompile Include="ThreadPool.cpp" />
-    <ClCompile Include="Tokenizer.cpp" />
-    <ClCompile Include="Triangle.cpp" />
-    <ClCompile Include="Window.cpp" />
-    <ClCompile Include="WindowManager.cpp" />
+    <ClCompile Include="src\scene\AssetManager.cpp" />
+    <ClCompile Include="src\scene\ECSRegistry.cpp" />
+    <ClCompile Include="src\window\ImageWindow.cpp" />
+    <ClCompile Include="src\window\InputManager.cpp" />
+    <ClCompile Include="src\window\OfflineRendererWindow.cpp" />
+    <ClCompile Include="src\window\RealTimeRendererWindow.cpp" />
+    <ClCompile Include="src\window\SelectionWindow.cpp" />
+    <ClCompile Include="src\window\Window.cpp" />
+    <ClCompile Include="src\window\WindowManager.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AssetManager.h" />
-    <ClInclude Include="Camera.h" />
-    <ClInclude Include="Cube.h" />
-    <ClInclude Include="DirectionalLight.h" />
-    <ClInclude Include="ECSRegistry.h" />
-    <ClInclude Include="EmbreeGeometry.h" />
-    <ClInclude Include="Geometry.h" />
-    <ClInclude Include="GLFWInputMap.h" />
-    <ClInclude Include="GLRenderer.h" />
-    <ClInclude Include="GPUResourceManager.h" />
-    <ClInclude Include="ImageWindow.h" />
-    <ClInclude Include="imgui\imconfig.h" />
-    <ClInclude Include="imgui\imgui.h" />
-    <ClInclude Include="imgui\imgui_impl_glfw.h" />
-    <ClInclude Include="imgui\imgui_impl_opengl3.h" />
-    <ClInclude Include="imgui\imgui_impl_opengl3_loader.h" />
-    <ClInclude Include="imgui\imgui_internal.h" />
-    <ClInclude Include="imgui\imgui_stdlib.h" />
-    <ClInclude Include="imgui\imstb_rectpack.h" />
-    <ClInclude Include="imgui\imstb_textedit.h" />
-    <ClInclude Include="imgui\imstb_truetype.h" />
-    <ClInclude Include="InputEnums.h" />
-    <ClInclude Include="InputManager.h" />
-    <ClInclude Include="Integrator.h" />
-    <ClInclude Include="Intersection.h" />
-    <ClInclude Include="Light.h" />
-    <ClInclude Include="Material.h" />
-    <ClInclude Include="OfflineRenderer.h" />
-    <ClInclude Include="OfflineRendererWindow.h" />
-    <ClInclude Include="PointLight.h" />
-    <ClInclude Include="RayTracerIntegrator.h" />
-    <ClInclude Include="RealTimeRendererWindow.h" />
-    <ClInclude Include="RenderableObject.h" />
-    <ClInclude Include="RenderTarget.h" />
-    <ClInclude Include="Scene.h" />
-    <ClInclude Include="SceneLoader.h" />
-    <ClInclude Include="SceneObject.h" />
-    <ClInclude Include="SelectionWindow.h" />
-    <ClInclude Include="Shader.h" />
-    <ClInclude Include="Sphere.h" />
-    <ClInclude Include="stb\stb_image.h" />
-    <ClInclude Include="stb\stb_image_write.h" />
-    <ClInclude Include="ThreadPool.h" />
-    <ClInclude Include="Tokenizer.h" />
-    <ClInclude Include="Triangle.h" />
-    <ClInclude Include="UBOData.h" />
-    <ClInclude Include="Window.h" />
-    <ClInclude Include="WindowManager.h" />
+    <Font Include="resources\fonts\DroidSans.ttf" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="imgui\imgui.natstepfilter" />
-    <None Include="scene4-ambient.txt" />
-    <None Include="scene4-diffuse.txt" />
-    <None Include="scene4-emission.txt" />
-    <None Include="scene4-specular.txt" />
-    <None Include="scene5.txt" />
-    <None Include="scene6.txt" />
-    <None Include="scene7.txt" />
-    <None Include="shaders\color.frag" />
-    <None Include="shaders\color.vert" />
-    <None Include="shaders\default.frag" />
-    <None Include="shaders\default.vert" />
-    <None Include="shaders\fragShader.frag" />
-    <None Include="shaders\lightCube.frag" />
-    <None Include="shaders\lightCube.vert" />
-    <None Include="shaders\lighting.frag" />
-    <None Include="shaders\lighting.vert" />
-    <None Include="shaders\phong.frag" />
-    <None Include="shaders\phong.vert" />
-    <None Include="shaders\texture.frag" />
-    <None Include="shaders\texture.vert" />
-    <None Include="shaders\unlit.frag" />
-    <None Include="shaders\unlit.vert" />
-    <None Include="shaders\vertexShader.vert" />
+    <Text Include="resources\scenes\scene1.txt" />
+    <Text Include="resources\scenes\scene2.txt" />
+    <Text Include="resources\scenes\scene3.txt" />
+    <Text Include="resources\scenes\scene4-ambient.txt" />
+    <Text Include="resources\scenes\scene4-diffuse.txt" />
+    <Text Include="resources\scenes\scene4-emission.txt" />
+    <Text Include="resources\scenes\scene4-specular.txt" />
+    <Text Include="resources\scenes\scene5.txt" />
+    <Text Include="resources\scenes\scene6.txt" />
+    <Text Include="resources\scenes\scene7.txt" />
   </ItemGroup>
   <ItemGroup>
-    <Natvis Include="imgui\imgui.natvis" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="container.jpg" />
-    <Image Include="container2.png" />
-    <Image Include="out12.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Font Include="fonts\DroidSans.ttf" />
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="scene1.txt" />
-    <Text Include="scene2.txt" />
-    <Text Include="scene3.txt" />
+    <Image Include="resources\textures\blending_transparent_window.png" />
+    <Image Include="resources\textures\default.png" />
+    <Image Include="resources\textures\grass.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,0 +1,15 @@
+{
+  "name": "duckengine",
+  "version-string": "1.0",
+  "dependencies": [
+    "glfw3",
+    "glew",
+    "glm",
+    "assimp",
+    "embree",
+    {
+      "name": "imgui",
+      "features": [ "glfw-binding", "opengl3-binding", "docking-experimental" ]
+    }
+  ]
+}
