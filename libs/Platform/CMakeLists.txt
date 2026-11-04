@@ -1,0 +1,1 @@
+duck_library(Platform DEPS Duck::Core glfw)

@@ -1,0 +1,1 @@
+duck_app(Sandbox DEPS Duck::Platform)

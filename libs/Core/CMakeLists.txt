@@ -1,0 +1,1 @@
+duck_library(Core DEPS glm::glm)
