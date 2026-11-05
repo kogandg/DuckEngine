@@ -1,8 +1,7 @@
 if(MSVC)
-  add_compile_options(/W4 /permissive- /MP /Zc:__cplusplus /utf-8)
+  add_compile_options(/W4 /permissive- /MP /Zc:__cplusplus /Zc:preprocessor /utf-8)
 endif()
 
-# duck_library(core DEPS other_libs...)  ->  target duck_core, alias duck::core
 function(duck_library name)
   cmake_parse_arguments(ARG "" "" "DEPS" ${ARGN})
   set(target Duck_${name})
