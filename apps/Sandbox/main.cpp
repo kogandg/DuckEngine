@@ -1,22 +1,36 @@
-#include <Duck/Core/Assert.h>
-#include <Duck/Core/Framebuffer.h>
+#include <Duck/Platform/Window.h>
 #include <Duck/Core/Log.h>
 
 using namespace Duck;
 
 int main()
 {
-    Framebuffer fb(256, 256);
-    for (std::uint32_t y = 0; y < fb.Height(); ++y)
+    Window window({.Title = "DuckEngine sandbox"});
+    bool captured = false;
+
+    while (!window.ShouldClose())
     {
-        for (std::uint32_t x = 0; x < fb.Width(); ++x)
+        window.PollEvents();
+        const Input& input = window.GetInput();
+
+        if (input.WasPressed(Key::Escape))
         {
-            fb[x, y] = PackRgba8(Vec3(x / 255.0f, y / 255.0f, 0.25f));
+            window.RequestClose();
+        }
+        if (input.WasPressed(Key::Tab))
+        {
+            captured = !captured;
+            window.SetCursorMode(captured ? CursorMode::Captured : CursorMode::Normal);
+        }
+        if (input.WasPressed(MouseButton::Left))
+        {
+            Log::Info("Click at ({}, {})", input.MousePosition().x, input.MousePosition().y);
+        }
+        if (input.IsDown(Key::W))
+        {
+            Log::Info("W held, mouse delta ({}, {})", input.MouseDelta().x, input.MouseDelta().y);
         }
     }
 
-    Log::Info("Bottom-right pixel: {:#010x}", fb[255, 255]);
-    DUCK_ASSERT(fb.Width() == 256);
-
-    // DUCK_VERIFY(fb.Height() == 100, "Height was {}", fb.Height());
+    Log::Info("Window closed");
 }
