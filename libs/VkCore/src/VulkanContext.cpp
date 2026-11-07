@@ -36,7 +36,7 @@ namespace Duck
 
         bool IsValidationAvailable()
         {
-            std::uint32_t count = 0;
+            uint32_t count = 0;
             vkEnumerateInstanceLayerProperties(&count, nullptr);
             std::vector<VkLayerProperties> layers(count);
             vkEnumerateInstanceLayerProperties(&count, layers.data());
@@ -47,7 +47,7 @@ namespace Duck
 
         bool SupportsSwapchain(VkPhysicalDevice device)
         {
-            std::uint32_t count = 0;
+            uint32_t count = 0;
             vkEnumerateDeviceExtensionProperties(device, nullptr, &count, nullptr);
             std::vector<VkExtensionProperties> extensions(count);
             vkEnumerateDeviceExtensionProperties(device, nullptr, &count, extensions.data());
@@ -70,14 +70,14 @@ namespace Duck
         }
 
         // single family that does graphics, compute, transfer, and present
-        bool FindQueueFamily(VkPhysicalDevice device, VkSurfaceKHR surface, std::uint32_t& outFamily)
+        bool FindQueueFamily(VkPhysicalDevice device, VkSurfaceKHR surface, uint32_t& outFamily)
         {
-            std::uint32_t count = 0;
+            uint32_t count = 0;
             vkGetPhysicalDeviceQueueFamilyProperties(device, &count, nullptr);
             std::vector<VkQueueFamilyProperties> families(count);
             vkGetPhysicalDeviceQueueFamilyProperties(device, &count, families.data());
 
-            for (std::uint32_t i = 0; i < count; ++i)
+            for (uint32_t i = 0; i < count; ++i)
             {
                 VkBool32 canPresent = VK_FALSE;
                 vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &canPresent);
@@ -99,7 +99,7 @@ namespace Duck
         DUCK_VERIFY(volkGetInstanceVersion() >= VK_API_VERSION_1_3, "The Vulkan loader does not support 1.3");
 
         // --- Instance ---
-        std::uint32_t glfwExtensionCount = 0;
+        uint32_t glfwExtensionCount = 0;
         const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
         DUCK_VERIFY(glfwExtensions != nullptr, "GLFW cannot find a Vulkan loader");
         std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
@@ -122,12 +122,12 @@ namespace Duck
                                         .apiVersion = VK_API_VERSION_1_3};
         const VkInstanceCreateInfo instanceInfo{.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
                                                 .pApplicationInfo = &appInfo,
-                                                .enabledLayerCount = static_cast<std::uint32_t>(layers.size()),
+                                                .enabledLayerCount = static_cast<uint32_t>(layers.size()),
                                                 .ppEnabledLayerNames = layers.data(),
-                                                .enabledExtensionCount = static_cast<std::uint32_t>(extensions.size()),
+                                                .enabledExtensionCount = static_cast<uint32_t>(extensions.size()),
                                                 .ppEnabledExtensionNames = extensions.data()};
-        DUCK_VK_CHECK(vkCreateInstance(&instanceInfo, nullptr, &this->instance));
-        volkLoadInstance(this->instance);
+        DUCK_VK_CHECK(vkCreateInstance(&instanceInfo, nullptr, &instance));
+        volkLoadInstance(instance);
 
         if (validation)
         {
@@ -140,17 +140,17 @@ namespace Duck
                                VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
                 .pfnUserCallback = OnDebugMessage};
             DUCK_VK_CHECK(
-                vkCreateDebugUtilsMessengerEXT(this->instance, &messengerInfo, nullptr, &this->debugMessenger));
+                vkCreateDebugUtilsMessengerEXT(instance, &messengerInfo, nullptr, &debugMessenger));
         }
 
         // --- Surface ---
-        DUCK_VK_CHECK(glfwCreateWindowSurface(this->instance, window.Handle(), nullptr, &this->surface));
+        DUCK_VK_CHECK(glfwCreateWindowSurface(instance, window.Handle(), nullptr, &surface));
 
         // --- Physical device: the best one that meets our requirements ---
-        std::uint32_t deviceCount = 0;
-        vkEnumeratePhysicalDevices(this->instance, &deviceCount, nullptr);
+        uint32_t deviceCount = 0;
+        vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
         std::vector<VkPhysicalDevice> devices(deviceCount);
-        vkEnumeratePhysicalDevices(this->instance, &deviceCount, devices.data());
+        vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 
         int bestScore = -1;
         for (VkPhysicalDevice candidate : devices)
@@ -159,7 +159,7 @@ namespace Duck
             vkGetPhysicalDeviceProperties(candidate, &properties);
 
             const char* name = properties.deviceName;
-            std::uint32_t family = 0;
+            uint32_t family = 0;
 
             if (properties.apiVersion < VK_API_VERSION_1_3)
             {
@@ -177,7 +177,7 @@ namespace Duck
                 Log::Warn("Skipping {}: missing dynamic rendering, synchronization2, or buffer device address", name);
                 continue;
             }
-            if (!FindQueueFamily(candidate, this->surface, family))
+            if (!FindQueueFamily(candidate, surface, family))
             {
                 Log::Warn("Skipping {}: no graphics+compute+present queue family", name);
                 continue;
@@ -187,16 +187,16 @@ namespace Duck
             if (score > bestScore)
             {
                 bestScore = score;
-                this->physicalDevice = candidate;
-                this->deviceProperties = properties;
-                this->queueFamily = family;
+                physicalDevice = candidate;
+                deviceProperties = properties;
+                queueFamily = family;
             }
         }
-        DUCK_VERIFY(this->physicalDevice != VK_NULL_HANDLE, "No GPU supports Vulkan 1.4 with the required features");
-        Log::Info("Using GPU: {} (Vulkan {}.{}.{})", this->deviceProperties.deviceName,
-                  VK_API_VERSION_MAJOR(this->deviceProperties.apiVersion),
-                  VK_API_VERSION_MINOR(this->deviceProperties.apiVersion),
-                  VK_API_VERSION_PATCH(this->deviceProperties.apiVersion));
+        DUCK_VERIFY(physicalDevice != VK_NULL_HANDLE, "No GPU supports Vulkan 1.4 with the required features");
+        Log::Info("Using GPU: {} (Vulkan {}.{}.{})", deviceProperties.deviceName,
+                  VK_API_VERSION_MAJOR(deviceProperties.apiVersion),
+                  VK_API_VERSION_MINOR(deviceProperties.apiVersion),
+                  VK_API_VERSION_PATCH(deviceProperties.apiVersion));
 
         // --- Logical device ---
         VkPhysicalDeviceVulkan12Features features12{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
@@ -208,7 +208,7 @@ namespace Duck
 
         const float queuePriority = 1.0f;
         const VkDeviceQueueCreateInfo queueInfo{.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-                                                .queueFamilyIndex = this->queueFamily,
+                                                .queueFamilyIndex = queueFamily,
                                                 .queueCount = 1,
                                                 .pQueuePriorities = &queuePriority};
         const char* deviceExtensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
@@ -218,9 +218,9 @@ namespace Duck
                                             .pQueueCreateInfos = &queueInfo,
                                             .enabledExtensionCount = 1,
                                             .ppEnabledExtensionNames = deviceExtensions};
-        DUCK_VK_CHECK(vkCreateDevice(this->physicalDevice, &deviceInfo, nullptr, &this->device));
-        volkLoadDevice(this->device);
-        vkGetDeviceQueue(this->device, this->queueFamily, 0, &this->queue);
+        DUCK_VK_CHECK(vkCreateDevice(physicalDevice, &deviceInfo, nullptr, &device));
+        volkLoadDevice(device);
+        vkGetDeviceQueue(device, queueFamily, 0, &queue);
 
         // --- VMA ---
         VmaVulkanFunctions functions{};
@@ -229,24 +229,24 @@ namespace Duck
 
         VmaAllocatorCreateInfo allocatorInfo{};
         allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
-        allocatorInfo.physicalDevice = this->physicalDevice;
-        allocatorInfo.device = this->device;
-        allocatorInfo.instance = this->instance;
+        allocatorInfo.physicalDevice = physicalDevice;
+        allocatorInfo.device = device;
+        allocatorInfo.instance = instance;
         allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_3;
         allocatorInfo.pVulkanFunctions = &functions;
-        DUCK_VK_CHECK(vmaCreateAllocator(&allocatorInfo, &this->allocator));
+        DUCK_VK_CHECK(vmaCreateAllocator(&allocatorInfo, &allocator));
     }
 
     VulkanContext::~VulkanContext()
     {
         // clear in reverse order of creation
-        vmaDestroyAllocator(this->allocator);
-        vkDestroyDevice(this->device, nullptr);
-        vkDestroySurfaceKHR(this->instance, this->surface, nullptr);
-        if (this->debugMessenger != VK_NULL_HANDLE)
+        vmaDestroyAllocator(allocator);
+        vkDestroyDevice(device, nullptr);
+        vkDestroySurfaceKHR(instance, surface, nullptr);
+        if (debugMessenger != VK_NULL_HANDLE)
         {
-            vkDestroyDebugUtilsMessengerEXT(this->instance, this->debugMessenger, nullptr);
+            vkDestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
         }
-        vkDestroyInstance(this->instance, nullptr);
+        vkDestroyInstance(instance, nullptr);
     }
 }

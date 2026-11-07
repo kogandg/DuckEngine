@@ -45,11 +45,11 @@ namespace Duck
         bool WasReleased(MouseButton button) const;
 
         // mouse pos in window coordinates, origin top-left
-        Vec2 MousePosition() const { return this->mousePosition; }
+        Vec2 MousePosition() const { return mousePosition; }
         // movement accumulated this frame, pos Y is down
-        Vec2 MouseDelta() const { return this->mouseDelta; }
+        Vec2 MouseDelta() const { return mouseDelta; }
         // scroll accumulated this frame, Y is the normal wheel axis
-        Vec2 Scroll() const { return this->scroll; }
+        Vec2 Scroll() const { return scroll; }
 
         // called by window from the GLFW callbacks, not for general use
         void OnKey(int key, int action);

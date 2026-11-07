@@ -18,13 +18,13 @@ namespace Duck
     }
     FrameContext::FrameContext(VulkanContext& context, Swapchain& swapchain) : context(context), swapchain(swapchain)
     {
-        const VkDevice device = this->context.Device();
+        const VkDevice device = context.Device();
 
-        for (Frame& frame : this->frames)
+        for (Frame& frame : frames)
         {
             const VkCommandPoolCreateInfo poolInfo{.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
                                                    .flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,
-                                                   .queueFamilyIndex = this->context.QueueFamily()};
+                                                   .queueFamilyIndex = context.QueueFamily()};
             DUCK_VK_CHECK(vkCreateCommandPool(device, &poolInfo, nullptr, &frame.Pool));
 
             const VkCommandBufferAllocateInfo allocInfo{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -41,16 +41,16 @@ namespace Duck
             frame.ImageAvailable = CreateSemaphore(device);
         }
 
-        this->CreateRenderFinishedSemaphores();
+        CreateRenderFinishedSemaphores();
     }
 
     FrameContext::~FrameContext()
     {
-        const VkDevice device = this->context.Device();
+        const VkDevice device = context.Device();
         vkDeviceWaitIdle(device);
 
-        this->DestroyRenderFinishedSemaphores();
-        for (Frame& frame : this->frames)
+        DestroyRenderFinishedSemaphores();
+        for (Frame& frame : frames)
         {
             vkDestroySemaphore(device, frame.ImageAvailable, nullptr);
             vkDestroyFence(device, frame.InFlight, nullptr);
@@ -60,18 +60,18 @@ namespace Duck
 
     std::optional<FrameInfo> FrameContext::BeginFrame()
     {
-        DUCK_ASSERT(!this->recording, "BeginFrame called twice without EndFrame");
+        DUCK_ASSERT(!recording, "BeginFrame called twice without EndFrame");
 
-        const VkDevice device = this->context.Device();
-        Frame& frame = this->frames[this->frameIndex];
+        const VkDevice device = context.Device();
+        Frame& frame = frames[frameIndex];
 
         // wait until GPU has finished the last frame that used this slot
         DUCK_VK_CHECK(vkWaitForFences(device, 1, &frame.InFlight, VK_TRUE, UINT64_MAX));
 
-        if (this->swapchain.Acquire(frame.ImageAvailable, this->imageIndex) == SwapchainStatus::OutOfDate)
+        if (swapchain.Acquire(frame.ImageAvailable, imageIndex) == SwapchainStatus::OutOfDate)
         {
             // nothing was signaled and nothing submitted so the fence is still signaled, just skip the frame
-            this->RecreateSwapchain();
+            RecreateSwapchain();
             return std::nullopt;
         }
 
@@ -82,24 +82,24 @@ namespace Duck
         const VkCommandBufferBeginInfo beginInfo{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
                                                  .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT};
         DUCK_VK_CHECK(vkBeginCommandBuffer(frame.Commands, &beginInfo));
-        this->recording = true;
+        recording = true;
 
         return FrameInfo{.Commands = frame.Commands,
-                         .Image = this->swapchain.Image(this->imageIndex),
-                         .ImageView = this->swapchain.ImageView(this->imageIndex),
-                         .Extent = this->swapchain.Extent(),
-                         .FrameIndex = this->frameIndex};
+                         .Image = swapchain.Image(imageIndex),
+                         .ImageView = swapchain.ImageView(imageIndex),
+                         .Extent = swapchain.Extent(),
+                         .FrameIndex = frameIndex};
     }
 
     void FrameContext::EndFrame()
     {
-        DUCK_ASSERT(this->recording, "EndFrame called without a successful BeginFrame");
-        this->recording = false;
+        DUCK_ASSERT(recording, "EndFrame called without a successful BeginFrame");
+        recording = false;
 
-        Frame& frame = this->frames[this->frameIndex];
+        Frame& frame = frames[frameIndex];
         DUCK_VK_CHECK(vkEndCommandBuffer(frame.Commands));
 
-        const VkSemaphore renderDone = this->renderFinished[this->imageIndex];
+        const VkSemaphore renderDone = renderFinished[imageIndex];
 
         // ALL_COMMANDS is conservative but works. it works for both rendering and transfer work and its easy to narrow
         // later if profiling shows performace problems
@@ -118,14 +118,14 @@ namespace Duck
                                        .pCommandBufferInfos = &commandInfo,
                                        .signalSemaphoreInfoCount = 1,
                                        .pSignalSemaphoreInfos = &signalInfo};
-        DUCK_VK_CHECK(vkQueueSubmit2(this->context.Queue(), 1, &submitInfo, frame.InFlight));
+        DUCK_VK_CHECK(vkQueueSubmit2(context.Queue(), 1, &submitInfo, frame.InFlight));
 
-        if (this->swapchain.Present(renderDone, this->imageIndex) == SwapchainStatus::OutOfDate)
+        if (swapchain.Present(renderDone, imageIndex) == SwapchainStatus::OutOfDate)
         {
-            this->RecreateSwapchain();
+            RecreateSwapchain();
         }
 
-        this->frameIndex = (this->frameIndex + 1) % MaxFramesInFlight;
+        frameIndex = (frameIndex + 1) % MaxFramesInFlight;
     }
 
     void FrameContext::RecreateSwapchain()
@@ -133,28 +133,28 @@ namespace Duck
         // Swapchain::Recreate waits for the device to go idle so destroying the semaphores afterwards is safe.
         // rebuilt every time rather than only on a count change, because a present that failed as out of date
         // may have left one in an unknown state.
-        if (this->swapchain.Recreate())
+        if (swapchain.Recreate())
         {
-            this->DestroyRenderFinishedSemaphores();
-            this->CreateRenderFinishedSemaphores();
+            DestroyRenderFinishedSemaphores();
+            CreateRenderFinishedSemaphores();
         }
     }
 
     void FrameContext::CreateRenderFinishedSemaphores()
     {
-        this->renderFinished.resize(this->swapchain.ImageCount());
-        for (VkSemaphore& semaphore : this->renderFinished)
+        renderFinished.resize(swapchain.ImageCount());
+        for (VkSemaphore& semaphore : renderFinished)
         {
-            semaphore = CreateSemaphore(this->context.Device());
+            semaphore = CreateSemaphore(context.Device());
         }
     }
 
     void FrameContext::DestroyRenderFinishedSemaphores()
     {
-        for (VkSemaphore semaphore : this->renderFinished)
+        for (VkSemaphore semaphore : renderFinished)
         {
-            vkDestroySemaphore(this->context.Device(), semaphore, nullptr);
+            vkDestroySemaphore(context.Device(), semaphore, nullptr);
         }
-        this->renderFinished.clear();
+        renderFinished.clear();
     }
 }

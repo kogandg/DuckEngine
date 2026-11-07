@@ -1,55 +1,35 @@
-#include "Camera.h"
-#include "Geometry.h"
+#include "WhittedIntegrator.h"
+#include "PathTracer.h"
+#include "NormalIntegrator.h"
 
-#include <Duck/Core/Framebuffer.h>
-#include <Duck/Core/ThreadPool.h>
 #include <Duck/Platform/Application.h>
 #include <Duck/VkCore/CpuFramebufferPresenter.h>
 #include <Duck/VkCore/FrameContext.h>
 #include <Duck/VkCore/Swapchain.h>
 #include <Duck/VkCore/VulkanContext.h>
 
-#include <algorithm>
 #include <format>
+#include <iterator>
+#include <memory>
 #include <vector>
 
 using namespace Duck;
 
 namespace
 {
-    constexpr std::uint32_t TileSize = 32;
-
-    // sky with white at horizon and blue on top
-    Vec3 SkyColor(const Ray& ray)
+    Scene MakeScene()
     {
-        const float a = 0.5f * (ray.Direction.y + 1.0f);
-        return glm::mix(Vec3(1.0f), Vec3(0.5f, 0.7f, 1.0f), a);
+        Scene scene;
+        scene.Materials = {Material{Vec3(0.5f)}, Material{Vec3(0.5f)}};
+        scene.Spheres = {
+            {{0.0f, 0.0f, -1.0f}, 0.5f, 0},
+            {{0.0f, -100.5f, -1.0f}, 100.0f, 1}, // huge sphere standing in for a ground plane
+        };
+        return scene;
     }
 
-    std::optional<Hit> ClosestHit(const std::vector<Sphere>& spheres, const Ray& ray, float tMin, float tMax)
-    {
-        std::optional<Hit> closest;
-        for (const Sphere& sphere : spheres)
-        {
-            // shrinking tMax means later spheres only count if they are nearer
-            if (const auto hit = sphere.Intersect(ray, tMin, tMax))
-            {
-                closest = hit;
-                tMax = hit->T;
-            }
-        }
-        return closest;
-    }
-
-    Vec3 TraceRay(const std::vector<Sphere>& spheres, const Ray& ray)
-    {
-        if (const auto hit = ClosestHit(spheres, ray, 0.001f, Infinity))
-        {
-            // map the normal components from [-1, 1] to [0, 1] so they can be shown as a color
-            return 0.5f * (hit->Normal + Vec3(1.0f));
-        }
-        return SkyColor(ray);
-    }
+    //// map the normal components from [-1, 1] to [0, 1] so they can be shown as a color
+    // return 0.5f * (hit->Normal + Vec3(1.0f));
 }
 
 class RaytracerApp : public Application
@@ -58,20 +38,29 @@ public:
     RaytracerApp()
         : Application({.Title = "DuckEngine Raytracer"}), context(this->GetWindow()),
           swapchain(this->context, this->GetWindow()), frames(this->context, this->swapchain), presenter(this->context),
-          hdr(640, 360), display(640, 360),
-          camera({0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {0.0f, 1.0f, 0.0f}, 90.0f, 640.0f / 360.0f)
+          film(640, 360), display(640, 360),
+          camera({0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {0.0f, 1.0f, 0.0f}, 90.0f, 640.0f / 360.0f),
+          scene(MakeScene())
     {
+        integrators.push_back(std::make_unique<PathTracer>());
+        integrators.push_back(std::make_unique<WhittedIntegrator>());
+        integrators.push_back(std::make_unique<NormalIntegrator>());
     }
 
 protected:
     void OnUpdate(float deltaSeconds) override
     {
-        if (GetWindow().GetInput().WasPressed(Key::Escape))
+        HandleInput();
+
+
+        IIntegrator& integrator = *integrators[current];
+        if (film.Passes < integrator.RecommendedPasses())
         {
-            Quit();
+            integrators[current]->RenderPass(scene, camera, film);
+            film.Passes++;
+            film.Resolve(display, integrator.GetOutputTransform());
         }
 
-        Render();
         UpdateTitle(deltaSeconds);
 
         const auto frame = frames.BeginFrame();
@@ -86,40 +75,23 @@ protected:
     void OnStop() override { vkDeviceWaitIdle(context.Device()); }
 
 private:
-    void Render()
+    void HandleInput()
     {
-        const std::uint32_t width = hdr.Width();
-        const std::uint32_t height = hdr.Height();
+        const Input& input = GetWindow().GetInput();
+        if (input.WasPressed(Key::Escape))
+        {
+            Quit();
+        }
 
-        const std::uint32_t tilesX = (width + TileSize - 1) / TileSize;
-        const std::uint32_t tilesY = (height + TileSize - 1) / TileSize;
-
-        // one index per tile, tiles never overlap so threads never write to the same pixel
-        ThreadPool::Shared().ParallelFor(tilesX * tilesY,
-                                         [&](std::uint32_t tile)
-                                         {
-                                             // edges of the tile
-                                             const std::uint32_t x0 = (tile % tilesX) * TileSize;
-                                             const std::uint32_t y0 = (tile / tilesX) * TileSize;
-                                             const std::uint32_t x1 = std::min(x0 + TileSize, width);
-                                             const std::uint32_t y1 = std::min(y0 + TileSize, height);
-
-                                             for (std::uint32_t y = y0; y < y1; ++y)
-                                             {
-                                                 for (std::uint32_t x = x0; x < x1; ++x)
-                                                 {
-                                                     // sample the pixel center
-                                                     const float s =
-                                                         (static_cast<float>(x) + 0.5f) / static_cast<float>(width);
-                                                     const float t =
-                                                         (static_cast<float>(y) + 0.5f) / static_cast<float>(height);
-
-                                                     const Vec3 color = TraceRay(spheres, camera.GetRay(s, t));
-                                                     hdr[x, y] = color;
-                                                     display[x, y] = PackRgba8(LinearToSrgb(color));
-                                                 }
-                                             }
-                                         });
+         const Key keys[] = {Key::D1, Key::D2, Key::D3};
+         for (size_t i = 0; i < integrators.size() && i < std::size(keys); i++)
+        {
+             if (input.WasPressed(keys[i]) && i != current)
+             {
+                 current = i;
+                 film.Reset(); // the accumulated sum belongs to the old integrator
+             }
+         }
     }
 
     void UpdateTitle(float deltaSeconds)
@@ -128,7 +100,8 @@ private:
         fpsFrames++;
         if (fpsTime >= 0.5f)
         {
-            GetWindow().SetTitle(std::format("DuckEngine Sandbox - {:.0f} FPS", fpsFrames / fpsTime));
+            GetWindow().SetTitle(std::format("DuckEngine Raytracer - {} - {} passes - {} - {:.0f} FPS", integrators[current]->Name(), film.Passes,
+                film.Passes >= integrators[current]->RecommendedPasses() ? "Done" : "In Progress", fpsFrames / fpsTime));
             fpsTime = 0.0f;
             fpsFrames = 0;
         }
@@ -139,17 +112,18 @@ private:
     Swapchain swapchain;
     FrameContext frames;
     CpuFramebufferPresenter presenter;
-    HdrFramebuffer hdr;
+
+    Film film;
     Framebuffer display;
 
     Camera camera;
-    std::vector<Sphere> spheres{
-        {{0.0f, 0.0f, -1.0f}, 0.5f},
-        {{0.0f, -100.5f, -1.0f}, 100.0f}, // huge sphere standing in for a ground plane
-    };
+    Scene scene;
+
+    std::vector<std::unique_ptr<IIntegrator>> integrators;
+    size_t current = 0;
 
     float fpsTime = 0.0f;
-    std::uint32_t fpsFrames = 0;
+    int fpsFrames = 0;
 };
 
 int main()

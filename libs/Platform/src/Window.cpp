@@ -57,44 +57,43 @@ namespace Duck
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, desc.Resizable ? GLFW_TRUE : GLFW_FALSE);
 
-        this->handle = glfwCreateWindow(static_cast<int>(desc.Width), static_cast<int>(desc.Height), desc.Title.c_str(),
-                                        nullptr, nullptr);
-        DUCK_VERIFY(this->handle != nullptr, "Failed to create window");
+        handle = glfwCreateWindow(desc.Width, desc.Height, desc.Title.c_str(), nullptr, nullptr);
+        DUCK_VERIFY(handle != nullptr, "Failed to create window");
 
-        glfwSetWindowUserPointer(this->handle, this);
-        glfwSetKeyCallback(this->handle, OnKeyCallback);
-        glfwSetMouseButtonCallback(this->handle, OnMouseButtonCallback);
-        glfwSetCursorPosCallback(this->handle, OnCursorPositionCallback);
-        glfwSetScrollCallback(this->handle, OnScrollCallback);
+        glfwSetWindowUserPointer(handle, this);
+        glfwSetKeyCallback(handle, OnKeyCallback);
+        glfwSetMouseButtonCallback(handle, OnMouseButtonCallback);
+        glfwSetCursorPosCallback(handle, OnCursorPositionCallback);
+        glfwSetScrollCallback(handle, OnScrollCallback);
     }
     Window::~Window()
     {
-        glfwDestroyWindow(this->handle);
+        glfwDestroyWindow(handle);
         ReleaseGlfw();
     }
 
-    bool Window::ShouldClose() const { return glfwWindowShouldClose(this->handle) == GLFW_TRUE; }
-    void Window::RequestClose() { glfwSetWindowShouldClose(this->handle, GLFW_TRUE); }
+    bool Window::ShouldClose() const { return glfwWindowShouldClose(handle) == GLFW_TRUE; }
+    void Window::RequestClose() { glfwSetWindowShouldClose(handle, GLFW_TRUE); }
 
-    void Window::SetTitle(const std::string& title) { glfwSetWindowTitle(this->handle, title.c_str()); }
+    void Window::SetTitle(const std::string& title) { glfwSetWindowTitle(handle, title.c_str()); }
 
-    UVec2 Window::Size() const
+    IVec2 Window::Size() const
     {
         int width = 0;
         int height = 0;
-        glfwGetWindowSize(this->handle, &width, &height);
-        return {static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height)};
+        glfwGetWindowSize(handle, &width, &height);
+        return {width, height};
     }
-    UVec2 Window::FramebufferSize() const
+    IVec2 Window::FramebufferSize() const
     {
         int width = 0;
         int height = 0;
-        glfwGetFramebufferSize(this->handle, &width, &height);
-        return {static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height)};
+        glfwGetFramebufferSize(handle, &width, &height);
+        return {width, height};
     }
     bool Window::IsMinimized() const
     {
-        const UVec2 size = this->FramebufferSize();
+        const IVec2 size = FramebufferSize();
         return size.x == 0 || size.y == 0;
     }
 

@@ -1,6 +1,7 @@
 #include <Duck/VkCore/CpuFramebufferPresenter.h>
 
 #include <Duck/Core/Assert.h>
+#include <Duck/Core/Cast.h>
 #include <Duck/VkCore/VkCheck.h>
 #include <Duck/VkCore/VulkanContext.h>
 
@@ -43,10 +44,10 @@ namespace Duck
 
     CpuFramebufferPresenter::~CpuFramebufferPresenter()
     {
-        vkDeviceWaitIdle(this->context.Device());
-        for (Slot& slot : this->slots)
+        vkDeviceWaitIdle(context.Device());
+        for (Slot& slot : slots)
         {
-            this->DestroySlot(slot);
+            DestroySlot(slot);
         }
     }
 
@@ -54,20 +55,21 @@ namespace Duck
     {
         DUCK_ASSERT(!framebuffer.Empty(), "Cannot present an empty framebuffer");
 
-        Slot& slot = this->slots[frame.FrameIndex];
-        this->EnsureSlot(slot, framebuffer.Width(), framebuffer.Height());
+        Slot& slot = slots[frame.FrameIndex];
+        EnsureSlot(slot, framebuffer.Width(), framebuffer.Height());
 
         // host write, flushing is a no-op on coherent memory, and required on noncoherent memory
         // queue submission makes the write visible to the GPU
         std::memcpy(slot.StagingMapped, framebuffer.Data(), framebuffer.SizeBytes());
-        vmaFlushAllocation(this->context.Allocator(), slot.StagingAllocation, 0, VK_WHOLE_SIZE);
+        vmaFlushAllocation(context.Allocator(), slot.StagingAllocation, 0, VK_WHOLE_SIZE);
 
         VkCommandBuffer commands = frame.Commands;
 
         // staging buffer -> image
         Transition(commands, slot.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
         const VkBufferImageCopy copy{.imageSubresource = ColorLayers,
-                                     .imageExtent = {framebuffer.Width(), framebuffer.Height(), 1}};
+                                     .imageExtent = {CheckedCast<std::uint32_t>(framebuffer.Width()),
+                                                     CheckedCast<std::uint32_t>(framebuffer.Height()), 1}};
         vkCmdCopyBufferToImage(commands, slot.StagingBuffer, slot.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
                                &copy);
         Transition(commands, slot.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
@@ -77,31 +79,31 @@ namespace Duck
         const VkClearColorValue black{{0.0f, 0.0f, 0.0f, 1.0f}};
         vkCmdClearColorImage(commands, frame.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &black, 1, &ColorRange);
 
-        const float scale =
-            std::min(static_cast<float>(frame.Extent.width) / static_cast<float>(framebuffer.Width()),
-                     static_cast<float>(frame.Extent.height) / static_cast<float>(framebuffer.Height()));
-        const std::int32_t width =
-            std::max(1, static_cast<std::int32_t>(static_cast<float>(framebuffer.Width()) * scale));
-        const std::int32_t height =
-            std::max(1, static_cast<std::int32_t>(static_cast<float>(framebuffer.Height()) * scale));
-        const std::int32_t x = (static_cast<std::int32_t>(frame.Extent.width) - width) / 2;
-        const std::int32_t y = (static_cast<std::int32_t>(frame.Extent.height) - height) / 2;
+        const int srcWidth = framebuffer.Width();
+        const int srcHeight = framebuffer.Height();
+        const int extentWidth = CheckedCast<int>(frame.Extent.width);
+        const int extentHeight = CheckedCast<int>(frame.Extent.height);
+
+        const float scale = std::min(static_cast<float>(extentWidth) / static_cast<float>(srcWidth),
+                                     static_cast<float>(extentHeight) / static_cast<float>(srcHeight));
+        const int width = std::max(1, static_cast<int>(static_cast<float>(srcWidth) * scale));
+        const int height = std::max(1, static_cast<int>(static_cast<float>(srcHeight) * scale));
+        const int x = (extentWidth - width) / 2;
+        const int y = (extentHeight - height) / 2;
 
         const VkImageBlit blit{
             .srcSubresource = ColorLayers,
-            .srcOffsets = {{0, 0, 0},
-                           {static_cast<std::int32_t>(framebuffer.Width()),
-                            static_cast<std::int32_t>(framebuffer.Height()), 1}},
+            .srcOffsets = {{0, 0, 0}, {srcWidth, srcHeight, 1}},
             .dstSubresource = ColorLayers,
             .dstOffsets = {{x, y, 0}, {x + width, y + height, 1}},
         };
         vkCmdBlitImage(commands, slot.Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, frame.Image,
-                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit, this->filter);
+                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit, filter);
 
         Transition(commands, frame.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
     }
 
-    void CpuFramebufferPresenter::EnsureSlot(Slot& slot, std::uint32_t width, std::uint32_t height)
+    void CpuFramebufferPresenter::EnsureSlot(Slot& slot, int width, int height)
     {
         if (slot.Width == width && slot.Height == height && slot.Image != VK_NULL_HANDLE)
         {
@@ -109,12 +111,15 @@ namespace Duck
         }
 
         // safe since FrameContext waited on this slots fence so GPU is done with these resources
-        this->DestroySlot(slot);
+        DestroySlot(slot);
 
-        const VmaAllocator allocator = this->context.Allocator();
+        const std::uint32_t w = CheckedCast<std::uint32_t>(width);
+        const std::uint32_t h = CheckedCast<std::uint32_t>(height);
+
+        const VmaAllocator allocator = context.Allocator();
 
         const VkBufferCreateInfo bufferInfo{.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-                                            .size = static_cast<VkDeviceSize>(width) * height * sizeof(Rgba8),
+                                            .size = static_cast<VkDeviceSize>(w) * h * sizeof(Rgba8),
                                             .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                                             .sharingMode = VK_SHARING_MODE_EXCLUSIVE};
         VmaAllocationCreateInfo bufferAlloc{};
@@ -128,7 +133,7 @@ namespace Duck
         const VkImageCreateInfo imageInfo{.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
                                           .imageType = VK_IMAGE_TYPE_2D,
                                           .format = CpuImageFormat,
-                                          .extent = {width, height, 1},
+                                          .extent = {w, h, 1},
                                           .mipLevels = 1,
                                           .arrayLayers = 1,
                                           .samples = VK_SAMPLE_COUNT_1_BIT,
@@ -146,7 +151,7 @@ namespace Duck
 
     void CpuFramebufferPresenter::DestroySlot(Slot& slot)
     {
-        const VmaAllocator allocator = this->context.Allocator();
+        const VmaAllocator allocator = context.Allocator();
         if (slot.Image != VK_NULL_HANDLE)
         {
             vmaDestroyImage(allocator, slot.Image, slot.ImageAllocation);

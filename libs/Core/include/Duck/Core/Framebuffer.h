@@ -6,6 +6,8 @@
 
 #include <algorithm>
 #include <span>
+#include <cstddef>
+#include <vector>
 
 namespace Duck
 {
@@ -14,24 +16,25 @@ namespace Duck
     {
     public:
         BasicFramebuffer() = default;
-        BasicFramebuffer(std::uint32_t width, std::uint32_t height) { Resize(width, height); }
+        BasicFramebuffer(int width, int height) { Resize(width, height); }
 
-        void Resize(std::uint32_t width, std::uint32_t height)
+        void Resize(int width, int height)
         {
+            DUCK_ASSERT(width >= 0 && height >= 0, "Invalid framebuffer size {}x{}", width, height);
             this->width = width;
             this->height = height;
-            this->pixels.assign(static_cast<std::size_t>(width) * height, TPixel{});
+            this->pixels.assign(static_cast<std::size_t>(width) * static_cast<std::size_t>(height), TPixel{});
         }
 
         void Fill(const TPixel& value) { std::ranges::fill(pixels, value); }
         void Clear() { Fill(TPixel{}); }
 
-        std::uint32_t Width() const noexcept { return width; }
-        std::uint32_t Height() const noexcept { return height; }
+        int Width() const noexcept { return width; }
+        int Height() const noexcept { return height; }
         bool Empty() const noexcept { return pixels.empty(); }
-        std::size_t PixelCount() const noexcept { return pixels.size(); }
-        std::size_t RowBytes() const noexcept { return static_cast<std::size_t>(width) * sizeof(TPixel); }
-        std::size_t SizeBytes() const noexcept { return pixels.size() * sizeof(TPixel); }
+        size_t PixelCount() const noexcept { return pixels.size(); }
+        size_t RowBytes() const noexcept { return static_cast<size_t>(width) * sizeof(TPixel); }
+        size_t SizeBytes() const noexcept { return pixels.size() * sizeof(TPixel); }
         float AspectRatio() const noexcept
         {
             return height == 0 ? 1.0f : static_cast<float>(width) / static_cast<float>(height);
@@ -43,31 +46,36 @@ namespace Duck
         std::span<TPixel> Pixels() noexcept { return pixels; }
         std::span<const TPixel> Pixels() const noexcept { return pixels; }
 
-        std::span<TPixel> Row(std::uint32_t y)
+        std::span<TPixel> Row(int y)
         {
             DUCK_ASSERT(y < height, "Row {} out of bounds (height {})", y, height);
-            return {pixels.data() + static_cast<std::size_t>(y) * width, width};
+            return {pixels.data() + Index(0, y), static_cast<size_t>(width)};
         }
-        std::span<const TPixel> Row(std::uint32_t y) const
+        std::span<const TPixel> Row(int y) const
         {
             DUCK_ASSERT(y < height, "Row {} out of bounds (height {})", y, height);
-            return {pixels.data() + static_cast<std::size_t>(y) * width, width};
+            return {pixels.data() + Index(0, y), static_cast<size_t>(width)};
         }
 
-        TPixel& operator[](std::uint32_t x, std::uint32_t y)
+        TPixel& operator[](int x, int y)
         {
             DUCK_ASSERT(x < width && y < height, "Pixel ({}, {}) out of bounds for {}x{}", x, y, width, height);
-            return pixels[static_cast<std::size_t>(y) * width + x];
+            return pixels[Index(x, y)];
         }
-        const TPixel& operator[](std::uint32_t x, std::uint32_t y) const
+        const TPixel& operator[](int x, int y) const
         {
             DUCK_ASSERT(x < width && y < height, "Pixel ({}, {}) out of bounds for {}x{}", x, y, width, height);
-            return pixels[static_cast<std::size_t>(y) * width + x];
+            return pixels[Index(x, y)];
         }
 
     private:
-        std::uint32_t width = 0;
-        std::uint32_t height = 0;
+        size_t Index(int x, int y) const noexcept
+        {
+            return static_cast<size_t>(y) * static_cast<size_t>(width) + static_cast<size_t>(x);
+        }
+
+        int width = 0;
+        int height = 0;
         std::vector<TPixel> pixels;
     };
 

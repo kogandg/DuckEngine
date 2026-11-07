@@ -8,25 +8,25 @@ namespace Duck
 
     Application::Application(const WindowDesc& desc) : window(desc) {}
 
-    void Application::Quit() { this->window.RequestClose(); }
+    void Application::Quit() { window.RequestClose(); }
 
     int Application::Run()
     {
         using Clock = std::chrono::steady_clock;
 
-        this->OnStart();
+        OnStart();
 
         auto last = Clock::now();
-        while (!this->window.ShouldClose())
+        while (!window.ShouldClose())
         {
-            this->window.PollEvents();
+            window.PollEvents();
 
             // sleep instead of spinning while minimized and dont count that time as a frame
-            if (this->window.IsMinimized())
+            if (window.IsMinimized())
             {
-                while (this->window.IsMinimized() && !this->window.ShouldClose())
+                while (window.IsMinimized() && !window.ShouldClose())
                 {
-                    this->window.WaitEvents();
+                    window.WaitEvents();
                 }
                 last = Clock::now();
                 continue;
@@ -37,10 +37,10 @@ namespace Duck
             const float deltaSeconds = std::min(std::chrono::duration<float>(now - last).count(), 0.25f);
             last = now;
 
-            this->OnUpdate(deltaSeconds);
+            OnUpdate(deltaSeconds);
         }
 
-        this->OnStop();
+        OnStop();
         return 0;
     }
 

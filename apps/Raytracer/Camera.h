@@ -15,7 +15,7 @@ namespace Duck
             const float viewportHeight = 2.0f * std::tan(Radians(verticalFovDegrees) * 0.5f);
             const float viewportWidth = aspectRatio * viewportHeight;
 
-            //camera basis: w points backward (away from the target), u right, v up.
+            //camera basis: w points backward (away from the target), u right, v up
             const Vec3 w = glm::normalize(position - target);
             const Vec3 u = glm::normalize(glm::cross(up, w));
             const Vec3 v = glm::cross(w, u);

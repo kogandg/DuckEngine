@@ -25,47 +25,47 @@ public:
 protected:
     void OnUpdate(float deltaSeconds) override
     {
-        if (this->GetWindow().GetInput().WasPressed(Key::Escape))
+        if (GetWindow().GetInput().WasPressed(Key::Escape))
         {
-            this->Quit();
+            Quit();
         }
 
-        this->time += deltaSeconds;
-        this->UpdateTitle(deltaSeconds);
+        time += deltaSeconds;
+        UpdateTitle(deltaSeconds);
 
-        const float blue = 0.5f + 0.5f * std::sin(this->time * 2.0f);
-        ThreadPool::Shared().ParallelFor(this->framebuffer.Height(),
-                                         [&](std::uint32_t y)
+        const float blue = 0.5f + 0.5f * std::sin(time * 2.0f);
+        ThreadPool::Shared().ParallelFor(framebuffer.Height(),
+                                         [&](int y)
                                          {
-                                             for (std::uint32_t x = 0; x < this->framebuffer.Width(); ++x)
+                                             for (int x = 0; x < framebuffer.Width(); x++)
                                              {
-                                                 this->framebuffer[x, y] = PackRgba8(
-                                                     Vec3(static_cast<float>(x) / this->framebuffer.Width(),
-                                                          static_cast<float>(y) / this->framebuffer.Height(), blue));
+                                                 framebuffer[x, y] = PackRgba8(
+                                                     Vec3(static_cast<float>(x) / framebuffer.Width(),
+                                                          static_cast<float>(y) / framebuffer.Height(), blue));
                                              }
                                          });
 
-        const auto frame = this->frames.BeginFrame();
+        const auto frame = frames.BeginFrame();
         if (!frame)
         {
             return;
         }
-        this->presenter.Present(*frame, this->framebuffer);
-        this->frames.EndFrame();
+        presenter.Present(*frame, framebuffer);
+        frames.EndFrame();
     }
 
-    void OnStop() override { vkDeviceWaitIdle(this->context.Device()); }
+    void OnStop() override { vkDeviceWaitIdle(context.Device()); }
 
 private:
     void UpdateTitle(float deltaSeconds)
     {
-        this->fpsTime += deltaSeconds;
-        this->fpsFrames++;
-        if (this->fpsTime >= 0.5f)
+        fpsTime += deltaSeconds;
+        fpsFrames++;
+        if (fpsTime >= 0.5f)
         {
-            this->GetWindow().SetTitle(std::format("DuckEngine Sandbox - {:.0f} FPS", this->fpsFrames / this->fpsTime));
-            this->fpsTime = 0.0f;
-            this->fpsFrames = 0;
+            GetWindow().SetTitle(std::format("DuckEngine Sandbox - {:.0f} FPS", fpsFrames / fpsTime));
+            fpsTime = 0.0f;
+            fpsFrames = 0;
         }
     }
 
@@ -78,7 +78,7 @@ private:
 
     float time = 0.0f;
     float fpsTime = 0.0f;
-    std::uint32_t fpsFrames = 0;
+    int fpsFrames = 0;
 };
 
 int main()

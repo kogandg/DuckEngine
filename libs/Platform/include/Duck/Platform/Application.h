@@ -29,7 +29,7 @@ namespace Duck
         // called once after the loop ends, while the window and your members still exist
         virtual void OnStop() {}
 
-        Window& GetWindow() noexcept { return this->window; }
+        Window& GetWindow() noexcept { return window; }
 
     private:
         Window window;

@@ -6,21 +6,21 @@ namespace Duck
 {
     void Input::BeginFrame()
     {
-        this->keyPressed.reset();
-        this->keyReleased.reset();
-        this->buttonPressed.reset();
-        this->buttonReleased.reset();
-        this->mouseDelta = Vec2(0.0f);
-        this->scroll = Vec2(0.0f);
+        keyPressed.reset();
+        keyReleased.reset();
+        buttonPressed.reset();
+        buttonReleased.reset();
+        mouseDelta = Vec2(0.0f);
+        scroll = Vec2(0.0f);
     }
 
-    bool Input::IsDown(Key key) const { return this->keyDown[static_cast<std::size_t>(key)]; }
-    bool Input::WasPressed(Key key) const { return this->keyPressed[static_cast<std::size_t>(key)]; }
-    bool Input::WasReleased(Key key) const { return this->keyReleased[static_cast<std::size_t>(key)]; }
+    bool Input::IsDown(Key key) const { return keyDown[static_cast<std::size_t>(key)]; }
+    bool Input::WasPressed(Key key) const { return keyPressed[static_cast<std::size_t>(key)]; }
+    bool Input::WasReleased(Key key) const { return keyReleased[static_cast<std::size_t>(key)]; }
 
-    bool Input::IsDown(MouseButton button) const { return this->buttonDown[static_cast<std::size_t>(button)]; }
-    bool Input::WasPressed(MouseButton button) const { return this->buttonPressed[static_cast<std::size_t>(button)]; }
-    bool Input::WasReleased(MouseButton button) const { return this->buttonReleased[static_cast<std::size_t>(button)]; }
+    bool Input::IsDown(MouseButton button) const { return buttonDown[static_cast<std::size_t>(button)]; }
+    bool Input::WasPressed(MouseButton button) const { return buttonPressed[static_cast<std::size_t>(button)]; }
+    bool Input::WasReleased(MouseButton button) const { return buttonReleased[static_cast<std::size_t>(button)]; }
 
     void Input::OnKey(int key, int action)
     {
@@ -31,13 +31,13 @@ namespace Duck
 
         if (action == GLFW_PRESS)
         {
-            this->keyDown.set(key);
-            this->keyPressed.set(key);
+            keyDown.set(key);
+            keyPressed.set(key);
         }
         else if (action == GLFW_RELEASE)
         {
-            this->keyDown.reset(key);
-            this->keyReleased.set(key);
+            keyDown.reset(key);
+            keyReleased.set(key);
         }
     }
 
@@ -50,28 +50,28 @@ namespace Duck
 
         if (action == GLFW_PRESS)
         {
-            this->buttonDown.set(button);
-            this->buttonPressed.set(button);
+            buttonDown.set(button);
+            buttonPressed.set(button);
         }
         else if (action == GLFW_RELEASE)
         {
-            this->buttonDown.reset(button);
-            this->buttonReleased.set(button);
+            buttonDown.reset(button);
+            buttonReleased.set(button);
         }
     }
 
     void Input::OnCursorPosition(double x, double y)
     {
         const Vec2 position(static_cast<float>(x), static_cast<float>(y));
-        if (this->hasMousePosition)
+        if (hasMousePosition)
         {
-            this->mouseDelta += position - this->mousePosition;
+            mouseDelta += position - mousePosition;
         }
-        this->mousePosition = position;
-        this->hasMousePosition = true;
+        mousePosition = position;
+        hasMousePosition = true;
     }
 
-    void Input::OnScroll(double x, double y) { this->scroll += Vec2(static_cast<float>(x), static_cast<float>(y)); }
+    void Input::OnScroll(double x, double y) { scroll += Vec2(static_cast<float>(x), static_cast<float>(y)); }
 
-    void Input::ResetMouseTracking() { this->hasMousePosition = false; }
+    void Input::ResetMouseTracking() { hasMousePosition = false; }
 }

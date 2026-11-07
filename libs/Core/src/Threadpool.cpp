@@ -46,7 +46,7 @@ namespace Duck
         insideParallelFor = true;
         while (true)
         {
-            const std::uint32_t index = this->nextIndex.fetch_add(1, std::memory_order_relaxed);
+            const int index = this->nextIndex.fetch_add(1, std::memory_order_relaxed);
             if (index >= jobToRun.count)
             {
                 break;
@@ -85,7 +85,7 @@ namespace Duck
         }
     }
 
-    void ThreadPool::Run(std::uint32_t count, Invoker invoker, void* context)
+    void ThreadPool::Run(int count, Invoker invoker, void* context)
     {
         DUCK_ASSERT(!insideParallelFor, "ParallelFor cannot be nested");
         if (count == 0)
@@ -98,7 +98,7 @@ namespace Duck
         //just work on the caller thread if there are no workier or just 1 index
         if (this->workers.empty() || count == 1)
         {
-            for (std::uint32_t i = 0; i < count; ++i)
+            for (int i = 0; i < count; i++)
             {
                 invoker(context, i);
             }

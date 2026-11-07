@@ -13,7 +13,7 @@ namespace Duck
 {
     class VulkanContext;
 
-    constexpr std::uint32_t MaxFramesInFlight = 2;
+    constexpr uint32_t MaxFramesInFlight = 2;
 
     struct FrameInfo
     {
@@ -21,7 +21,7 @@ namespace Duck
         VkImage Image = VK_NULL_HANDLE; // swapchain image, in layout VK_IMAGE_LAYOUT_UNDEFINED
         VkImageView ImageView = VK_NULL_HANDLE;
         VkExtent2D Extent{};
-        std::uint32_t FrameIndex = 0; // 0 to maxframesinflight-1, for indexing per frame resources
+        uint32_t FrameIndex = 0; // 0 to maxframesinflight-1, for indexing per frame resources
     };
 
     class FrameContext
@@ -60,8 +60,8 @@ namespace Duck
 
         std::array<Frame, MaxFramesInFlight> frames;
         std::vector<VkSemaphore> renderFinished; // one per swapchain image
-        std::uint32_t frameIndex = 0;
-        std::uint32_t imageIndex = 0;
+        uint32_t frameIndex = 0;
+        uint32_t imageIndex = 0;
         bool recording = false;
     };
 }

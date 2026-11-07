@@ -6,6 +6,13 @@
 
 namespace Duck
 {
+    using std::int32_t;
+    using std::int64_t;
+    using std::size_t;
+    using std::uint32_t;
+    using std::uint64_t;
+    using std::uint8_t;
+
     using Vec2 = glm::vec2;
     using Vec3 = glm::vec3;
     using Vec4 = glm::vec4;

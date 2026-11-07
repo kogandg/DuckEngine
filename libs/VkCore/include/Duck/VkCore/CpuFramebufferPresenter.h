@@ -42,11 +42,11 @@ namespace Duck
             VkImage Image = VK_NULL_HANDLE;
             VmaAllocation_T* ImageAllocation = nullptr;
 
-            std::uint32_t Width = 0;
-            std::uint32_t Height = 0;
+            int Width = 0;
+            int Height = 0;
         };
 
-        void EnsureSlot(Slot& slot, std::uint32_t width, std::uint32_t height);
+        void EnsureSlot(Slot& slot, int width, int height);
         void DestroySlot(Slot& slot);
 
         VulkanContext& context;

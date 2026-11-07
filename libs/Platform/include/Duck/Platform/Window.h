@@ -21,8 +21,8 @@ namespace Duck
     struct WindowDesc
     {
         std::string Title = "DuckEngine";
-        std::uint32_t Width = 1280;
-        std::uint32_t Height = 720;
+        int Width = 1280;
+        int Height = 720;
         bool Resizable = true;
     };
 
@@ -42,15 +42,15 @@ namespace Duck
         void RequestClose();
         void SetTitle(const std::string& title);
 
-        UVec2 Size() const;
-        UVec2 FramebufferSize() const;
+        IVec2 Size() const;
+        IVec2 FramebufferSize() const;
         bool IsMinimized() const; // framebuffer size should report 0 if minimized
 
         GLFWwindow* Handle() const noexcept { return this->handle; }
 
-        //resets perframe input state, then processes OS events
+        // resets perframe input state, then processes OS events
         void PollEvents();
-        //like PollEvents but sleeps until an event arives, for minimized windows
+        // like PollEvents but sleeps until an event arives, for minimized windows
         void WaitEvents();
 
         Input& GetInput() noexcept { return this->input; }

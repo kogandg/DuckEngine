@@ -1,6 +1,7 @@
 #include <Duck/VkCore/Swapchain.h>
 
 #include <Duck/Core/Assert.h>
+#include <Duck/Core/Cast.h>
 #include <Duck/Core/Log.h>
 #include <Duck/Platform/Window.h>
 #include <Duck/VkCore/VkCheck.h>
@@ -15,7 +16,7 @@ namespace Duck
     {
         VkSurfaceFormatKHR ChooseSurfaceFormat(VkPhysicalDevice device, VkSurfaceKHR surface)
         {
-            std::uint32_t count = 0;
+            uint32_t count = 0;
             vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &count, nullptr);
             std::vector<VkSurfaceFormatKHR> formats(count);
             vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &count, formats.data());
@@ -39,35 +40,35 @@ namespace Duck
     Swapchain::Swapchain(VulkanContext& context, Window& window) : context(context), window(window)
     {
         DUCK_VERIFY(!window.IsMinimized(), "Cannot create swapchain for a minimized window");
-        this->Build(VK_NULL_HANDLE);
+        Build(VK_NULL_HANDLE);
     }
 
     Swapchain::~Swapchain()
     {
-        this->DestroyImageViews();
-        vkDestroySwapchainKHR(this->context.Device(), this->swapchain, nullptr);
+        DestroyImageViews();
+        vkDestroySwapchainKHR(context.Device(), swapchain, nullptr);
     }
 
     bool Swapchain::Recreate()
     {
-        if (this->window.IsMinimized())
+        if (window.IsMinimized())
         {
             return false;
         }
 
         // wait so nothing is still be using the old images or views
-        vkDeviceWaitIdle(this->context.Device());
+        vkDeviceWaitIdle(context.Device());
 
-        this->DestroyImageViews();
-        const VkSwapchainKHR old = this->swapchain;
-        this->Build(old);
-        vkDestroySwapchainKHR(this->context.Device(), old, nullptr);
+        DestroyImageViews();
+        const VkSwapchainKHR old = swapchain;
+        Build(old);
+        vkDestroySwapchainKHR(context.Device(), old, nullptr);
         return true;
     }
 
-    SwapchainStatus Swapchain::Acquire(VkSemaphore signalSemaphore, std::uint32_t& imageIndex)
+    SwapchainStatus Swapchain::Acquire(VkSemaphore signalSemaphore, uint32_t& imageIndex)
     {
-        const VkResult result = vkAcquireNextImageKHR(this->context.Device(), this->swapchain, UINT64_MAX,
+        const VkResult result = vkAcquireNextImageKHR(context.Device(), swapchain, UINT64_MAX,
                                                       signalSemaphore, VK_NULL_HANDLE, &imageIndex);
         if (result == VK_ERROR_OUT_OF_DATE_KHR)
         {
@@ -79,17 +80,17 @@ namespace Duck
         return SwapchainStatus::Ok;
     }
 
-    SwapchainStatus Swapchain::Present(VkSemaphore waitSemaphore, std::uint32_t imageIndex)
+    SwapchainStatus Swapchain::Present(VkSemaphore waitSemaphore, uint32_t imageIndex)
     {
         const VkPresentInfoKHR info{
             .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
             .waitSemaphoreCount = 1,
             .pWaitSemaphores = &waitSemaphore,
             .swapchainCount = 1,
-            .pSwapchains = &this->swapchain,
+            .pSwapchains = &swapchain,
             .pImageIndices = &imageIndex,
         };
-        const VkResult result = vkQueuePresentKHR(this->context.Queue(), &info);
+        const VkResult result = vkQueuePresentKHR(context.Queue(), &info);
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
         {
             return SwapchainStatus::OutOfDate;
@@ -100,8 +101,8 @@ namespace Duck
 
     void Swapchain::Build(VkSwapchainKHR oldSwapchain)
     {
-        const VkPhysicalDevice physicalDevice = this->context.PhysicalDevice();
-        const VkSurfaceKHR surface = this->context.Surface();
+        const VkPhysicalDevice physicalDevice = context.PhysicalDevice();
+        const VkSurfaceKHR surface = context.Surface();
 
         VkSurfaceCapabilitiesKHR capabilities;
         DUCK_VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &capabilities));
@@ -109,21 +110,21 @@ namespace Duck
         const VkSurfaceFormatKHR surfaceFormat = ChooseSurfaceFormat(physicalDevice, surface);
 
         // platforms will dictate the extent, max value means any value works within bounds
-        if (capabilities.currentExtent.width != std::numeric_limits<std::uint32_t>::max())
+        if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
         {
-            this->extent = capabilities.currentExtent;
+            extent = capabilities.currentExtent;
         }
         else
         {
-            const UVec2 size = this->window.FramebufferSize();
-            this->extent.width =
-                std::clamp(size.x, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
-            this->extent.height =
-                std::clamp(size.y, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+            const IVec2 size = window.FramebufferSize();
+            extent.width =
+                std::clamp(CheckedCast<uint32_t>(size.x), capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+            extent.height =
+                std::clamp(CheckedCast<uint32_t>(size.y), capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
         }
 
         // one more than the min to never waiting on the driver, max of 0 means no limit
-        std::uint32_t imageCount = capabilities.minImageCount + 1;
+        uint32_t imageCount = capabilities.minImageCount + 1;
         if (capabilities.maxImageCount > 0)
         {
             imageCount = std::min(imageCount, capabilities.maxImageCount);
@@ -135,7 +136,7 @@ namespace Duck
             .minImageCount = imageCount,
             .imageFormat = surfaceFormat.format,
             .imageColorSpace = surfaceFormat.colorSpace,
-            .imageExtent = this->extent,
+            .imageExtent = extent,
             .imageArrayLayers = 1,
             // COLOR_ATTACHMENT for rendering, TRANSFER_DST for the CPU framebuffer blit
             .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
@@ -146,39 +147,39 @@ namespace Duck
             .clipped = VK_TRUE,
             .oldSwapchain = oldSwapchain,
         };
-        DUCK_VK_CHECK(vkCreateSwapchainKHR(this->context.Device(), &info, nullptr, &this->swapchain));
+        DUCK_VK_CHECK(vkCreateSwapchainKHR(context.Device(), &info, nullptr, &swapchain));
 
-        this->format = surfaceFormat.format;
-        this->colorSpace = surfaceFormat.colorSpace;
+        format = surfaceFormat.format;
+        colorSpace = surfaceFormat.colorSpace;
 
-        std::uint32_t actualCount = 0;
-        vkGetSwapchainImagesKHR(this->context.Device(), this->swapchain, &actualCount, nullptr);
-        this->images.resize(actualCount);
-        vkGetSwapchainImagesKHR(this->context.Device(), this->swapchain, &actualCount, this->images.data());
+        uint32_t actualCount = 0;
+        vkGetSwapchainImagesKHR(context.Device(), swapchain, &actualCount, nullptr);
+        images.resize(actualCount);
+        vkGetSwapchainImagesKHR(context.Device(), swapchain, &actualCount, images.data());
 
-        this->imageViews.resize(actualCount);
-        for (std::uint32_t i = 0; i < actualCount; ++i)
+        imageViews.resize(actualCount);
+        for (uint32_t i = 0; i < actualCount; i++)
         {
             const VkImageViewCreateInfo viewInfo{
                 .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-                .image = this->images[i],
+                .image = images[i],
                 .viewType = VK_IMAGE_VIEW_TYPE_2D,
-                .format = this->format,
+                .format = format,
                 .subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1},
             };
-            DUCK_VK_CHECK(vkCreateImageView(this->context.Device(), &viewInfo, nullptr, &this->imageViews[i]));
+            DUCK_VK_CHECK(vkCreateImageView(context.Device(), &viewInfo, nullptr, &imageViews[i]));
         }
 
-        Log::Info("Swapchain: {}x{}, {} images, format {}", this->extent.width, this->extent.height, actualCount,
-                  static_cast<int>(this->format));
+        Log::Info("Swapchain: {}x{}, {} images, format {}", extent.width, extent.height, actualCount,
+                  static_cast<int>(format));
     }
 
     void Swapchain::DestroyImageViews()
     {
-        for (VkImageView view : this->imageViews)
+        for (VkImageView view : imageViews)
         {
-            vkDestroyImageView(this->context.Device(), view, nullptr);
+            vkDestroyImageView(context.Device(), view, nullptr);
         }
-        this->imageViews.clear();
+        imageViews.clear();
     }
 }

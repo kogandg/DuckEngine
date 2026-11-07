@@ -7,6 +7,8 @@
 
 namespace Duck
 {
+    using std::uint32_t;
+
     class VulkanContext;
     class Window;
 
@@ -31,16 +33,16 @@ namespace Duck
         bool Recreate();
 
         // gets the next image to render into, signalSemaphore is signaled when the image is ready to be written
-        SwapchainStatus Acquire(VkSemaphore signalSemaphore, std::uint32_t& imageIndex);
+        SwapchainStatus Acquire(VkSemaphore signalSemaphore, uint32_t& imageIndex);
         // 2ueues the image for display once waitSemaphore is signaled
-        SwapchainStatus Present(VkSemaphore waitSemaphore, std::uint32_t imageIndex);
+        SwapchainStatus Present(VkSemaphore waitSemaphore, uint32_t imageIndex);
 
         VkSwapchainKHR Handle() const noexcept { return this->swapchain; }
         VkFormat Format() const noexcept { return this->format; }
         VkExtent2D Extent() const noexcept { return this->extent; }
-        std::uint32_t ImageCount() const noexcept { return static_cast<std::uint32_t>(this->images.size()); }
-        VkImage Image(std::uint32_t index) const { return this->images[index]; }
-        VkImageView ImageView(std::uint32_t index) const { return this->imageViews[index]; }
+        uint32_t ImageCount() const noexcept { return static_cast<uint32_t>(this->images.size()); }
+        VkImage Image(uint32_t index) const { return this->images[index]; }
+        VkImageView ImageView(uint32_t index) const { return this->imageViews[index]; }
 
     private:
         void Build(VkSwapchainKHR oldSwapchain);

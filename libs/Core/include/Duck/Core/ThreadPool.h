@@ -35,25 +35,25 @@ namespace Duck
         // are done. indices are handed out one at a time, so each one should be a meaningful chunk of work.
         // Must not be called from inside a body.
         template <typename TFunc>
-        void ParallelFor(std::uint32_t count, TFunc&& body)
+        void ParallelFor(int count, TFunc&& body)
         {
             using Fn = std::remove_reference_t<TFunc>;
             this->Run(
-                count, [](void* context, std::uint32_t index) { (*static_cast<Fn*>(context))(index); },
+                count, [](void* context, int index) { (*static_cast<Fn*>(context))(index); },
                 const_cast<std::remove_const_t<Fn>*>(std::addressof(body)));
         }
 
     private:
-        using Invoker = void (*)(void*, std::uint32_t);
+        using Invoker = void (*)(void*, int);
 
         struct Job
         {
             Invoker invoker = nullptr;
             void* context = nullptr;
-            std::uint32_t count = 0;
+            int count = 0;
         };
 
-        void Run(std::uint32_t count, Invoker invoker, void* context);
+        void Run(int count, Invoker invoker, void* context);
         void WorkerLoop();
         void Work(const Job& job);
 
@@ -66,7 +66,7 @@ namespace Duck
         unsigned workersBusy = 0;     // how many workers havent finished their current job
         bool stopping = false;        // set at shutdown
 
-        std::atomic<std::uint32_t> nextIndex{0};
+        std::atomic<int> nextIndex{0};
 
         std::vector<std::jthread>
             workers; // sleeping threads. last, so they are joined before anything above is destroyed
