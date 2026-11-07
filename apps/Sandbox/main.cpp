@@ -1,36 +1,88 @@
-#include <Duck/Platform/Window.h>
+#include <Duck/Core/Framebuffer.h>
 #include <Duck/Core/Log.h>
+#include <Duck/Core/ThreadPool.h>
+#include <Duck/Platform/Application.h>
+#include <Duck/VkCore/CpuFramebufferPresenter.h>
+#include <Duck/VkCore/FrameContext.h>
+#include <Duck/VkCore/Swapchain.h>
+#include <Duck/VkCore/VulkanContext.h>
+
+#include <cmath>
+#include <format>
 
 using namespace Duck;
 
-int main()
+class SandboxApp : public Application
 {
-    Window window({.Title = "DuckEngine sandbox"});
-    bool captured = false;
-
-    while (!window.ShouldClose())
+public:
+    SandboxApp()
+        : Application({.Title = "DuckEngine Sandbox"}), context(this->GetWindow()),
+          swapchain(this->context, this->GetWindow()), frames(this->context, this->swapchain), presenter(this->context),
+          framebuffer(320, 180)
     {
-        window.PollEvents();
-        const Input& input = window.GetInput();
+    }
 
-        if (input.WasPressed(Key::Escape))
+protected:
+    void OnUpdate(float deltaSeconds) override
+    {
+        if (this->GetWindow().GetInput().WasPressed(Key::Escape))
         {
-            window.RequestClose();
+            this->Quit();
         }
-        if (input.WasPressed(Key::Tab))
+
+        this->time += deltaSeconds;
+        this->UpdateTitle(deltaSeconds);
+
+        const float blue = 0.5f + 0.5f * std::sin(this->time * 2.0f);
+        ThreadPool::Shared().ParallelFor(this->framebuffer.Height(),
+                                         [&](std::uint32_t y)
+                                         {
+                                             for (std::uint32_t x = 0; x < this->framebuffer.Width(); ++x)
+                                             {
+                                                 this->framebuffer[x, y] = PackRgba8(
+                                                     Vec3(static_cast<float>(x) / this->framebuffer.Width(),
+                                                          static_cast<float>(y) / this->framebuffer.Height(), blue));
+                                             }
+                                         });
+
+        const auto frame = this->frames.BeginFrame();
+        if (!frame)
         {
-            captured = !captured;
-            window.SetCursorMode(captured ? CursorMode::Captured : CursorMode::Normal);
+            return;
         }
-        if (input.WasPressed(MouseButton::Left))
+        this->presenter.Present(*frame, this->framebuffer);
+        this->frames.EndFrame();
+    }
+
+    void OnStop() override { vkDeviceWaitIdle(this->context.Device()); }
+
+private:
+    void UpdateTitle(float deltaSeconds)
+    {
+        this->fpsTime += deltaSeconds;
+        this->fpsFrames++;
+        if (this->fpsTime >= 0.5f)
         {
-            Log::Info("Click at ({}, {})", input.MousePosition().x, input.MousePosition().y);
-        }
-        if (input.IsDown(Key::W))
-        {
-            Log::Info("W held, mouse delta ({}, {})", input.MouseDelta().x, input.MouseDelta().y);
+            this->GetWindow().SetTitle(std::format("DuckEngine Sandbox - {:.0f} FPS", this->fpsFrames / this->fpsTime));
+            this->fpsTime = 0.0f;
+            this->fpsFrames = 0;
         }
     }
 
-    Log::Info("Window closed");
+    // declaration order is construction order, and reverse is destruction order
+    VulkanContext context;
+    Swapchain swapchain;
+    FrameContext frames;
+    CpuFramebufferPresenter presenter;
+    Framebuffer framebuffer;
+
+    float time = 0.0f;
+    float fpsTime = 0.0f;
+    std::uint32_t fpsFrames = 0;
+};
+
+int main()
+{
+    SandboxApp app;
+    return app.Run();
 }

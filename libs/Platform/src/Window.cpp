@@ -104,6 +104,12 @@ namespace Duck
         glfwPollEvents();
     }
 
+    void Window::WaitEvents()
+    {
+        this->input.BeginFrame();
+        glfwWaitEvents();
+    }
+
     void Window::SetCursorMode(CursorMode mode)
     {
         int glfwMode = GLFW_CURSOR_NORMAL;

@@ -50,6 +50,8 @@ namespace Duck
 
         //resets perframe input state, then processes OS events
         void PollEvents();
+        //like PollEvents but sleeps until an event arives, for minimized windows
+        void WaitEvents();
 
         Input& GetInput() noexcept { return this->input; }
         const Input& GetInput() const noexcept { return this->input; }

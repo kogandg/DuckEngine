@@ -1,0 +1,1 @@
+duck_app(Raytracer DEPS Duck::VkCore)

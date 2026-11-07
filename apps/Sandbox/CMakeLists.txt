@@ -1,1 +1,1 @@
-duck_app(Sandbox DEPS Duck::Platform)
+duck_app(Sandbox DEPS Duck::VkCore)
