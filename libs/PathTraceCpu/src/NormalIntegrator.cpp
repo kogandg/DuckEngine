@@ -8,6 +8,7 @@ namespace Duck::PathTrace
     {
         if (const auto hit = scene.ClosestHit(ray, 0.001f, Infinity))
         {
+            // map the normal components from [-1, 1] to [0, 1] so they can be shown as a color
             return 0.5f * (hit->Normal + Vec3(1.0f));
         }
         return Vec3(0.0f);

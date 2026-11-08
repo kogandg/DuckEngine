@@ -16,14 +16,14 @@ namespace Duck
     {
     public:
         BasicFramebuffer() = default;
-        BasicFramebuffer(int width, int height) { Resize(width, height); }
+        BasicFramebuffer(int frameWidth, int frameHeight) { Resize(frameWidth, frameHeight); }
 
-        void Resize(int width, int height)
+        void Resize(int frameWidth, int frameHeight)
         {
-            DUCK_ASSERT(width >= 0 && height >= 0, "Invalid framebuffer size {}x{}", width, height);
-            this->width = width;
-            this->height = height;
-            this->pixels.assign(static_cast<std::size_t>(width) * static_cast<std::size_t>(height), TPixel{});
+            DUCK_ASSERT(frameWidth >= 0 && frameHeight >= 0, "Invalid framebuffer size {}x{}", frameWidth, frameHeight);
+            width = frameWidth;
+            height = frameHeight;
+            pixels.assign(static_cast<std::size_t>(width) * static_cast<std::size_t>(height), TPixel{});
         }
 
         void Fill(const TPixel& value) { std::ranges::fill(pixels, value); }

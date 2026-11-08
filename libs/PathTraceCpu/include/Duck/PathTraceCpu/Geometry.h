@@ -3,8 +3,8 @@
 #include <Duck/Core/Ray.h>
 
 #include <cmath>
-#include <optional>
 #include <cstdint>
+#include <optional>
 
 namespace Duck::PathTrace
 {
@@ -17,9 +17,18 @@ namespace Duck::PathTrace
         int MaterialId = 0;
     };
 
+    enum class MaterialType
+    {
+        Diffuse,    // labert + sun + ambient
+        Mirror,     // perfect reflection, tinted by albedo
+        Dielectric, // glass and water, fresnel weighted reflection + refraction
+    };
+
     struct Material
     {
-        Vec3 Albedo{0.5f};
+        MaterialType Type = MaterialType::Diffuse;
+        Vec3 Albedo{0.5f}; // diffuse color or mirror tint
+        float Ior = 1.5f;  // index of refraction, dielectric only
     };
 
     struct Sphere

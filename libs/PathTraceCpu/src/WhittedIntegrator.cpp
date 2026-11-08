@@ -1,29 +1,93 @@
 #include <Duck/PathTraceCpu/WhittedIntegrator.h>
 
 #include <Duck/Core/Ray.h>
+#include <Duck/PathTraceCpu/Optics.h>
 #include <Duck/PathTraceCpu/Scene.h>
+
+#include <algorithm>
 
 namespace Duck::PathTrace
 {
-    Vec3 WhittedIntegrator::Li(const Scene& scene, const Ray& ray, Random& random) const
+    namespace
     {
-        const auto hit = scene.ClosestHit(ray, 0.001f, Infinity);
+        constexpr float RayEpsilon = 0.001f;
+        constexpr float AmbientFactor = 0.3f;
+        constexpr float MinWeight = 0.001f; // below this a branch cant visibly change the pixel
+
+        Vec3 ShadeDiffuse(const Scene& scene, const Hit& hit, const Vec3& albedo)
+        {
+            const Vec3 ambient = AmbientFactor * scene.SkyColor({hit.Point, hit.Normal});
+
+            Vec3 direct(0.0f);
+            const float cosine = glm::dot(hit.Normal, scene.SunDirection);
+            if (cosine > 0.0f && !scene.Occluded({hit.Point, scene.SunDirection}, RayEpsilon, Infinity))
+            {
+                direct = scene.SunStrength * cosine;
+            }
+            return albedo * (ambient + direct);
+        }
+    }
+
+    Vec3 WhittedIntegrator::Li(const Scene& scene, const Ray& ray, Random&) const
+    {
+        return Trace(scene, ray, 0, 1.0f);
+    }
+
+    Vec3 WhittedIntegrator::Trace(const Scene& scene, const Ray& ray, int depth, float weight) const
+    {
+        if (depth > maxDepth || weight < MinWeight)
+        {
+            return Vec3(0.0f);
+        }
+
+        const auto hit = scene.ClosestHit(ray, RayEpsilon, Infinity);
         if (!hit)
         {
             return scene.SkyColor(ray);
         }
 
-        const Vec3 albedo = scene.Materials[hit->MaterialId].Albedo;
-
-        const Vec3 ambient = 0.3f * scene.SkyColor({hit->Point, hit->Normal});
-
-        Vec3 direct(0.0f);
-        const float cosine = glm::dot(hit->Normal, scene.SunDirection);
-        if (cosine > 0.0f && !scene.Occluded({hit->Point, scene.SunDirection}, 0.001f, Infinity))
+        const Material& material = scene.Materials[hit->MaterialId];
+        switch (material.Type)
         {
-            direct = scene.SunStrength * cosine;
+        case MaterialType::Diffuse:
+            return ShadeDiffuse(scene, *hit, material.Albedo);
+
+        case MaterialType::Mirror:
+        {
+            const Vec3 reflected = Reflect(ray.Direction, hit->Normal);
+            const float tint = std::max({material.Albedo.x, material.Albedo.y, material.Albedo.z});
+            return material.Albedo * Trace(scene, {hit->Point, reflected}, depth + 1, weight * tint);
         }
 
-        return albedo * (ambient + direct);
+        case MaterialType::Dielectric:
+            return TraceDielectric(scene, ray, *hit, material, depth, weight);
+        }
+
+        return Vec3(0.0f);
+    }
+
+    Vec3 WhittedIntegrator::TraceDielectric(const Scene& scene, const Ray& ray, const Hit& hit,
+                                            const Material& material, int depth, float weight) const
+    {
+        // hit.normal always faces the incoming ray, frontface says either entering or leaving
+        const float etaFrom = hit.FrontFace ? 1.0f : material.Ior;
+        const float etaTo = hit.FrontFace ? material.Ior : 1.0f;
+
+        const Vec3 reflected = Reflect(ray.Direction, hit.Normal);
+        const auto refracted = Refract(ray.Direction, hit.Normal, etaFrom / etaTo);
+        if (!refracted)
+        {
+            // total internal reflection, it all reflects
+            return Trace(scene, {hit.Point, reflected}, depth + 1, weight);
+        }
+
+        // schlick has angle on lower index (air) side, incoming when entering, refracted when leaving
+        const float cosine = hit.FrontFace ? -glm::dot(ray.Direction, hit.Normal) : -glm::dot(*refracted, hit.Normal);
+        const float reflectance = SchlickFresnel(cosine, etaFrom, etaTo);
+
+        const Vec3 reflectedLight = Trace(scene, {hit.Point, reflected}, depth + 1, weight * reflectance);
+        const Vec3 refractedLight = Trace(scene, {hit.Point, *refracted}, depth + 1, weight * (1.0f - reflectance));
+
+        return (reflectance * reflectedLight) + ((1.0f - reflectance) * refractedLight);
     }
 }

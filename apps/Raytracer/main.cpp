@@ -24,16 +24,20 @@ namespace
     Scene MakeScene()
     {
         Scene scene;
-        scene.Materials = {Material{Vec3(0.5f)}, Material{Vec3(0.5f)}};
+        scene.Materials = {
+            Material{.Albedo = Vec3(0.5f)},                          // 0 ground
+            Material{.Albedo = Vec3(0.1f, 0.2f, 0.5f)},              // 1 blue diffuse
+            Material{.Type = MaterialType::Dielectric, .Ior = 1.5f}, // 2 glass
+            Material{.Type = MaterialType::Mirror, .Albedo = Vec3(0.8f, 0.6f, 0.2f)}, // 3 gold mirror
+        };
         scene.Spheres = {
-            {{0.0f, 0.0f, -1.0f}, 0.5f, 0},
-            {{0.0f, -100.5f, -1.0f}, 100.0f, 1}, // huge sphere standing in for a ground plane
+            {{0.0f, -100.5f, -1.0f}, 100.0f, 0}, // huge sphere standing in for a ground plane
+            {{0.0f, 0.0f, -1.2f}, 0.5f, 1},
+            {{-1.0f, 0.0f, -1.0f}, 0.5f, 2},
+            {{1.0f, 0.0f, -1.0f}, 0.5f, 3},
         };
         return scene;
     }
-
-    //// map the normal components from [-1, 1] to [0, 1] so they can be shown as a color
-    // return 0.5f * (hit->Normal + Vec3(1.0f));
 }
 
 class RaytracerApp : public Application
@@ -54,13 +58,13 @@ public:
 protected:
     void OnStart() override
     {
-//#ifdef _DEBUG
-//        Log::Info("Running in Debug");
-//#elif defined(NDEBUG)
-//        Log::Info("Running in Release");
-//#else
-//        Log::Info("Running in Unknown");
-//#endif
+        // #ifdef _DEBUG
+        //         Log::Info("Running in Debug");
+        // #elif defined(NDEBUG)
+        //         Log::Info("Running in Release");
+        // #else
+        //         Log::Info("Running in Unknown");
+        // #endif
     }
 
     void OnUpdate(float deltaSeconds) override
