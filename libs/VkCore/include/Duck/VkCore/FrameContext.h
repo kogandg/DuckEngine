@@ -9,7 +9,7 @@
 #include <optional>
 #include <vector>
 
-namespace Duck
+namespace Duck::Vk
 {
     class VulkanContext;
 

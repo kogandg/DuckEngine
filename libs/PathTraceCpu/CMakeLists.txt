@@ -1,0 +1,1 @@
+duck_library(PathTraceCpu DEPS Duck::Core)

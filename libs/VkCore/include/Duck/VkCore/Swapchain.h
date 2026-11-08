@@ -7,10 +7,14 @@
 
 namespace Duck
 {
+    class Window;
+}
+
+namespace Duck::Vk
+{
     using std::uint32_t;
 
     class VulkanContext;
-    class Window;
 
     enum SwapchainStatus
     {

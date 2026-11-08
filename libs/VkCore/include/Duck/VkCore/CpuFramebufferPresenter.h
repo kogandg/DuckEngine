@@ -10,7 +10,7 @@
 
 struct VmaAllocation_T;
 
-namespace Duck
+namespace Duck::Vk
 {
     class VulkanContext;
 

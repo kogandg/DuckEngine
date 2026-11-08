@@ -30,6 +30,7 @@ find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 add_subdirectory(libs/Core)
 add_subdirectory(libs/Platform)
 add_subdirectory(libs/VkCore)
+add_subdirectory(libs/PathTraceCpu)
 
 add_subdirectory(apps/Sandbox)
 add_subdirectory(apps/Raytracer)

@@ -4,7 +4,7 @@
 #include <Duck/VkCore/VkCheck.h>
 #include <Duck/VkCore/VulkanContext.h>
 
-namespace Duck
+namespace Duck::Vk
 {
     namespace
     {

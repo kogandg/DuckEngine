@@ -4,8 +4,9 @@
 
 #include <cmath>
 #include <optional>
+#include <cstdint>
 
-namespace Duck
+namespace Duck::PathTrace
 {
     struct Hit
     {

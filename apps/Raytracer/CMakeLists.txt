@@ -1,1 +1,1 @@
-duck_app(Raytracer DEPS Duck::VkCore)
+duck_app(Raytracer DEPS Duck::VkCore Duck::PathTraceCpu)

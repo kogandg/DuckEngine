@@ -1,7 +1,9 @@
-#include "WhittedIntegrator.h"
-#include "PathTracer.h"
-#include "NormalIntegrator.h"
-
+#include <Duck/PathTraceCpu/Camera.h>
+#include <Duck/PathTraceCpu/Film.h>
+#include <Duck/PathTraceCpu/NormalIntegrator.h>
+#include <Duck/PathTraceCpu/PathTracer.h>
+#include <Duck/PathTraceCpu/Scene.h>
+#include <Duck/PathTraceCpu/WhittedIntegrator.h>
 #include <Duck/Platform/Application.h>
 #include <Duck/VkCore/CpuFramebufferPresenter.h>
 #include <Duck/VkCore/FrameContext.h>
@@ -14,6 +16,8 @@
 #include <vector>
 
 using namespace Duck;
+using namespace Duck::PathTrace;
+using namespace Duck::Vk;
 
 namespace
 {
@@ -48,10 +52,20 @@ public:
     }
 
 protected:
+    void OnStart() override
+    {
+//#ifdef _DEBUG
+//        Log::Info("Running in Debug");
+//#elif defined(NDEBUG)
+//        Log::Info("Running in Release");
+//#else
+//        Log::Info("Running in Unknown");
+//#endif
+    }
+
     void OnUpdate(float deltaSeconds) override
     {
         HandleInput();
-
 
         IIntegrator& integrator = *integrators[current];
         if (film.Passes < integrator.RecommendedPasses())
@@ -83,15 +97,15 @@ private:
             Quit();
         }
 
-         const Key keys[] = {Key::D1, Key::D2, Key::D3};
-         for (size_t i = 0; i < integrators.size() && i < std::size(keys); i++)
+        const Key keys[] = {Key::D1, Key::D2, Key::D3};
+        for (size_t i = 0; i < integrators.size() && i < std::size(keys); i++)
         {
-             if (input.WasPressed(keys[i]) && i != current)
-             {
-                 current = i;
-                 film.Reset(); // the accumulated sum belongs to the old integrator
-             }
-         }
+            if (input.WasPressed(keys[i]) && i != current)
+            {
+                current = i;
+                film.Reset(); // the accumulated sum belongs to the old integrator
+            }
+        }
     }
 
     void UpdateTitle(float deltaSeconds)
@@ -100,8 +114,10 @@ private:
         fpsFrames++;
         if (fpsTime >= 0.5f)
         {
-            GetWindow().SetTitle(std::format("DuckEngine Raytracer - {} - {} passes - {} - {:.0f} FPS", integrators[current]->Name(), film.Passes,
-                film.Passes >= integrators[current]->RecommendedPasses() ? "Done" : "In Progress", fpsFrames / fpsTime));
+            GetWindow().SetTitle(std::format(
+                "DuckEngine Raytracer - {} - {} passes - {} - {:.0f} FPS", integrators[current]->Name(), film.Passes,
+                film.Passes >= integrators[current]->RecommendedPasses() ? "Done" : "In Progress",
+                fpsFrames / fpsTime));
             fpsTime = 0.0f;
             fpsFrames = 0;
         }

@@ -10,7 +10,7 @@
 #include <algorithm>
 #include <cstring>
 
-namespace Duck
+namespace Duck::Vk
 {
     namespace
     {

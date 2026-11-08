@@ -11,6 +11,7 @@
 #include <format>
 
 using namespace Duck;
+using namespace Duck::Vk;
 
 class SandboxApp : public Application
 {

@@ -10,7 +10,7 @@
 #include <algorithm>
 #include <limits>
 
-namespace Duck
+namespace Duck::Vk
 {
     namespace
     {

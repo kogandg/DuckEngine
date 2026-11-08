@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Integrator.h"
+#include <Duck/PathTraceCpu/Integrator.h>
 
-namespace Duck
+namespace Duck::PathTrace
 {
     class NormalIntegrator final : public PixelIntegrator
     {
@@ -14,13 +14,6 @@ namespace Duck
     protected:
         bool JitterSamples() const override { return false; }
 
-        Vec3 Li(const Scene& scene, const Ray& ray, Random&) const override
-        {
-            if (const auto hit = scene.ClosestHit(ray, 0.001f, Infinity))
-            {
-                return 0.5f * (hit->Normal + Vec3(1.0f));
-            }
-            return Vec3(0.0f);
-        }
+        Vec3 Li(const Scene& scene, const Ray& ray, Random&) const override;
     };
 }

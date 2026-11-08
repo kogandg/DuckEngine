@@ -8,9 +8,12 @@ struct VmaAllocator_T;
 
 namespace Duck
 {
-    using std::uint32_t;
-
     class Window;
+}
+
+namespace Duck::Vk
+{
+    using std::uint32_t;
 
     struct VulkanContextDesc
     {
