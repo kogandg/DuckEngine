@@ -40,7 +40,7 @@ TEST_CASE("Whitted: a diffuse floor follows Lambert's cosine law", "[whitted]")
     const Vec3 irradiance(0.8f);
     const int gray = scene.AddMaterial({.Albedo = Vec3(albedo)});
     scene.Quads = {Floor(gray)};
-    scene.DirectionalLights = {{Vec3(std::sin(Radians(angle)), std::cos(Radians(angle)), 0.0f), irradiance}};
+    scene.Lights = {DirectionalLight{Vec3(std::sin(Radians(angle)), std::cos(Radians(angle)), 0.0f), irradiance}};
 
     WhittedIntegrator whitted;
     // albedo / pi * E * cos(theta)
@@ -53,7 +53,7 @@ TEST_CASE("Whitted: light doesn't leak through a surface", "[whitted]")
     Scene scene = DarkScene();
     const int gray = scene.AddMaterial({.Albedo = Vec3(0.5f)});
     scene.Quads = {Floor(gray)};
-    scene.DirectionalLights = {{Vec3(0.0f, 1.0f, 0.0f), Vec3(1.0f)}};
+    scene.Lights = {DirectionalLight{Vec3(0.0f, 1.0f, 0.0f), Vec3(1.0f)}};
 
     WhittedIntegrator whitted;
     // seen from below, the normal faces down, away from the light above
@@ -86,7 +86,7 @@ TEST_CASE("Whitted: blockers shadow a directional light", "[whitted]")
     const int gray = scene.AddMaterial({.Albedo = Vec3(0.5f)});
     scene.Quads = {Floor(gray)};
     const Vec3 toSun = glm::normalize(Vec3(1.0f, 1.0f, 0.0f));
-    scene.DirectionalLights = {{toSun, Vec3(1.0f)}};
+    scene.Lights = {DirectionalLight{toSun, Vec3(1.0f)}};
 
     const Camera camera = LookDown({0.0f, 1.0f, 0.0f}, 5.0f);
     WhittedIntegrator whitted;
@@ -113,7 +113,7 @@ TEST_CASE("Whitted: point lights fall off with the inverse square law", "[whitte
     const Vec3 intensity(2.0f);
     const int gray = scene.AddMaterial({.Albedo = Vec3(albedo)});
     scene.Quads = {Floor(gray)};
-    scene.PointLights = {{light, intensity}};
+    scene.Lights = {PointLight{light, intensity}};
 
     // very narrow view so the center pixel sees one spot, averaged over a few jittered passes
     WhittedIntegrator whitted;
@@ -126,7 +126,7 @@ TEST_CASE("Whitted: point light shadows stop at the light", "[whitted]")
     Scene scene = DarkScene();
     const int gray = scene.AddMaterial({.Albedo = Vec3(0.5f)});
     scene.Quads = {Floor(gray)};
-    scene.PointLights = {{Vec3(1.0f, 1.0f, 0.0f), Vec3(1.0f)}};
+    scene.Lights = {PointLight{Vec3(1.0f, 1.0f, 0.0f), Vec3(1.0f)}};
     const Camera camera = LookDown({0.0f, 1.0f, 0.0f}, 0.25f);
     WhittedIntegrator whitted;
 

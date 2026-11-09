@@ -3,7 +3,8 @@
 #include <Duck/Core/Random.h>
 #include <Duck/Core/Ray.h>
 #include <Duck/Core/Sampling.h>
-#include <Duck/PathTraceCpu//Scene.h>
+#include <Duck/PathTraceCpu/Scene.h>
+#include <Duck/PathTraceCpu/Shading.h>
 
 namespace Duck::PathTrace
 {
@@ -15,7 +16,7 @@ namespace Duck::PathTrace
 
         for (int bounce = 0; bounce < this->maxBounces; ++bounce)
         {
-            const auto hit = scene.ClosestHit(ray, 0.001f, Infinity);
+            const auto hit = scene.ClosestHit(ray, RayEpsilon, Infinity);
             if (!hit)
             {
                 radiance += throughput * scene.SkyColor(ray);
@@ -24,7 +25,7 @@ namespace Duck::PathTrace
 
             // lambertian diffuse with cosine sampling: f * cos / pdf = albedo
             throughput *= scene.Materials[hit->MaterialId].AlbedoAt(hit->Point);
-            ray = {hit->Point, SampleCosineHemisphere(hit->Normal, random)};
+            ray = SpawnRay(*hit, SampleCosineHemisphere(hit->Normal, random));
         }
         return radiance;
     }

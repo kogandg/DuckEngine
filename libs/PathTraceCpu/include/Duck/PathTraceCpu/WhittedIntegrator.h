@@ -20,9 +20,9 @@ namespace Duck::PathTrace
 
     private:
         // weight = how much this ray can still contribute to the pixel, used to cut off useless branches
-        Vec3 Trace(const Scene& scene, const Ray& ray, int depth, float weight) const;
-        Vec3 TraceDielectric(const Scene& scene, const Ray& ray, const Hit& hit, const Material& material, int depth,
-                             float weight) const;
+        Vec3 Trace(const Scene& scene, const Ray& ray, Random& random, int depth, float weight) const;
+        Vec3 TraceDielectric(const Scene& scene, const Ray& ray, const Hit& hit, const Material& material,
+                             Random& random, int depth, float weight) const;
 
         int maxDepth;
     };

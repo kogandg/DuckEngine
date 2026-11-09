@@ -23,7 +23,7 @@ namespace
             {{-1.0f, 0.0f, -1.0f}, 0.5f, glass},
             {{1.0f, 0.0f, -1.0f}, 0.5f, gold},
         };
-        scene.DirectionalLights = {{glm::normalize(Vec3(0.6f, 1.0f, 0.4f)), Vec3(0.7f * Pi)}};
+        scene.Lights = {DirectionalLight{glm::normalize(Vec3(0.6f, 1.0f, 0.4f)), Vec3(0.7f * Pi)}};
 
         return {.Name = "Spheres",
                 .Scene = std::move(scene),
@@ -54,7 +54,7 @@ namespace
         };
 
         // a point light just under the ceiling stands in for the usual area light
-        scene.PointLights = {{{0.0f, 1.9f, 0.0f}, Vec3(3.0f * Pi)}};
+        scene.Lights = {PointLight{{0.0f, 1.9f, 0.0f}, Vec3(3.0f * Pi)}}; 
 
         // closed room: black background, and a small flat ambient so shadows aren't pure black
         scene.SkyDown = scene.SkyUp = Vec3(0.0f);
@@ -81,7 +81,7 @@ namespace
             {{0.5f, 1.6f, -2.6f}, -0.95f, glass}, // negative radius flips the normal: a hollow shell
         };
 
-        scene.DirectionalLights = {{glm::normalize(Vec3(-0.4f, 1.0f, 0.6f)), Vec3(Pi)}};
+        scene.Lights = {DirectionalLight{glm::normalize(Vec3(-0.4f, 1.0f, 0.6f)), Vec3(Pi)}};
         scene.SkyDown = Vec3(0.45f, 0.6f, 0.95f);
         scene.SkyUp = Vec3(0.1f, 0.25f, 0.7f);
         scene.AmbientDown = Vec3(0.15f);

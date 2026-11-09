@@ -2,34 +2,20 @@
 
 #include <Duck/Core/Ray.h>
 #include <Duck/PathTraceCpu/Geometry.h>
+#include <Duck/PathTraceCpu/Lights.h>
 
 #include <optional>
 #include <vector>
 
 namespace Duck::PathTrace
 {
-    // infinitely far away
-    struct DirectionalLight
-    {
-        Vec3 Direction{0.0f, 1.0f, 0.0f}; // unit, points TOWARD the light
-        Vec3 Irradiance{Pi}; // W/m^2 on a surface facing the light. Pi lights a white surface to radiance 1
-    };
-
-    // light from one point, falls off with 1/distance^2, inverse square law
-    struct PointLight
-    {
-        Vec3 Position{0.0f};
-        Vec3 Intensity{1.0f}; // W/sr
-    };
-
     struct Scene
     {
         std::vector<Material> Materials;
         std::vector<Sphere> Spheres;
         std::vector<Quad> Quads;
 
-        std::vector<DirectionalLight> DirectionalLights;
-        std::vector<PointLight> PointLights;
+        std::vector<Light> Lights;
 
         // radiance of the background for rays that escape, W/(m^2 sr)
         Vec3 SkyDown{1.0f};

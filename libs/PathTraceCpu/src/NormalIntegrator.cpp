@@ -1,12 +1,13 @@
 #include <Duck/PathTraceCpu/NormalIntegrator.h>
 
 #include <Duck/PathTraceCpu/Scene.h>
+#include <Duck/PathTraceCpu/Shading.h>
 
 namespace Duck::PathTrace
 {
     Vec3 NormalIntegrator::Li(const Scene& scene, const Ray& ray, Random&) const
     {
-        if (const auto hit = scene.ClosestHit(ray, 0.001f, Infinity))
+        if (const auto hit = scene.ClosestHit(ray, RayEpsilon, Infinity))
         {
             // map the normal components from [-1, 1] to [0, 1] so they can be shown as a color
             return 0.5f * (hit->Normal + Vec3(1.0f));
