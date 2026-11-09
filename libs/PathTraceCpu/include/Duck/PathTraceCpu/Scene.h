@@ -12,14 +12,14 @@ namespace Duck::PathTrace
     struct DirectionalLight
     {
         Vec3 Direction{0.0f, 1.0f, 0.0f}; // unit, points TOWARD the light
-        Vec3 Strength{1.0f};
+        Vec3 Irradiance{Pi}; // W/m^2 on a surface facing the light. Pi lights a white surface to radiance 1
     };
 
     // light from one point, falls off with 1/distance^2, inverse square law
     struct PointLight
     {
         Vec3 Position{0.0f};
-        Vec3 Intensity{1.0f};
+        Vec3 Intensity{1.0f}; // W/sr
     };
 
     struct Scene
@@ -31,11 +31,11 @@ namespace Duck::PathTrace
         std::vector<DirectionalLight> DirectionalLights;
         std::vector<PointLight> PointLights;
 
-        // background for rays that escape
+        // radiance of the background for rays that escape, W/(m^2 sr)
         Vec3 SkyDown{1.0f};
         Vec3 SkyUp{0.5f, 0.7f, 1.0f};
 
-        // whitted ambient
+        // whitted ambient: radiance of a surrounding environment, ignoring occlusion
         Vec3 AmbientDown{0.3f};
         Vec3 AmbientUp{0.15f, 0.21f, 0.3f};
 

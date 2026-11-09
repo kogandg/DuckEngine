@@ -6,9 +6,9 @@
 #include <catch2/generators/catch_generators.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
+#include <algorithm>
 #include <cmath>
 #include <tuple>
-#include <algorithm>
 
 using namespace Duck;
 using namespace Duck::PathTrace;
@@ -37,15 +37,15 @@ TEST_CASE("Whitted: a diffuse floor follows Lambert's cosine law", "[whitted]")
 
     Scene scene = DarkScene();
     const float albedo = 0.5f;
-    const Vec3 strength(0.8f);
+    const Vec3 irradiance(0.8f);
     const int gray = scene.AddMaterial({.Albedo = Vec3(albedo)});
     scene.Quads = {Floor(gray)};
-    scene.DirectionalLights = {{Vec3(std::sin(Radians(angle)), std::cos(Radians(angle)), 0.0f), strength}};
+    scene.DirectionalLights = {{Vec3(std::sin(Radians(angle)), std::cos(Radians(angle)), 0.0f), irradiance}};
 
     WhittedIntegrator whitted;
-    // rho * E * cos(theta), with the 1/pi folded into E (see P-006)
+    // albedo / pi * E * cos(theta)
     CheckAllPixels(Render(whitted, scene, LookDown({0.0f, 1.0f, 0.0f}, 30.0f)),
-                   albedo * strength * std::cos(Radians(angle)), 1e-5f);
+                   albedo * InvPi * irradiance * std::cos(Radians(angle)), 1e-5f);
 }
 
 TEST_CASE("Whitted: light doesn't leak through a surface", "[whitted]")
@@ -90,7 +90,7 @@ TEST_CASE("Whitted: blockers shadow a directional light", "[whitted]")
 
     const Camera camera = LookDown({0.0f, 1.0f, 0.0f}, 5.0f);
     WhittedIntegrator whitted;
-    CheckAllPixels(Render(whitted, scene, camera), Vec3(0.5f * toSun.y), 1e-5f);
+    CheckAllPixels(Render(whitted, scene, camera), Vec3(0.5f * InvPi * toSun.y), 1e-5f);
 
     // a ball on the line from the viewed spot toward the sun, outside the camera's view
     scene.Spheres = {{{2.0f, 2.0f, 0.0f}, 0.5f, gray}};
@@ -118,7 +118,7 @@ TEST_CASE("Whitted: point lights fall off with the inverse square law", "[whitte
     // very narrow view so the center pixel sees one spot, averaged over a few jittered passes
     WhittedIntegrator whitted;
     const Vec3 center = CenterPixel(Render(whitted, scene, LookDown({0.0f, 5.0f, 0.0f}, 0.25f), 9, 8));
-    CHECK_THAT(center, Vec3Near(albedo * intensity * cosineOverDistanceSquared, 1e-3f));
+    CHECK_THAT(center, Vec3Near(albedo * InvPi * intensity * cosineOverDistanceSquared, 1e-3f));
 }
 
 TEST_CASE("Whitted: point light shadows stop at the light", "[whitted]")
@@ -131,8 +131,9 @@ TEST_CASE("Whitted: point light shadows stop at the light", "[whitted]")
     WhittedIntegrator whitted;
 
     // behind the light: must not block
+    // albedo * pi * I * cos(45) / r^2 with r^2 = 2
     scene.Spheres = {{{2.0f, 2.0f, 0.0f}, 0.5f, gray}};
-    CHECK(CenterPixel(Render(whitted, scene, camera)).x > 0.1f);
+    CHECK_THAT(CenterPixel(Render(whitted, scene, camera)), Vec3Near(Vec3(0.5f * InvPi * 0.35355339f), 1e-3f));
 
     // between the floor and the light: blocks
     scene.Spheres = {{{0.5f, 0.5f, 0.0f}, 0.2f, gray}};

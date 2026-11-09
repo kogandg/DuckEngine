@@ -14,16 +14,20 @@ namespace Duck::PathTrace
         constexpr float RayEpsilon = 0.001f;
         constexpr float MinWeight = 0.001f; // below this a branch cant visibly change the pixel
 
+        //lambert: BRDF = albedo / pi, so reflected radiance = albedo / pi * irradiance
         Vec3 ShadeDiffuse(const Scene& scene, const Hit& hit, const Vec3& albedo)
         {
-            Vec3 light = scene.Ambient(hit.Normal);
+            // ambient is radiance from all around, uniform radiance L over hemisphere gives E = pi * L
+            // and albedo / pi * pi * L = albedo * L, so no pi needed
+            const Vec3 ambient = albedo * scene.Ambient(hit.Normal);
 
+            Vec3 irradiance(0.0f);
             for (const DirectionalLight& sun : scene.DirectionalLights)
             {
                 const float cosine = glm::dot(hit.Normal, sun.Direction);
                 if (cosine > 0.0f && !scene.Occluded({hit.Point, sun.Direction}, RayEpsilon, Infinity))
                 {
-                    light += sun.Strength * cosine;
+                    irradiance += sun.Irradiance * cosine;
                 } 
             }
 
@@ -37,11 +41,11 @@ namespace Duck::PathTrace
                 // the shadow ray has to stop at the light, anything behind it doesn't block
                 if (cosine > 0.0f && !scene.Occluded({hit.Point, direction}, RayEpsilon, distance - RayEpsilon))
                 {
-                    light += point.Intensity * cosine / distanceSquared; // inverse-square falloff
+                    irradiance += point.Intensity * cosine / distanceSquared; // inverse-square falloff
                 }
             }
 
-            return albedo * light;
+            return ambient + albedo * InvPi * irradiance;
         }
     }
 

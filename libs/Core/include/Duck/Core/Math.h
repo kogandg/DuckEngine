@@ -32,7 +32,8 @@ namespace Duck
     inline constexpr float Pi = std::numbers::pi_v<float>;
     inline constexpr float TwoPi = 2.0f * Pi;
     inline constexpr float HalfPi = 0.5f * Pi;
-    inline constexpr float Epislon = 1e-6f;
+    inline constexpr float InvPi = 1.0f / Pi;
+    inline constexpr float Epsilon = 1e-6f;
     inline constexpr float Infinity = std::numeric_limits<float>::infinity();
 
     constexpr float Radians(float degrees) { return degrees * (Pi / 180.0f); }
