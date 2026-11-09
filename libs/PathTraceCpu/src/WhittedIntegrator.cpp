@@ -5,6 +5,7 @@
 #include <Duck/PathTraceCpu/Scene.h>
 
 #include <algorithm>
+#include <cmath>
 
 namespace Duck::PathTrace
 {
@@ -16,15 +17,32 @@ namespace Duck::PathTrace
 
         Vec3 ShadeDiffuse(const Scene& scene, const Hit& hit, const Vec3& albedo)
         {
-            const Vec3 ambient = AmbientFactor * scene.SkyColor({hit.Point, hit.Normal});
+            Vec3 light = scene.Ambient(hit.Normal);
 
-            Vec3 direct(0.0f);
-            const float cosine = glm::dot(hit.Normal, scene.SunDirection);
-            if (cosine > 0.0f && !scene.Occluded({hit.Point, scene.SunDirection}, RayEpsilon, Infinity))
+            for (const DirectionalLight& sun : scene.DirectionalLights)
             {
-                direct = scene.SunStrength * cosine;
+                const float cosine = glm::dot(hit.Normal, sun.Direction);
+                if (cosine > 0.0f && !scene.Occluded({hit.Point, sun.Direction}, RayEpsilon, Infinity))
+                {
+                    light += sun.Stength * cosine;
+                } 
             }
-            return albedo * (ambient + direct);
+
+            for (const PointLight& point : scene.PointLights)
+            {
+                const Vec3 toLight = point.Position - hit.Point;
+                const float distanceSquared = glm::dot(toLight, toLight);
+                const float distance = std::sqrt(distanceSquared);
+                const Vec3 direction = toLight / distance;
+                const float cosine = glm::dot(hit.Normal, direction);
+                // the shadow ray has to stop at the light, anything behind it doesn't block
+                if (cosine > 0.0f && !scene.Occluded({hit.Point, direction}, RayEpsilon, distance - RayEpsilon))
+                {
+                    light += point.Intensity * cosine / distanceSquared; // inverse-square falloff
+                }
+            }
+
+            return albedo * light;
         }
     }
 
@@ -50,7 +68,7 @@ namespace Duck::PathTrace
         switch (material.Type)
         {
         case MaterialType::Diffuse:
-            return ShadeDiffuse(scene, *hit, material.Albedo);
+            return ShadeDiffuse(scene, *hit, material.AlbedoAt(hit->Point));
 
         case MaterialType::Mirror:
         {

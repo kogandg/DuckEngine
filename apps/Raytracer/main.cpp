@@ -1,3 +1,5 @@
+#include "TestScenes.h"
+
 #include <Duck/PathTraceCpu/Camera.h>
 #include <Duck/PathTraceCpu/Film.h>
 #include <Duck/PathTraceCpu/NormalIntegrator.h>
@@ -21,23 +23,8 @@ using namespace Duck::Vk;
 
 namespace
 {
-    Scene MakeScene()
-    {
-        Scene scene;
-        scene.Materials = {
-            Material{.Albedo = Vec3(0.5f)},                          // 0 ground
-            Material{.Albedo = Vec3(0.1f, 0.2f, 0.5f)},              // 1 blue diffuse
-            Material{.Type = MaterialType::Dielectric, .Ior = 1.5f}, // 2 glass
-            Material{.Type = MaterialType::Mirror, .Albedo = Vec3(0.8f, 0.6f, 0.2f)}, // 3 gold mirror
-        };
-        scene.Spheres = {
-            {{0.0f, -100.5f, -1.0f}, 100.0f, 0}, // huge sphere standing in for a ground plane
-            {{0.0f, 0.0f, -1.2f}, 0.5f, 1},
-            {{-1.0f, 0.0f, -1.0f}, 0.5f, 2},
-            {{1.0f, 0.0f, -1.0f}, 0.5f, 3},
-        };
-        return scene;
-    }
+    constexpr int FilmWidth = 640;
+    constexpr int FilmHeight = 360;
 }
 
 class RaytracerApp : public Application
@@ -46,9 +33,8 @@ public:
     RaytracerApp()
         : Application({.Title = "DuckEngine Raytracer"}), context(this->GetWindow()),
           swapchain(this->context, this->GetWindow()), frames(this->context, this->swapchain), presenter(this->context),
-          film(640, 360), display(640, 360),
-          camera({0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {0.0f, 1.0f, 0.0f}, 90.0f, 640.0f / 360.0f),
-          scene(MakeScene())
+          film(FilmWidth, FilmHeight), display(FilmWidth, FilmHeight),
+          scenes(MakeTestScenes(static_cast<float>(FilmWidth) / static_cast<float>(FilmHeight)))
     {
         integrators.push_back(std::make_unique<PathTracer>());
         integrators.push_back(std::make_unique<WhittedIntegrator>());
@@ -71,10 +57,11 @@ protected:
     {
         HandleInput();
 
-        IIntegrator& integrator = *integrators[current];
+        IIntegrator& integrator = *integrators[currentIntegrator];
+        const TestScene& test = scenes[currentScene];
         if (film.Passes < integrator.RecommendedPasses())
         {
-            integrators[current]->RenderPass(scene, camera, film);
+            integrators[currentIntegrator]->RenderPass(test.Scene, test.Camera, film);
             film.Passes++;
             film.Resolve(display, integrator.GetOutputTransform());
         }
@@ -101,12 +88,22 @@ private:
             Quit();
         }
 
-        const Key keys[] = {Key::D1, Key::D2, Key::D3};
-        for (size_t i = 0; i < integrators.size() && i < std::size(keys); i++)
+        const Key integratorKeys[] = {Key::D1, Key::D2, Key::D3};
+        for (size_t i = 0; i < integrators.size() && i < std::size(integratorKeys); i++)
         {
-            if (input.WasPressed(keys[i]) && i != current)
+            if (input.WasPressed(integratorKeys[i]) && i != currentIntegrator)
             {
-                current = i;
+                currentIntegrator = i;
+                film.Reset(); // the accumulated sum belongs to the old integrator
+            }
+        }
+
+        const Key sceneKeys[] = {Key::Q, Key::W, Key::R};
+        for (size_t i = 0; i < scenes.size() && i < std::size(sceneKeys); i++)
+        {
+            if (input.WasPressed(sceneKeys[i]) && i != currentScene)
+            {
+                currentScene = i;
                 film.Reset(); // the accumulated sum belongs to the old integrator
             }
         }
@@ -118,10 +115,11 @@ private:
         fpsFrames++;
         if (fpsTime >= 0.5f)
         {
-            GetWindow().SetTitle(std::format(
-                "DuckEngine Raytracer - {} - {} passes - {} - {:.0f} FPS", integrators[current]->Name(), film.Passes,
-                film.Passes >= integrators[current]->RecommendedPasses() ? "Done" : "In Progress",
-                fpsFrames / fpsTime));
+            GetWindow().SetTitle(
+                std::format("DuckEngine Raytracer - {} - {} - {} passes - {} - {:.0f} FPS", scenes[currentScene].Name,
+                            integrators[currentIntegrator]->Name(), film.Passes,
+                            film.Passes >= integrators[currentIntegrator]->RecommendedPasses() ? "Done" : "In Progress",
+                            fpsFrames / fpsTime));
             fpsTime = 0.0f;
             fpsFrames = 0;
         }
@@ -136,11 +134,11 @@ private:
     Film film;
     Framebuffer display;
 
-    Camera camera;
-    Scene scene;
+    std::vector<TestScene> scenes;
+    size_t currentScene = 0;
 
     std::vector<std::unique_ptr<IIntegrator>> integrators;
-    size_t current = 0;
+    size_t currentIntegrator = 0;
 
     float fpsTime = 0.0f;
     int fpsFrames = 0;

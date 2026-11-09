@@ -23,7 +23,7 @@ namespace Duck::PathTrace
             }
 
             // lambertian diffuse with cosine sampling: f * cos / pdf = albedo
-            throughput *= scene.Materials[hit->MaterialId].Albedo;
+            throughput *= throughput *= scene.Materials[hit->MaterialId].AlbedoAt(hit->Point);
             ray = {hit->Point, SampleCosineHemisphere(hit->Normal, random)};
         }
         return radiance;
