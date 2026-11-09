@@ -98,7 +98,7 @@ private:
             }
         }
 
-        const Key sceneKeys[] = {Key::Q, Key::W, Key::R};
+        const Key sceneKeys[] = {Key::Q, Key::W, Key::E};
         for (size_t i = 0; i < scenes.size() && i < std::size(sceneKeys); i++)
         {
             if (input.WasPressed(sceneKeys[i]) && i != currentScene)

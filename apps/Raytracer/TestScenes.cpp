@@ -76,9 +76,9 @@ namespace
 
         scene.Quads = {{{-8.0f, 0.0f, 4.0f}, {16.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -24.0f}, checker}};
         scene.Spheres = {
-            {{0.8f, 1.6f, -5.0f}, 1.0f, mirror},
-            {{-0.5f, 1.3f, -2.6f}, 0.6f, glass},
-            {{-0.5f, 1.3f, -2.6f}, -0.55f, glass}, // negative radius flips the normal: a hollow shell
+            {{-0.8f, 1.0f, -5.0f}, 0.7f, mirror},
+            {{0.5f, 1.6f, -2.6f}, 1.0f, glass},
+            {{0.5f, 1.6f, -2.6f}, -0.95f, glass}, // negative radius flips the normal: a hollow shell
         };
 
         scene.DirectionalLights = {{glm::normalize(Vec3(-0.4f, 1.0f, 0.6f)), Vec3(1.0f)}};
@@ -89,7 +89,7 @@ namespace
 
         return {.Name = "Whitted 1980",
                 .Scene = std::move(scene),
-                .Camera = Camera({0.0f, 1.6f, 2.5f}, {0.0f, 1.2f, -3.0f}, WorldUp, 40.0f, aspectRatio)};
+                .Camera = Camera({0.0f, 1.8f, 2.5f}, {0.0f, 1.2f, -3.0f}, WorldUp, 40.0f, aspectRatio)};
     }
 }
 

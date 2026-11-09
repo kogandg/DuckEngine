@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Duck/Core/Assert.h>
 #include <Duck/Core/Ray.h>
 
 #include <cmath>
@@ -55,6 +56,9 @@ namespace Duck::PathTrace
         // only hits with tMin <= t <= tMax count
         std::optional<Hit> Intersect(const Ray& ray, float tMin, float tMax) const
         {
+            DUCK_ASSERT(std::abs(glm::dot(ray.Direction, ray.Direction) - 1.0f) < 1e-4f,
+                        "Ray direction must be normalized");
+
             const Vec3 oc = ray.Origin - Center;
             const float b = glm::dot(oc, ray.Direction);
             const Vec3 perpendicular = oc - b * ray.Direction; // closest approach offset
@@ -79,14 +83,20 @@ namespace Duck::PathTrace
             hit.T = t;
             hit.MaterialId = MaterialId;
             hit.Point = ray.At(t);
-            const Vec3 outward = (hit.Point - Center) / Radius;
+
+            // normalize instead of dividing by Radius: after rounding the hit point is only near the surface,
+            // and a normal that isn't unit length makes reflected/refracted directions that aren't either, which
+            // puts the next hit further off the surface. the error grows every bounce
+            // the sign keeps negative radii (inside-out spheres) working
+            const Vec3 outward = glm::normalize(hit.Point - Center) * (Radius < 0.0f ? -1.0f : 1.0f);
+
             hit.FrontFace = glm::dot(ray.Direction, outward) < 0.0f;
             hit.Normal = hit.FrontFace ? outward : -outward;
             return hit;
         }
     };
 
-    //parallelogram: corner + a * edgeU + b*edgeV for a, b in [0, 1]
+    // parallelogram: corner + a * edgeU + b*edgeV for a, b in [0, 1]
     struct Quad
     {
         Vec3 Corner{0.0f};

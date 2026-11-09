@@ -7,7 +7,7 @@ namespace Duck
     using std::uint32_t;
     using std::uint64_t;
 
-            // splitMix64
+    // splitMix64
     inline uint64_t HashU64(uint64_t x)
     {
         x += 0x9E3779B97F4A7C15ULL;
@@ -16,8 +16,8 @@ namespace Duck
         return x ^ (x >> 31);
     }
 
-    //PCG#2
-    //NOT THREAD SAFE, use one Random per thread
+    // PCG#2
+    // NOT THREAD SAFE, use one Random per thread
     class Random
     {
     public:
@@ -43,7 +43,12 @@ namespace Duck
         }
 
         // uniform in [0, 1). uses the top 24 bits, which is all a float can represent
-        float NextFloat() { return static_cast<float>(NextUint() >> 8u) * (1.0f / 16777216.0f); }
+        static constexpr float ToUnitFloat(uint32_t bits)
+        {
+            return static_cast<float>(bits >> 8u) * (1.0f / 16777216.0f);
+        }
+
+        float NextFloat() { return ToUnitFloat(NextUint()); }
 
     private:
         uint64_t state = 0;

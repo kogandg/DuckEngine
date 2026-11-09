@@ -12,7 +12,6 @@ namespace Duck::PathTrace
     namespace
     {
         constexpr float RayEpsilon = 0.001f;
-        constexpr float AmbientFactor = 0.3f;
         constexpr float MinWeight = 0.001f; // below this a branch cant visibly change the pixel
 
         Vec3 ShadeDiffuse(const Scene& scene, const Hit& hit, const Vec3& albedo)
@@ -24,7 +23,7 @@ namespace Duck::PathTrace
                 const float cosine = glm::dot(hit.Normal, sun.Direction);
                 if (cosine > 0.0f && !scene.Occluded({hit.Point, sun.Direction}, RayEpsilon, Infinity))
                 {
-                    light += sun.Stength * cosine;
+                    light += sun.Strength * cosine;
                 } 
             }
 

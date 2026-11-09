@@ -3,6 +3,8 @@
 #
 cmake_minimum_required (VERSION 3.28)
 
+option(DUCK_BUILD_TESTS "Build the unit tests" ON)
+
 # Enable Hot Reload for MSVC compilers if supported.
 if (POLICY CMP0141)
   cmake_policy(SET CMP0141 NEW)
@@ -34,3 +36,9 @@ add_subdirectory(libs/PathTraceCpu)
 
 add_subdirectory(apps/Sandbox)
 add_subdirectory(apps/Raytracer)
+
+if(DUCK_BUILD_TESTS)
+	enable_testing()
+	find_package(Catch2 3 CONFIG REQUIRED)
+	add_subdirectory(tests)
+endif()

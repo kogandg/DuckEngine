@@ -1,0 +1,1 @@
+duck_test(Core DEPS Duck::Core)

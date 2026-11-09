@@ -5,8 +5,8 @@
 #include <Duck/Core/Math.h>
 
 #include <algorithm>
-#include <span>
 #include <cstddef>
+#include <span>
 #include <vector>
 
 namespace Duck
@@ -57,16 +57,21 @@ namespace Duck
             return {pixels.data() + Index(0, y), static_cast<size_t>(width)};
         }
 
-        TPixel& operator[](int x, int y)
+        TPixel& At(int x, int y)
         {
-            DUCK_ASSERT(x < width && y < height, "Pixel ({}, {}) out of bounds for {}x{}", x, y, width, height);
+            DUCK_ASSERT(x >= 0 && y >= 0 && x < width && y < height, "Pixel ({}, {}) out of bounds for {}x{}", x, y,
+                        width, height);
             return pixels[Index(x, y)];
         }
-        const TPixel& operator[](int x, int y) const
+        const TPixel& At(int x, int y) const
         {
-            DUCK_ASSERT(x < width && y < height, "Pixel ({}, {}) out of bounds for {}x{}", x, y, width, height);
+            DUCK_ASSERT(x >= 0 && y >= 0 && x < width && y < height, "Pixel ({}, {}) out of bounds for {}x{}", x, y,
+                        width, height);
             return pixels[Index(x, y)];
         }
+
+        TPixel& operator[](int x, int y) { return At(x, y); }
+        const TPixel& operator[](int x, int y) const { return At(x, y); }
 
     private:
         size_t Index(int x, int y) const noexcept

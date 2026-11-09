@@ -40,3 +40,24 @@ function(duck_app name)
   source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${srcs})
   set_target_properties(${name} PROPERTIES FOLDER apps)
 endfunction()
+
+# test executable from every .cpp/.h in the folder, registered with CTest one TEST_CASE at a time
+function(duck_test name)
+  cmake_parse_arguments(ARG "" "" "DEPS" ${ARGN})
+  set(target ${name}Tests)
+
+  file(GLOB_RECURSE srcs CONFIGURE_DEPENDS
+       ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
+       ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
+
+  add_executable(${target} ${srcs})
+  target_link_libraries(${target} PRIVATE ${ARG_DEPS} Catch2::Catch2WithMain)
+  target_include_directories(${target} PRIVATE ${CMAKE_SOURCE_DIR}/tests/Common)
+  target_compile_definitions(${target} PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN DUCK_ROOT_DIR="${CMAKE_SOURCE_DIR}")
+
+  source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${srcs})
+  set_target_properties(${target} PROPERTIES FOLDER tests)
+
+  # PRE_TEST lists the tests when ctest runs instead of after every build
+  catch_discover_tests(${target} TEST_PREFIX "${name}." DISCOVERY_MODE PRE_TEST)
+endfunction()

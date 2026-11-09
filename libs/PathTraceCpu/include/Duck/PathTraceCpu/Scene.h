@@ -12,7 +12,7 @@ namespace Duck::PathTrace
     struct DirectionalLight
     {
         Vec3 Direction{0.0f, 1.0f, 0.0f}; // unit, points TOWARD the light
-        Vec3 Stength{1.0f};
+        Vec3 Strength{1.0f};
     };
 
     // light from one point, falls off with 1/distance^2, inverse square law

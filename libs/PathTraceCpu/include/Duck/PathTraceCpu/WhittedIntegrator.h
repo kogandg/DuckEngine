@@ -10,7 +10,7 @@ namespace Duck::PathTrace
     class WhittedIntegrator final : public PixelIntegrator
     {
     public:
-        explicit WhittedIntegrator(int maxDepthCount = 6) : maxDepth(maxDepthCount) {}
+        explicit WhittedIntegrator(int maxDepthCount = 10) : maxDepth(maxDepthCount) {}
 
         const char* Name() const override { return "Whitted"; }
         int RecommendedPasses() const override { return 32; }

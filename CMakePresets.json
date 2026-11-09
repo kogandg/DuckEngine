@@ -43,5 +43,26 @@
       "inherits": "base",
       "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
     }
+  ],
+  "buildPresets": [
+    { "name": "x64-debug", "displayName": "x64 Debug", "configurePreset": "x64-debug" },
+    { "name": "x64-relwithdebinfo", "displayName": "x64 RelWithDebInfo", "configurePreset": "x64-relwithdebinfo" },
+    { "name": "x64-release", "displayName": "x64 Release", "configurePreset": "x64-release" }
+  ],
+  "testPresets": [
+    {
+      "name": "test-base",
+      "hidden": true,
+      "output": { "outputOnFailure": true },
+      "execution": { "noTestsAction": "error" }
+    },
+    { "name": "x64-debug", "displayName": "x64 Debug", "inherits": "test-base", "configurePreset": "x64-debug" },
+    {
+      "name": "x64-relwithdebinfo",
+      "displayName": "x64 RelWithDebInfo",
+      "inherits": "test-base",
+      "configurePreset": "x64-relwithdebinfo"
+    },
+    { "name": "x64-release", "displayName": "x64 Release", "inherits": "test-base", "configurePreset": "x64-release" }
   ]
 }
