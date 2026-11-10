@@ -130,7 +130,7 @@ TestScene MakeAbsorption(float aspectRatio)
     for (int i = 0; i < 4; i++)
     {
         const float x = -2.4f + 1.3f * static_cast<float>(i);
-        AddBox(scene, {x, 0.01f, -2.0f - depths[i]}, {x + 1.0f, 1.0f, -2.0f}, glass);
+        AddBox(scene, {x, 0.01f, -2.0f - depths[i]}, {x + 1.0f, 1.0f, -2.0f}, noRefraction);
     }
 
     // back row: solid ball, hollow ball (thin shell), and a ball with ior 1 (no bending)

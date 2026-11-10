@@ -8,11 +8,19 @@
 
 namespace Duck::PathTrace
 {
-    // rays leaving a surface ignore hits closer than this, so they don't hit the surface they start on
-    inline constexpr float RayEpsilon = 0.001f;
+    // rays leaving a surface ignore hits closer than this
+    inline constexpr float RayEpsilon = 1e-6f;
+
+    // how far SpawnRay pushes an origin off it surface
+    inline constexpr float RayOffset = 1e-4f;
 
     // a ray leaving the surface at hit. the one place to add an offset along the normal later
-    inline Ray SpawnRay(const Hit& hit, const Vec3& direction) { return {hit.Point, direction}; }
+    inline Ray SpawnRay(const Hit& hit, const Vec3& direction)
+    {
+        const float side = glm::dot(direction, hit.Normal) > 0.0f ? 1.0f : -1.0f;
+        
+        return {hit.Point + side * RayOffset * hit.Normal, direction};
+    }
 
     inline Vec3 LambertBrdf(const Vec3& albedo) { return albedo * InvPi; }
 
