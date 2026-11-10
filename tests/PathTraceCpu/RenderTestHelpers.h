@@ -7,6 +7,7 @@
 #include <Duck/PathTraceCpu/Film.h>
 #include <Duck/PathTraceCpu/Integrator.h>
 #include <Duck/PathTraceCpu/Scene.h>
+#include <Duck/Core/ThreadPool.h>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -22,7 +23,7 @@ namespace Duck::Test
         PathTrace::Film film(size, size);
         for (int i = 0; i < passes; i++)
         {
-            integrator.RenderPass(scene, camera, film);
+            integrator.RenderPass(scene, camera, film, ThreadPool::Shared());
             film.Passes++;
         }
 

@@ -38,4 +38,11 @@ namespace Duck::PathTrace
         }
         return total;
     }
+
+    // light coming back along the ray from hit. if the ray hit this surface from the inside, it crossed the
+    // objects interior to get there and was partly absorbed on the way. (no nested media)
+    inline Vec3 SegmentTransmittance(const Material& material, const Hit& hit)
+    {
+        return hit.FrontFace ? Vec3(1.0f) : InteriorTransmittance(material, hit.T);
+    }
 }

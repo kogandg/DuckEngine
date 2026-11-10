@@ -3,6 +3,7 @@
 #include <Duck/Core/Ray.h>
 #include <Duck/PathTraceCpu/Geometry.h>
 #include <Duck/PathTraceCpu/Lights.h>
+#include <Duck/PathTraceCpu/Materials.h>
 
 #include <optional>
 #include <vector>

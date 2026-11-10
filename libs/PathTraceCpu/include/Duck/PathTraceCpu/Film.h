@@ -4,6 +4,11 @@
 
 #include <cstdint>
 
+namespace Duck
+{
+    class ThreadPool;
+}
+
 namespace Duck::PathTrace
 {
     enum class OutputTransform
@@ -18,7 +23,7 @@ namespace Duck::PathTrace
 
         void Reset();
 
-        void Resolve(Framebuffer& output, OutputTransform transform = OutputTransform::Srgb) const;
+        void Resolve(Framebuffer& output, ThreadPool& pool, OutputTransform transform = OutputTransform::Srgb) const;
 
         HdrFramebuffer Sum; // sum of every pass so far
         int Passes = 0;     // how many passes are in Sum

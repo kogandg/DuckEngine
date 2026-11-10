@@ -1,12 +1,11 @@
 #include <Duck/PathTraceCpu/WhittedIntegrator.h>
 
 #include <Duck/Core/Ray.h>
+#include <Duck/PathTraceCpu/Bsdf.h>
+#include <Duck/PathTraceCpu/Materials.h>
 #include <Duck/PathTraceCpu/Optics.h>
 #include <Duck/PathTraceCpu/Scene.h>
 #include <Duck/PathTraceCpu/Shading.h>
-
-#include <algorithm>
-#include <cmath>
 
 namespace Duck::PathTrace
 {
@@ -14,17 +13,7 @@ namespace Duck::PathTrace
     {
         constexpr float MinWeight = 0.001f; // below this a branch cant visibly change the pixel
 
-        // lambert: BRDF = albedo / pi, so reflected radiance = albedo / pi * irradiance
-        Vec3 ShadeDiffuse(const Scene& scene, const Hit& hit, const Vec3& albedo, Random& random)
-        {
-            // ambient is radiance from all around, uniform radiance L over hemisphere gives E = pi * L
-            // and albedo / pi * pi * L = albedo * L, so no pi needed
-            const Vec3 ambient = albedo * scene.Ambient(hit.Normal);
-
-            const Vec3 brdf = LambertBrdf(albedo);
-
-            return ambient + DirectLighting(scene, hit, random, [&](const Vec3&) { return brdf; });
-        }
+        float MirrorFade(float roughness) { return (1.0f - roughness) * (1.0f - roughness); }
     }
 
     Vec3 WhittedIntegrator::Li(const Scene& scene, const Ray& ray, Random& random) const
@@ -46,48 +35,33 @@ namespace Duck::PathTrace
         }
 
         const Material& material = scene.Materials[hit->MaterialId];
-        switch (material.Type)
-        {
-        case MaterialType::Diffuse:
-            return ShadeDiffuse(scene, *hit, material.AlbedoAt(hit->Point), random);
 
-        case MaterialType::Mirror:
+        const Vec3 transmittance = SegmentTransmittance(material, *hit);
+        const float carried = weight * MaxComponent(transmittance); // what this branch can still contribute
+
+        const Vec3 wo = -ray.Direction;
+        const Bsdf bsdf = GetBsdf(material, *hit, wo);
+
+        Vec3 radiance = EmissionAt(material, *hit);
+        if (bsdf.HasNonDeltaLobes())
         {
-            const Vec3 reflected = Reflect(ray.Direction, hit->Normal);
-            const float tint = std::max({material.Albedo.x, material.Albedo.y, material.Albedo.z});
-            return material.Albedo * Trace(scene, SpawnRay(*hit, reflected), random, depth + 1, weight * tint);
+            radiance += (bsdf.DiffuseReflectance() * scene.Ambient(hit->Normal)) +
+                        DirectLighting(scene, *hit, random, [&](const Vec3& wi) { return bsdf.Evaluate(wo, wi); });
         }
 
-        case MaterialType::Dielectric:
-            return TraceDielectric(scene, ray, *hit, material, random, depth, weight);
-        }
+        // perfect reflection and refraction rays
+        bsdf.ForEachSpecularPath(wo,
+                                 [&](const SpecularPath& path)
+                                 {
+                                     const Vec3 pathWeight = path.Weight * MirrorFade(path.Roughness);
+                                     const float strength = MaxComponent(pathWeight);
+                                     if (strength > 0.0f)
+                                     {
+                                         radiance += pathWeight * Trace(scene, SpawnRay(*hit, path.Direction), random,
+                                                                        depth + 1, carried * strength);
+                                     }
+                                 });
 
-        return Vec3(0.0f);
-    }
-
-    Vec3 WhittedIntegrator::TraceDielectric(const Scene& scene, const Ray& ray, const Hit& hit,
-                                            const Material& material, Random& random, int depth, float weight) const
-    {
-        // hit.normal always faces the incoming ray, frontface says either entering or leaving
-        const float etaFrom = hit.FrontFace ? 1.0f : material.Ior;
-        const float etaTo = hit.FrontFace ? material.Ior : 1.0f;
-
-        const Vec3 reflected = Reflect(ray.Direction, hit.Normal);
-        const auto refracted = Refract(ray.Direction, hit.Normal, etaFrom / etaTo);
-        if (!refracted)
-        {
-            // total internal reflection, it all reflects
-            return Trace(scene, SpawnRay(hit, reflected), random, depth + 1, weight);
-        }
-
-        // schlick has angle on lower index (air) side, incoming when entering, refracted when leaving
-        const float cosine = hit.FrontFace ? -glm::dot(ray.Direction, hit.Normal) : -glm::dot(*refracted, hit.Normal);
-        const float reflectance = SchlickFresnel(cosine, etaFrom, etaTo);
-
-        const Vec3 reflectedLight = Trace(scene, SpawnRay(hit, reflected), random, depth + 1, weight * reflectance);
-        const Vec3 refractedLight =
-            Trace(scene, SpawnRay(hit, *refracted), random, depth + 1, weight * (1.0f - reflectance));
-
-        return (reflectance * reflectedLight) + ((1.0f - reflectance) * refractedLight);
+        return transmittance * radiance;
     }
 }

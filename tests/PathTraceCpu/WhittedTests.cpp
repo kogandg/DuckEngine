@@ -38,7 +38,7 @@ TEST_CASE("Whitted: a diffuse floor follows Lambert's cosine law", "[whitted]")
     Scene scene = DarkScene();
     const float albedo = 0.5f;
     const Vec3 irradiance(0.8f);
-    const int gray = scene.AddMaterial({.Albedo = Vec3(albedo)});
+    const int gray = scene.AddMaterial(GltfMaterial::Lambert(Vec3(albedo)));
     scene.Quads = {Floor(gray)};
     scene.Lights = {DirectionalLight{Vec3(std::sin(Radians(angle)), std::cos(Radians(angle)), 0.0f), irradiance}};
 
@@ -51,7 +51,7 @@ TEST_CASE("Whitted: a diffuse floor follows Lambert's cosine law", "[whitted]")
 TEST_CASE("Whitted: light doesn't leak through a surface", "[whitted]")
 {
     Scene scene = DarkScene();
-    const int gray = scene.AddMaterial({.Albedo = Vec3(0.5f)});
+    const int gray = scene.AddMaterial(GltfMaterial::Lambert(Vec3(0.5f)));
     scene.Quads = {Floor(gray)};
     scene.Lights = {DirectionalLight{Vec3(0.0f, 1.0f, 0.0f), Vec3(1.0f)}};
 
@@ -65,7 +65,7 @@ TEST_CASE("Whitted: ambient is blended by the normal's direction", "[whitted]")
     Scene scene = DarkScene();
     scene.AmbientUp = Vec3(0.2f, 0.4f, 0.6f);
     scene.AmbientDown = Vec3(0.6f, 0.4f, 0.2f);
-    const int gray = scene.AddMaterial({.Albedo = Vec3(0.5f)});
+    const int gray = scene.AddMaterial(GltfMaterial::Lambert(Vec3(0.5f)));
     scene.Quads = {
         Floor(gray),
         {{-50.0f, -50.0f, -2.0f}, {100.0f, 0.0f, 0.0f}, {0.0f, 100.0f, 0.0f}, gray}, // wall facing +Z
@@ -83,7 +83,7 @@ TEST_CASE("Whitted: ambient is blended by the normal's direction", "[whitted]")
 TEST_CASE("Whitted: blockers shadow a directional light", "[whitted]")
 {
     Scene scene = DarkScene();
-    const int gray = scene.AddMaterial({.Albedo = Vec3(0.5f)});
+    const int gray = scene.AddMaterial(GltfMaterial::Lambert(Vec3(0.5f)));
     scene.Quads = {Floor(gray)};
     const Vec3 toSun = glm::normalize(Vec3(1.0f, 1.0f, 0.0f));
     scene.Lights = {DirectionalLight{toSun, Vec3(1.0f)}};
@@ -111,7 +111,7 @@ TEST_CASE("Whitted: point lights fall off with the inverse square law", "[whitte
     Scene scene = DarkScene();
     const float albedo = 0.5f;
     const Vec3 intensity(2.0f);
-    const int gray = scene.AddMaterial({.Albedo = Vec3(albedo)});
+    const int gray = scene.AddMaterial(GltfMaterial::Lambert(Vec3(albedo)));
     scene.Quads = {Floor(gray)};
     scene.Lights = {PointLight{light, intensity}};
 
@@ -124,7 +124,7 @@ TEST_CASE("Whitted: point lights fall off with the inverse square law", "[whitte
 TEST_CASE("Whitted: point light shadows stop at the light", "[whitted]")
 {
     Scene scene = DarkScene();
-    const int gray = scene.AddMaterial({.Albedo = Vec3(0.5f)});
+    const int gray = scene.AddMaterial(GltfMaterial::Lambert(Vec3(0.5f)));
     scene.Quads = {Floor(gray)};
     scene.Lights = {PointLight{Vec3(1.0f, 1.0f, 0.0f), Vec3(1.0f)}};
     const Camera camera = LookDown({0.0f, 1.0f, 0.0f}, 0.25f);
@@ -146,7 +146,7 @@ TEST_CASE("Whitted furnace: a mirror only tints what it reflects", "[whitted][fu
 {
     const Vec3 tint = GENERATE(Vec3(1.0f), Vec3(0.9f, 0.5f, 0.2f));
     Scene scene = FurnaceScene();
-    const int mirror = scene.AddMaterial({.Type = MaterialType::Mirror, .Albedo = tint});
+    const int mirror = scene.AddMaterial(GltfMaterial::Metal(tint));
     scene.Spheres = {{{0.0f, 0.0f, -3.0f}, 1.0f, mirror}};
 
     WhittedIntegrator whitted;
@@ -159,7 +159,7 @@ TEST_CASE("Whitted: a mirror reflects in the mirror direction", "[whitted]")
     Scene scene = DarkScene();
     scene.SkyDown = Vec3(1.0f, 0.0f, 0.0f);
     scene.SkyUp = Vec3(0.0f, 0.0f, 1.0f);
-    const int mirror = scene.AddMaterial({.Type = MaterialType::Mirror, .Albedo = Vec3(1.0f)});
+    const int mirror = scene.AddMaterial(GltfMaterial::Metal(Vec3(1.0f)));
     // tilted 45 degrees and centered 3 units ahead, so a level ray reflects straight up
     scene.Quads = {{{-1.0f, -1.0f, -2.0f}, {2.0f, 0.0f, 0.0f}, {0.0f, 2.0f, -2.0f}, mirror}};
 
@@ -171,7 +171,7 @@ TEST_CASE("Whitted: a mirror reflects in the mirror direction", "[whitted]")
 TEST_CASE("Whitted: recursion stops at max depth", "[whitted]")
 {
     Scene scene = FurnaceScene();
-    const int mirror = scene.AddMaterial({.Type = MaterialType::Mirror, .Albedo = Vec3(1.0f)});
+    const int mirror = scene.AddMaterial(GltfMaterial::Metal(Vec3(1.0f)));
     // two facing mirrors with the camera between: no ray ever escapes
     scene.Quads = {
         {{-10.0f, -10.0f, -1.0f}, {20.0f, 0.0f, 0.0f}, {0.0f, 20.0f, 0.0f}, mirror},
@@ -190,7 +190,7 @@ TEST_CASE("Whitted: a glass slab seen head-on reflects 2R / (1 + R)", "[whitted]
     // white above, black below. the camera looks down, so only reflected light comes back
     Scene scene = DarkScene();
     scene.SkyUp = Vec3(1.0f);
-    const int glass = scene.AddMaterial({.Type = MaterialType::Dielectric, .Ior = 1.5f});
+    const int glass = scene.AddMaterial(GltfMaterial::Glass(1.5f));
     // a glass quad's front, cross(EdgeU, EdgeV), must face OUT of the glass: FrontFace decides entering vs leaving
     scene.Quads = {
         {{-10.0f, 0.0f, -10.0f}, {0.0f, 0.0f, 20.0f}, {20.0f, 0.0f, 0.0f}, glass},  // top, front faces up
@@ -207,10 +207,36 @@ TEST_CASE("Whitted: a glass slab seen head-on reflects 2R / (1 + R)", "[whitted]
     CHECK_THAT(pixel.x, WithinAbs(2.0f * r0 / (1.0f + r0), 1e-4f));
 }
 
+TEST_CASE("Whitted: light through absorbing glass follows Beer-Lambert", "[whitted][glass][absorption]")
+{
+    const float thickness = GENERATE(1.0f, 2.0f);
+    CAPTURE(thickness);
+
+    Scene scene = DarkScene();
+    scene.SkyDown = Vec3(1.0f); // white below, black above: the camera looking down only sees transmitted light
+    const Vec3 color(0.8f, 0.5f, 0.2f);
+    const int glass = scene.AddMaterial(GltfMaterial::ColoredGlass(color, 1.0f));
+    // fronts face out of the glass (see the slab test)
+    scene.Quads = {
+        {{-10.0f, 0.0f, -10.0f}, {0.0f, 0.0f, 20.0f}, {20.0f, 0.0f, 0.0f}, glass},       // top, faces up
+        {{-10.0f, -thickness, -10.0f}, {20.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 20.0f}, glass}, // bottom, faces down
+    };
+
+    WhittedIntegrator whitted;
+    const Vec3 pixel = CenterPixel(Render(whitted, scene, LookDown({0.0f, 1.0f, 0.0f}, 1.0f)));
+
+    // head-on: R = 0.04 at each surface, T = color^thickness per pass, plus internal round trips
+    const float r = 0.04f;
+    const Vec3 t = glm::pow(color, Vec3(thickness));
+    const Vec3 expected = (1.0f - r) * (1.0f - r) * t / (Vec3(1.0f) - r * r * t * t);
+    // MinWeight drops the second round trip, at most (1 - R)^2 R^2 T^3 < 1e-3
+    CHECK_THAT(pixel, Vec3Near(expected, 1e-3f));
+}
+
 TEST_CASE("Whitted furnace: a glass ball vanishes in a uniform sky", "[whitted][furnace][glass]")
 {
     Scene scene = FurnaceScene();
-    const int glass = scene.AddMaterial({.Type = MaterialType::Dielectric, .Ior = 1.5f});
+    const int glass = scene.AddMaterial(GltfMaterial::Glass(1.5f));
     scene.Spheres = {{{0.0f, 0.0f, -3.0f}, 1.0f, glass}};
     WhittedIntegrator whitted;
 
@@ -242,7 +268,7 @@ TEST_CASE("Whitted furnace: a glass ball vanishes in a uniform sky", "[whitted][
 TEST_CASE("Whitted furnace: a hollow glass ball vanishes with enough depth", "[whitted][furnace][glass]")
 {
     Scene scene = FurnaceScene();
-    const int glass = scene.AddMaterial({.Type = MaterialType::Dielectric, .Ior = 1.5f});
+    const int glass = scene.AddMaterial(GltfMaterial::Glass(1.5f));
     scene.Spheres = {
         {{0.0f, 0.0f, -3.0f}, 1.0f, glass},
         {{0.0f, 0.0f, -3.0f}, -0.9f, glass}, // negative radius: the inside wall of the shell
@@ -254,4 +280,59 @@ TEST_CASE("Whitted furnace: a hollow glass ball vanishes with enough depth", "[w
     // narrow view through the middle. near the rim the shell traps light by total internal reflection,
     // and the cutoffs lose a few percent there even at high depth
     CheckAllPixels(Render(whitted, scene, LookForward(Vec3(0.0f), 10.0f)), Vec3(1.0f), 2e-3f);
+}
+
+TEST_CASE("Whitted furnace: smooth white plastic reflects exactly what arrives", "[whitted][furnace][material]")
+{
+    // diffuse (1 - F) * white under ambient 1, plus the coat's mirror reflection F * sky 1: always 1
+    Scene scene = FurnaceScene();
+    scene.AmbientDown = scene.AmbientUp = Vec3(1.0f);
+    scene.Quads = {Floor(scene.AddMaterial(GltfMaterial::Plastic(Vec3(1.0f), 0.0f)))};
+
+    WhittedIntegrator whitted;
+    // slanted view, so F changes across the image
+    const Camera camera({0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, -2.0f}, {0.0f, 1.0f, 0.0f}, 60.0f, 1.0f);
+    CheckAllPixels(Render(whitted, scene, camera), Vec3(1.0f), 1e-5f);
+}
+
+TEST_CASE("Whitted: emissive surfaces show their radiance", "[whitted][material]")
+{
+    Scene scene = DarkScene();
+    scene.Quads = {Floor(scene.AddMaterial(GltfMaterial::Emissive(Vec3(2.0f, 1.0f, 0.5f))))};
+    WhittedIntegrator whitted;
+    CheckAllPixels(Render(whitted, scene, LookDown({0.0f, 1.0f, 0.0f}, 30.0f)), Vec3(2.0f, 1.0f, 0.5f), 1e-6f);
+}
+
+TEST_CASE("Whitted: the inside of an opaque sphere is lit by a light inside it", "[whitted][absorption]")
+{
+    Scene scene = DarkScene();
+    GltfMaterial wall = GltfMaterial::Lambert(Vec3(0.5f));
+    // absorption on an opaque material must not darken the space the camera is in
+    wall.AttenuationColor = Vec3(0.1f);
+    wall.AttenuationDistance = 0.01f;
+    const float radius = 2.0f;
+    scene.Spheres = {{{0.0f, 0.0f, 0.0f}, radius, scene.AddMaterial(wall)}};
+    const Vec3 intensity(4.0f);
+    scene.Lights = {PointLight{Vec3(0.0f), intensity}};
+
+    WhittedIntegrator whitted;
+    // every wall point faces the light head-on from distance R: albedo / pi * I / R^2
+    CheckAllPixels(Render(whitted, scene, LookForward(Vec3(0.0f), 60.0f)), 0.5f * InvPi * intensity / (radius * radius),
+                   1e-5f);
+}
+
+TEST_CASE("Whitted: an absorbing ball without refraction darkens with path length", "[whitted][absorption]")
+{
+    // ior 1: no bending and no reflection head-on, so the center ray crosses the whole diameter
+    Scene scene = FurnaceScene();
+    const Vec3 color(0.4f, 0.8f, 0.5f);
+    const float radius = 1.0f;
+    const float distance = 0.5f;
+    const int glass = scene.AddMaterial(GltfMaterial::ColoredGlass(color, distance, 1.0f));
+    scene.Spheres = {{{0.0f, 0.0f, -3.0f}, radius, glass}};
+
+    WhittedIntegrator whitted;
+    const Vec3 center = CenterPixel(Render(whitted, scene, LookForward(Vec3(0.0f), 1.0f)));
+    // color^(2R / D) = color^4 = (0.0256, 0.41, 0.0625)
+    CHECK_THAT(center, Vec3Near(glm::pow(color, Vec3(2.0f * radius / distance)), 1e-3f));
 }

@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 
 #include <numbers>
+#include <algorithm>
 
 namespace Duck
 {
@@ -38,4 +39,6 @@ namespace Duck
 
     constexpr float Radians(float degrees) { return degrees * (Pi / 180.0f); }
     constexpr float Degrees(float radians) { return radians * (180.0f / Pi); }
+
+    inline float MaxComponent(const Vec3& v) { return std::max({v.x, v.y, v.z}); }
 }

@@ -5,6 +5,10 @@
 #include <Duck/Core/Sampling.h>
 #include <Duck/PathTraceCpu/Scene.h>
 #include <Duck/PathTraceCpu/Shading.h>
+#include <Duck/PathTraceCpu/Bsdf.h>
+#include <Duck/PathTraceCpu/Materials.h>
+
+#include <cmath>
 
 namespace Duck::PathTrace
 {
@@ -23,9 +27,20 @@ namespace Duck::PathTrace
                 break;
             }
 
-            // lambertian diffuse with cosine sampling: f * cos / pdf = albedo
-            throughput *= scene.Materials[hit->MaterialId].AlbedoAt(hit->Point);
-            ray = SpawnRay(*hit, SampleCosineHemisphere(hit->Normal, random));
+            const Material& material = scene.Materials[hit->MaterialId];
+            throughput *= SegmentTransmittance(material, *hit);
+            radiance += throughput * EmissionAt(material, *hit);
+
+            const Vec3 wo = -ray.Direction;
+            const Bsdf bsdf = GetBsdf(material, *hit, wo);
+            const auto sample = bsdf.Sample(wo, random);
+            if (!sample)
+            {
+                break; //absorbed
+            }
+
+            throughput *= sample->Value * std::abs(glm::dot(sample->Direction, hit->Normal)) / sample->Pdf;
+            ray = SpawnRay(*hit, sample->Direction);
         }
         return radiance;
     }

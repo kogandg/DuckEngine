@@ -19,7 +19,7 @@ TEST_CASE("Whitted ambient matches path-traced sky light on an open floor", "[co
     Scene scene = DarkScene();
     scene.SkyDown = scene.SkyUp = sky;
     scene.AmbientDown = scene.AmbientUp = sky;
-    const int gray = scene.AddMaterial({.Albedo = Vec3(albedo)});
+    const int gray = scene.AddMaterial(GltfMaterial::Lambert(Vec3(albedo)));
     scene.Quads = {Floor(gray)};
     const Camera camera = LookDown({0.0f, 1.0f, 0.0f}, 30.0f);
 

@@ -11,6 +11,7 @@ namespace Duck
 {
     struct Ray;
     class Random;
+    class ThreadPool;
 }
 
 namespace Duck::PathTrace
@@ -27,7 +28,7 @@ namespace Duck::PathTrace
         virtual const char* Name() const = 0;
 
         // adds one pass onto film. Passes is the index of THIS pass
-        virtual void RenderPass(const Scene& scene, const Camera& camera, Film& film) = 0;
+        virtual void RenderPass(const Scene& scene, const Camera& camera, Film& film, ThreadPool& pool) = 0;
 
         // how many passes are worth rendering before image stops improving noticeably
         virtual int RecommendedPasses() const { return 256; }
@@ -38,7 +39,7 @@ namespace Duck::PathTrace
     class PixelIntegrator : public IIntegrator
     {
     public:
-        void RenderPass(const Scene& scene, const Camera& camera, Film& film) final;
+        void RenderPass(const Scene& scene, const Camera& camera, Film& film, ThreadPool& pool) final;
 
     protected:
         // radiance arriving along ray

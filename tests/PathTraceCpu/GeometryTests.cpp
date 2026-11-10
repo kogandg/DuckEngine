@@ -1,8 +1,8 @@
 #include "TestHelpers.h"
 
 #include <Duck/PathTraceCpu/Geometry.h>
-#include <Duck/PathTraceCpu/Scene.h>
 #include <Duck/PathTraceCpu/Optics.h>
+#include <Duck/PathTraceCpu/Scene.h>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
@@ -128,14 +128,15 @@ TEST_CASE("Quad hits inside and misses outside", "[geometry]")
 
 TEST_CASE("Checker alternates on the XZ plane", "[geometry]")
 {
-    const Material checker{.Albedo = Vec3(1.0f), .CheckerAlbedo = Vec3(0.0f), .CheckerSize = 1.0f};
-    CHECK(checker.AlbedoAt({0.5f, 0.0f, 0.5f}) == Vec3(1.0f));
-    CHECK(checker.AlbedoAt({1.5f, 0.0f, 0.5f}) == Vec3(0.0f));
-    CHECK(checker.AlbedoAt({-0.5f, 0.0f, 0.5f}) == Vec3(0.0f)); // floor, not truncation, below zero
-    CHECK(checker.AlbedoAt({0.5f, 7.3f, 0.5f}) == Vec3(1.0f));  // height doesn't matter
+    const GltfMaterial checker{
+        .BaseColor = Vec3(1.0f), .Roughness = 1.0f, .Specular = 0.0f, .CheckerColor = Vec3(0.0f), .CheckerSize = 1.0f};
+    CHECK(checker.BaseColorAt({0.5f, 0.0f, 0.5f}) == Vec3(1.0f));
+    CHECK(checker.BaseColorAt({1.5f, 0.0f, 0.5f}) == Vec3(0.0f));
+    CHECK(checker.BaseColorAt({-0.5f, 0.0f, 0.5f}) == Vec3(0.0f)); // floor, not truncation, below zero
+    CHECK(checker.BaseColorAt({0.5f, 7.3f, 0.5f}) == Vec3(1.0f));  // height doesn't matter
 
-    const Material plain{.Albedo = Vec3(0.2f)};
-    CHECK(plain.AlbedoAt({1.5f, 0.0f, 0.5f}) == Vec3(0.2f));
+    const GltfMaterial plain = GltfMaterial::Lambert(Vec3(0.2f));
+    CHECK(plain.BaseColorAt({1.5f, 0.0f, 0.5f}) == Vec3(0.2f));
 }
 
 TEST_CASE("Scene finds the closest hit across shape types", "[geometry]")

@@ -18,35 +18,6 @@ namespace Duck::PathTrace
         int MaterialId = 0;
     };
 
-    enum class MaterialType
-    {
-        Diffuse,    // labert + sun + ambient
-        Mirror,     // perfect reflection, tinted by albedo
-        Dielectric, // glass and water, fresnel weighted reflection + refraction
-    };
-
-    struct Material
-    {
-        MaterialType Type = MaterialType::Diffuse;
-        Vec3 Albedo{0.5f}; // diffuse color or mirror tint
-        float Ior = 1.5f;  // index of refraction, dielectric only
-
-        // checkersize > 0 alternates between albedo and checker albedo in squares on xz plane
-        Vec3 CheckerAlbedo{0.0f};
-        float CheckerSize = 0.0f;
-
-        Vec3 AlbedoAt(const Vec3& point) const
-        {
-            if (CheckerSize <= 0.0f)
-            {
-                return Albedo;
-            }
-            const int cellX = static_cast<int>(std::floor(point.x / CheckerSize));
-            const int cellZ = static_cast<int>(std::floor(point.z / CheckerSize));
-            return ((cellX + cellZ) & 1) == 0 ? Albedo : CheckerAlbedo;
-        }
-    };
-
     struct Sphere
     {
         Vec3 Center{0.0f};

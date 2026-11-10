@@ -1,5 +1,7 @@
 #include "TestScenes.h"
 
+#include <Duck/Core/ThreadPool.h>
+#include <Duck/PathTraceCpu/BackgroundRenderer.h>
 #include <Duck/PathTraceCpu/Camera.h>
 #include <Duck/PathTraceCpu/Film.h>
 #include <Duck/PathTraceCpu/NormalIntegrator.h>
@@ -12,9 +14,11 @@
 #include <Duck/VkCore/Swapchain.h>
 #include <Duck/VkCore/VulkanContext.h>
 
+#include <algorithm>
 #include <format>
 #include <iterator>
 #include <memory>
+#include <thread>
 #include <vector>
 
 using namespace Duck;
@@ -25,6 +29,12 @@ namespace
 {
     constexpr int FilmWidth = 640;
     constexpr int FilmHeight = 360;
+
+    unsigned RenderThreadCount()
+    {
+        const unsigned hardware = std::max(1u, std::thread::hardware_concurrency());
+        return hardware > 1 ? hardware - 1 : 1;
+    }
 }
 
 class RaytracerApp : public Application
@@ -33,12 +43,13 @@ public:
     RaytracerApp()
         : Application({.Title = "DuckEngine Raytracer"}), context(this->GetWindow()),
           swapchain(this->context, this->GetWindow()), frames(this->context, this->swapchain), presenter(this->context),
-          film(FilmWidth, FilmHeight), display(FilmWidth, FilmHeight),
+          display(FilmWidth, FilmHeight),
           scenes(MakeTestScenes(static_cast<float>(FilmWidth) / static_cast<float>(FilmHeight)))
     {
         integrators.push_back(std::make_unique<PathTracer>());
         integrators.push_back(std::make_unique<WhittedIntegrator>());
         integrators.push_back(std::make_unique<NormalIntegrator>());
+        RestartRender();
     }
 
 protected:
@@ -56,15 +67,7 @@ protected:
     void OnUpdate(float deltaSeconds) override
     {
         HandleInput();
-
-        IIntegrator& integrator = *integrators[currentIntegrator];
-        const TestScene& test = scenes[currentScene];
-        if (film.Passes < integrator.RecommendedPasses())
-        {
-            integrators[currentIntegrator]->RenderPass(test.Scene, test.Camera, film);
-            film.Passes++;
-            film.Resolve(display, integrator.GetOutputTransform());
-        }
+        renderer.TakeLatest(display);
 
         UpdateTitle(deltaSeconds);
 
@@ -80,6 +83,12 @@ protected:
     void OnStop() override { vkDeviceWaitIdle(context.Device()); }
 
 private:
+    void RestartRender()
+    {
+        const TestScene& test = scenes[currentScene];
+        renderer.Restart(test.Scene, test.Camera, *integrators[currentIntegrator]);
+    }
+
     void HandleInput()
     {
         const Input& input = GetWindow().GetInput();
@@ -88,24 +97,59 @@ private:
             Quit();
         }
 
-        const Key integratorKeys[] = {Key::D1, Key::D2, Key::D3};
-        for (size_t i = 0; i < integrators.size() && i < std::size(integratorKeys); i++)
+        bool changed = false;
+
+        const Key integratorKeyNext = Key::Up;
+        const Key integratorKeyPrev = Key::Down;
+        if (input.WasPressed(integratorKeyNext))
         {
-            if (input.WasPressed(integratorKeys[i]) && i != currentIntegrator)
+            currentIntegrator++;
+            if (currentIntegrator > integrators.size() - 1)
             {
-                currentIntegrator = i;
-                film.Reset(); // the accumulated sum belongs to the old integrator
+                currentIntegrator = 0;
             }
+            changed = true;
+        }
+        if (input.WasPressed(integratorKeyPrev))
+        {
+            if (currentIntegrator <= 0)
+            {
+                currentIntegrator = integrators.size() - 1;
+            }
+            else
+            {
+                currentIntegrator--;
+            }
+            changed = true;
         }
 
-        const Key sceneKeys[] = {Key::Q, Key::W, Key::E};
-        for (size_t i = 0; i < scenes.size() && i < std::size(sceneKeys); i++)
+        const Key sceneKeyNext = Key::Right;
+        const Key sceneKeyPrev = Key::Left;
+        if (input.WasPressed(sceneKeyNext))
         {
-            if (input.WasPressed(sceneKeys[i]) && i != currentScene)
+            currentScene++;
+            if (currentScene > scenes.size() - 1)
             {
-                currentScene = i;
-                film.Reset(); // the accumulated sum belongs to the old integrator
+                currentScene = 0;
             }
+            changed = true;
+        }
+        if (input.WasPressed(sceneKeyPrev))
+        {
+            if (currentScene <= 0)
+            {
+                currentScene = scenes.size() - 1;
+            }
+            else
+            {
+                currentScene--;
+            }
+            changed = true;
+        }
+
+        if (changed)
+        {
+            RestartRender();
         }
     }
 
@@ -115,11 +159,11 @@ private:
         fpsFrames++;
         if (fpsTime >= 0.5f)
         {
-            GetWindow().SetTitle(
-                std::format("DuckEngine Raytracer - {} - {} - {} passes - {} - {:.0f} FPS", scenes[currentScene].Name,
-                            integrators[currentIntegrator]->Name(), film.Passes,
-                            film.Passes >= integrators[currentIntegrator]->RecommendedPasses() ? "Done" : "In Progress",
-                            fpsFrames / fpsTime));
+            const auto progress = renderer.GetProgress();
+            GetWindow().SetTitle(std::format(
+                "DuckEngine Raytracer - {} - {} - {}/{} passes - {} - {:.0f} ms/pass - {:.0f} FPS", scenes[currentScene].Name,
+                integrators[currentIntegrator]->Name(), progress.Passes, progress.TargetPasses,
+                progress.Done() ? "Done" : "In Progress", progress.LastPassMs, fpsFrames / fpsTime));
             fpsTime = 0.0f;
             fpsFrames = 0;
         }
@@ -131,7 +175,6 @@ private:
     FrameContext frames;
     CpuFramebufferPresenter presenter;
 
-    Film film;
     Framebuffer display;
 
     std::vector<TestScene> scenes;
@@ -139,6 +182,8 @@ private:
 
     std::vector<std::unique_ptr<IIntegrator>> integrators;
     size_t currentIntegrator = 0;
+
+    BackgroundRenderer renderer{FilmWidth, FilmHeight, RenderThreadCount()};
 
     float fpsTime = 0.0f;
     int fpsFrames = 0;

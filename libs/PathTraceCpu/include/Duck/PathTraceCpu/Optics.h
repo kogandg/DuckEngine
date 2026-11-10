@@ -4,6 +4,7 @@
 
 #include <cmath>
 #include <optional>
+#include <algorithm>
 
 namespace Duck::PathTrace
 {
@@ -30,5 +31,25 @@ namespace Duck::PathTrace
         r0 *= r0;
         const float m = 1.0f - cosTheta;
         return r0 + (1.0f - r0) * (m * m * m * m * m);
+    }
+
+    // reflectance at normal incidence of a dielectric with index ior seen from air
+    inline float F0FromIor(float ior)
+    {
+        const float r = (ior - 1.0f) / (ior + 1.0f);
+        return r * r;
+    }
+
+    // Schlick from the reflectance at normal incidence (F0). colored for metals
+    inline float SchlickReflectance(float f0, float cosTheta)
+    {
+        const float m = 1.0f - std::clamp(cosTheta, 0.0f, 1.0f);
+        return f0 + (1.0f - f0) * (m * m * m * m * m);
+    }
+
+    inline Vec3 SchlickReflectance(const Vec3& f0, float cosTheta)
+    {
+        const float m = 1.0f - std::clamp(cosTheta, 0.0f, 1.0f);
+        return f0 + (Vec3(1.0f) - f0) * (m * m * m * m * m);
     }
 }
