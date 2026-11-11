@@ -44,8 +44,8 @@ namespace Duck::Test
     inline RayTraceCpu::Scene DarkScene()
     {
         RayTraceCpu::Scene scene;
-        scene.SkyDown = scene.SkyUp = Vec3(0.0f);
-        scene.AmbientDown = scene.AmbientUp = Vec3(0.0f);
+        scene.Environment.SkyDown = scene.Environment.SkyUp = Vec3(0.0f);
+        scene.Environment.AmbientDown = scene.Environment.AmbientUp = Vec3(0.0f);
         return scene;
     }
 
@@ -53,7 +53,7 @@ namespace Duck::Test
     inline RayTraceCpu::Scene FurnaceScene()
     {
         RayTraceCpu::Scene scene = DarkScene();
-        scene.SkyDown = scene.SkyUp = Vec3(1.0f);
+        scene.Environment.SkyDown = scene.Environment.SkyUp = Vec3(1.0f);
         return scene;
     }
 

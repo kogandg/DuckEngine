@@ -4,7 +4,7 @@
 #include <Duck/Core/Ray.h>
 #include <Duck/RayTraceCpu/Geometry.h>
 #include <Duck/RayTraceCpu/Lights.h>
-#include <Duck/RayTraceCpu/Scene.h>
+#include <Duck/RayTraceCpu/RenderScene.h>
 
 namespace Duck::RayTraceCpu
 {
@@ -27,10 +27,10 @@ namespace Duck::RayTraceCpu
     // light arriving straight from the lights, one sample per light: sum of f(wi) * Li * cos / pdf.
     // brdf(wi) returns f(wo, wi) for the surface being shaded, so Blinn-Phong etc. plug in later
     template <typename TBrdf>
-    Vec3 DirectLighting(const Scene& scene, const Hit& hit, Random& random, TBrdf&& brdf)
+    Vec3 DirectLighting(const RenderScene& scene, const Hit& hit, Random& random, TBrdf&& brdf)
     {
         Vec3 total(0.0f);
-        for (const Light& light : scene.Lights)
+        for (const Light& light : scene.GetLights())
         {
             const LightSample sample = SampleLight(light, hit.Point, random);
             const float cosine = glm::dot(hit.Normal, sample.Direction);

@@ -13,6 +13,7 @@
 #include <Duck/VkCore/FrameContext.h>
 #include <Duck/VkCore/Swapchain.h>
 #include <Duck/VkCore/VulkanContext.h>
+#include <Duck/RayTraceCpu/RenderScene.h>
 
 #include <algorithm>
 #include <format>
@@ -49,6 +50,12 @@ public:
         integrators.push_back(std::make_unique<PathTracer>());
         integrators.push_back(std::make_unique<WhittedIntegrator>());
         integrators.push_back(std::make_unique<NormalIntegrator>());
+
+        for (const TestScene& test : scenes)
+        {
+            builtScenes.push_back(BuildScene(test.Scene));
+        }
+
         RestartRender();
     }
 
@@ -85,8 +92,7 @@ protected:
 private:
     void RestartRender()
     {
-        const TestScene& test = scenes[currentScene];
-        renderer.Restart(test.Scene, test.Camera, *integrators[currentIntegrator]);
+        renderer.Restart(builtScenes[currentScene], scenes[currentScene].Camera, *integrators[currentIntegrator]);
     }
 
     void HandleInput()
@@ -178,6 +184,7 @@ private:
     Framebuffer display;
 
     std::vector<TestScene> scenes;
+    std::vector<std::shared_ptr<const RenderScene>> builtScenes;
     size_t currentScene = 0;
 
     std::vector<std::unique_ptr<IIntegrator>> integrators;

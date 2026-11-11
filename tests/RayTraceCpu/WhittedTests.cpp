@@ -21,12 +21,12 @@ using Catch::Matchers::WithinAbs;
 TEST_CASE("Whitted: rays that miss see the sky", "[whitted]")
 {
     Scene scene = DarkScene();
-    scene.SkyDown = Vec3(1.0f, 0.0f, 0.0f);
-    scene.SkyUp = Vec3(0.0f, 0.0f, 1.0f);
+    scene.Environment.SkyDown = Vec3(1.0f, 0.0f, 0.0f);
+    scene.Environment.SkyUp = Vec3(0.0f, 0.0f, 1.0f);
     WhittedIntegrator whitted;
 
-    CheckAllPixels(Render(whitted, scene, LookUp(Vec3(0.0f), 1.0f)), scene.SkyUp, 1e-3f);
-    CheckAllPixels(Render(whitted, scene, LookDown(Vec3(0.0f), 1.0f)), scene.SkyDown, 1e-3f);
+    CheckAllPixels(Render(whitted, scene, LookUp(Vec3(0.0f), 1.0f)), scene.Environment.SkyUp, 1e-3f);
+    CheckAllPixels(Render(whitted, scene, LookDown(Vec3(0.0f), 1.0f)), scene.Environment.SkyDown, 1e-3f);
     CheckAllPixels(Render(whitted, scene, LookForward(Vec3(0.0f), 1.0f)), Vec3(0.5f, 0.0f, 0.5f), 1e-2f);
 }
 
@@ -63,8 +63,8 @@ TEST_CASE("Whitted: light doesn't leak through a surface", "[whitted]")
 TEST_CASE("Whitted: ambient is blended by the normal's direction", "[whitted]")
 {
     Scene scene = DarkScene();
-    scene.AmbientUp = Vec3(0.2f, 0.4f, 0.6f);
-    scene.AmbientDown = Vec3(0.6f, 0.4f, 0.2f);
+    scene.Environment.AmbientUp = Vec3(0.2f, 0.4f, 0.6f);
+    scene.Environment.AmbientDown = Vec3(0.6f, 0.4f, 0.2f);
     const int gray = scene.AddMaterial(GltfMaterial::Lambert(Vec3(0.5f)));
     scene.Quads = {
         Floor(gray),
@@ -72,10 +72,10 @@ TEST_CASE("Whitted: ambient is blended by the normal's direction", "[whitted]")
     };
 
     WhittedIntegrator whitted;
-    CheckAllPixels(Render(whitted, scene, LookDown({0.0f, 1.0f, 0.0f}, 30.0f)), 0.5f * scene.AmbientUp, 1e-5f);
-    CheckAllPixels(Render(whitted, scene, LookUp({0.0f, -1.0f, 0.0f}, 30.0f)), 0.5f * scene.AmbientDown, 1e-5f);
+    CheckAllPixels(Render(whitted, scene, LookDown({0.0f, 1.0f, 0.0f}, 30.0f)), 0.5f * scene.Environment.AmbientUp, 1e-5f);
+    CheckAllPixels(Render(whitted, scene, LookUp({0.0f, -1.0f, 0.0f}, 30.0f)), 0.5f * scene.Environment.AmbientDown, 1e-5f);
     CheckAllPixels(Render(whitted, scene, LookForward({0.0f, 1.0f, 0.0f}, 30.0f)),
-                   0.25f * (scene.AmbientUp + scene.AmbientDown), 1e-5f); // sideways normal: halfway
+                   0.25f * (scene.Environment.AmbientUp + scene.Environment.AmbientDown), 1e-5f); // sideways normal: halfway
 }
 
 // ---------- shadows and lights ----------
@@ -157,15 +157,15 @@ TEST_CASE("Whitted furnace: a mirror only tints what it reflects", "[whitted][fu
 TEST_CASE("Whitted: a mirror reflects in the mirror direction", "[whitted]")
 {
     Scene scene = DarkScene();
-    scene.SkyDown = Vec3(1.0f, 0.0f, 0.0f);
-    scene.SkyUp = Vec3(0.0f, 0.0f, 1.0f);
+    scene.Environment.SkyDown = Vec3(1.0f, 0.0f, 0.0f);
+    scene.Environment.SkyUp = Vec3(0.0f, 0.0f, 1.0f);
     const int mirror = scene.AddMaterial(GltfMaterial::Metal(Vec3(1.0f)));
     // tilted 45 degrees and centered 3 units ahead, so a level ray reflects straight up
     scene.Quads = {{{-1.0f, -1.0f, -2.0f}, {2.0f, 0.0f, 0.0f}, {0.0f, 2.0f, -2.0f}, mirror}};
 
     WhittedIntegrator whitted;
     // reflecting the wrong way would show the red SkyDown
-    CheckAllPixels(Render(whitted, scene, LookForward(Vec3(0.0f), 1.0f)), scene.SkyUp, 1e-3f);
+    CheckAllPixels(Render(whitted, scene, LookForward(Vec3(0.0f), 1.0f)), scene.Environment.SkyUp, 1e-3f);
 }
 
 TEST_CASE("Whitted: recursion stops at max depth", "[whitted]")
@@ -189,7 +189,7 @@ TEST_CASE("Whitted: a glass slab seen head-on reflects 2R / (1 + R)", "[whitted]
 {
     // white above, black below. the camera looks down, so only reflected light comes back
     Scene scene = DarkScene();
-    scene.SkyUp = Vec3(1.0f);
+    scene.Environment.SkyUp = Vec3(1.0f);
     const int glass = scene.AddMaterial(GltfMaterial::Glass(1.5f));
     // a glass quad's front, cross(EdgeU, EdgeV), must face OUT of the glass: FrontFace decides entering vs leaving
     scene.Quads = {
@@ -213,7 +213,7 @@ TEST_CASE("Whitted: light through absorbing glass follows Beer-Lambert", "[whitt
     CAPTURE(thickness);
 
     Scene scene = DarkScene();
-    scene.SkyDown = Vec3(1.0f); // white below, black above: the camera looking down only sees transmitted light
+    scene.Environment.SkyDown = Vec3(1.0f); // white below, black above: the camera looking down only sees transmitted light
     const Vec3 color(0.8f, 0.5f, 0.2f);
     const int glass = scene.AddMaterial(GltfMaterial::ColoredGlass(color, 1.0f));
     // fronts face out of the glass (see the slab test)
@@ -286,7 +286,7 @@ TEST_CASE("Whitted furnace: smooth white plastic reflects exactly what arrives",
 {
     // diffuse (1 - F) * white under ambient 1, plus the coat's mirror reflection F * sky 1: always 1
     Scene scene = FurnaceScene();
-    scene.AmbientDown = scene.AmbientUp = Vec3(1.0f);
+    scene.Environment.AmbientDown = scene.Environment.AmbientUp = Vec3(1.0f);
     scene.Quads = {Floor(scene.AddMaterial(GltfMaterial::Plastic(Vec3(1.0f), 0.0f)))};
 
     WhittedIntegrator whitted;

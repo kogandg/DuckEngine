@@ -9,7 +9,7 @@
 
 namespace Duck::RayTraceCpu
 {
-    void PixelIntegrator::RenderPass(const Scene& scene, const Camera& camera, Film& film, ThreadPool& pool)
+    void PixelIntegrator::RenderPass(const RenderScene& scene, const Camera& camera, Film& film, ThreadPool& pool)
     {
         const int width = film.Sum.Width();
         const int height = film.Sum.Height();

@@ -11,10 +11,11 @@
 #include <optional>
 #include <stop_token>
 #include <thread>
+#include <memory>
 
 namespace Duck::RayTraceCpu
 {
-    struct Scene;
+    class RenderScene;
     class IIntegrator;
 
     // renders passes on its own thread (plus a thread pool) so the caller's loop never waits on rendering
@@ -32,7 +33,7 @@ namespace Duck::RayTraceCpu
 
         // throws away the current image and starts over. the camera is copied; scene and integrator are
         // referenced, so they must outlive the renderer and must not change while it uses them
-        void Restart(const Scene& scene, const Camera& camera, IIntegrator& integrator);
+        void Restart(std::shared_ptr<const RenderScene> newScene, const Camera& camera, IIntegrator& integrator);
 
         // swaps the newest finished image into display if there is one. returns whether display changed
         // display must be width x height
@@ -58,13 +59,13 @@ namespace Duck::RayTraceCpu
 
         mutable std::mutex mutex; // guards everything below
         std::condition_variable_any changed;
-        const Scene* scene = nullptr;
         std::optional<Camera> camera;
         IIntegrator* integrator = nullptr;
         std::uint64_t generation = 0; // goes up on every Restart
         Framebuffer shared;           // newest finished image
         bool fresh = false;           // shared has an image the caller hasn't taken yet
         Progress progress;
+        std::shared_ptr<const RenderScene> scene;
 
         // last: started after everything above exists, and stopped and joined before any of it is destroyed
         std::jthread thread;

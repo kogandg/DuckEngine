@@ -17,7 +17,7 @@ namespace Duck
 namespace Duck::RayTraceCpu
 {
     class Camera;
-    struct Scene;
+    class RenderScene;
 
     // anything that can add a pass of work onto film
     class IIntegrator
@@ -28,7 +28,7 @@ namespace Duck::RayTraceCpu
         virtual const char* Name() const = 0;
 
         // adds one pass onto film. Passes is the index of THIS pass
-        virtual void RenderPass(const Scene& scene, const Camera& camera, Film& film, ThreadPool& pool) = 0;
+        virtual void RenderPass(const RenderScene& scene, const Camera& camera, Film& film, ThreadPool& pool) = 0;
 
         // how many passes are worth rendering before image stops improving noticeably
         virtual int RecommendedPasses() const { return 256; }
@@ -39,11 +39,11 @@ namespace Duck::RayTraceCpu
     class PixelIntegrator : public IIntegrator
     {
     public:
-        void RenderPass(const Scene& scene, const Camera& camera, Film& film, ThreadPool& pool) final;
+        void RenderPass(const RenderScene& scene, const Camera& camera, Film& film, ThreadPool& pool) final;
 
     protected:
         // radiance arriving along ray
-        virtual Vec3 Li(const Scene& scene, const Ray& ray, Random& random) const = 0;
+        virtual Vec3 Li(const RenderScene& scene, const Ray& ray, Random& random) const = 0;
 
         virtual bool JitterSamples() const { return true; }
 

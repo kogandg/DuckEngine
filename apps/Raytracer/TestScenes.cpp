@@ -57,8 +57,8 @@ namespace
         scene.Lights = {PointLight{{0.0f, 1.9f, 0.0f}, Vec3(3.0f * Pi)}};
 
         // closed room: black background, and a small flat ambient so shadows aren't pure black
-        scene.SkyDown = scene.SkyUp = Vec3(0.0f);
-        scene.AmbientDown = scene.AmbientUp = Vec3(0.08f);
+        scene.Environment.SkyDown = scene.Environment.SkyUp = Vec3(0.0f);
+        scene.Environment.AmbientDown = scene.Environment.AmbientUp = Vec3(0.08f);
 
         return {.Name = "Cornell Box",
                 .Scene = std::move(scene),
@@ -85,10 +85,10 @@ namespace
         };
 
         scene.Lights = {DirectionalLight{glm::normalize(Vec3(-0.4f, 1.0f, 0.6f)), Vec3(Pi)}};
-        scene.SkyDown = Vec3(0.45f, 0.6f, 0.95f);
-        scene.SkyUp = Vec3(0.1f, 0.25f, 0.7f);
-        scene.AmbientDown = Vec3(0.15f);
-        scene.AmbientUp = Vec3(0.2f, 0.22f, 0.3f);
+        scene.Environment.SkyDown = Vec3(0.45f, 0.6f, 0.95f);
+        scene.Environment.SkyUp = Vec3(0.1f, 0.25f, 0.7f);
+        scene.Environment.AmbientDown = Vec3(0.15f);
+        scene.Environment.AmbientUp = Vec3(0.2f, 0.22f, 0.3f);
 
         return {.Name = "Whitted 1980",
                 .Scene = std::move(scene),

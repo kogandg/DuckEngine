@@ -12,7 +12,7 @@ namespace Duck::RayTraceCpu
         const char* Name() const override { return "Path Tracer"; }
 
     protected:
-        Vec3 Li(const Scene& scene, const Ray& cameraRay, Random& random) const override;
+        Vec3 Li(const RenderScene& scene, const Ray& cameraRay, Random& random) const override;
 
     private:
         int maxBounces;

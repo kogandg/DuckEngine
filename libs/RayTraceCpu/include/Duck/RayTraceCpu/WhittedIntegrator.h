@@ -15,11 +15,11 @@ namespace Duck::RayTraceCpu
         int RecommendedPasses() const override { return 32; }
 
     protected:
-        Vec3 Li(const Scene& scene, const Ray& ray, Random& random) const override;
+        Vec3 Li(const RenderScene& scene, const Ray& ray, Random& random) const override;
 
     private:
         // weight = how much this ray can still contribute to the pixel, used to cut off useless branches
-        Vec3 Trace(const Scene& scene, const Ray& ray, Random& random, int depth, float weight) const;
+        Vec3 Trace(const RenderScene& scene, const Ray& ray, Random& random, int depth, float weight) const;
 
         int maxDepth;
     };

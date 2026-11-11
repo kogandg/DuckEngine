@@ -2,7 +2,7 @@
 
 #include <Duck/Core/Assert.h>
 #include <Duck/RayTraceCpu/Integrator.h>
-#include <Duck/RayTraceCpu/Scene.h>
+#include <Duck/RayTraceCpu/RenderScene.h>
 
 #include <utility>
 #include <chrono>
@@ -15,11 +15,12 @@ namespace Duck::RayTraceCpu
     {
     }
 
-    void BackgroundRenderer::Restart(const Scene& newScene, const Camera& newCamera, IIntegrator& newIntegrator)
+    void BackgroundRenderer::Restart(std::shared_ptr<const RenderScene> newScene, const Camera& newCamera,
+                                     IIntegrator& newIntegrator)
     {
         {
             std::lock_guard lock(mutex);
-            scene = &newScene;
+            scene = std::move(newScene);
             camera = newCamera;
             integrator = &newIntegrator;
             generation++;
@@ -52,7 +53,7 @@ namespace Duck::RayTraceCpu
         std::uint64_t rendering = 0; // the generation the film belongs to
         while (true)
         {
-            const Scene* jobScene = nullptr;
+            std::shared_ptr<const RenderScene> jobScene;
             IIntegrator* jobIntegrator = nullptr;
             std::optional<Camera> jobCamera;
             {

@@ -12,7 +12,7 @@
 
 namespace Duck::RayTraceCpu
 {
-    Vec3 PathTracer::Li(const Scene& scene, const Ray& cameraRay, Random& random) const
+    Vec3 PathTracer::Li(const RenderScene& scene, const Ray& cameraRay, Random& random) const
     {
         Ray ray = cameraRay;
         Vec3 radiance(0.0f);
@@ -23,11 +23,11 @@ namespace Duck::RayTraceCpu
             const auto hit = scene.ClosestHit(ray, RayEpsilon, Infinity);
             if (!hit)
             {
-                radiance += throughput * scene.SkyColor(ray);
+                radiance += throughput * scene.GetEnironment().SkyColor(ray.Direction);
                 break;
             }
 
-            const Material& material = scene.Materials[hit->MaterialId];
+            const Material& material = scene.GetMaterial(hit->MaterialId);
             throughput *= SegmentTransmittance(material, *hit);
             radiance += throughput * EmissionAt(material, *hit);
 

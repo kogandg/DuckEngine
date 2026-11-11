@@ -16,12 +16,12 @@ namespace Duck::RayTraceCpu
         float MirrorFade(float roughness) { return (1.0f - roughness) * (1.0f - roughness); }
     }
 
-    Vec3 WhittedIntegrator::Li(const Scene& scene, const Ray& ray, Random& random) const
+    Vec3 WhittedIntegrator::Li(const RenderScene& scene, const Ray& ray, Random& random) const
     {
         return Trace(scene, ray, random, 0, 1.0f);
     }
 
-    Vec3 WhittedIntegrator::Trace(const Scene& scene, const Ray& ray, Random& random, int depth, float weight) const
+    Vec3 WhittedIntegrator::Trace(const RenderScene& scene, const Ray& ray, Random& random, int depth, float weight) const
     {
         if (depth > maxDepth || weight < MinWeight)
         {
@@ -31,10 +31,10 @@ namespace Duck::RayTraceCpu
         const auto hit = scene.ClosestHit(ray, RayEpsilon, Infinity);
         if (!hit)
         {
-            return scene.SkyColor(ray);
+            return scene.GetEnironment().SkyColor(ray.Direction);
         }
 
-        const Material& material = scene.Materials[hit->MaterialId];
+        const Material& material = scene.GetMaterial(hit->MaterialId);
 
         const Vec3 transmittance = SegmentTransmittance(material, *hit);
         const float carried = weight * MaxComponent(transmittance); // what this branch can still contribute
@@ -45,7 +45,7 @@ namespace Duck::RayTraceCpu
         Vec3 radiance = EmissionAt(material, *hit);
         if (bsdf.HasNonDeltaLobes())
         {
-            radiance += (bsdf.DiffuseReflectance() * scene.Ambient(hit->Normal)) +
+            radiance += (bsdf.DiffuseReflectance() * scene.GetEnironment().Ambient(hit->Normal)) +
                         DirectLighting(scene, *hit, random, [&](const Vec3& wi) { return bsdf.Evaluate(wo, wi); });
         }
 
