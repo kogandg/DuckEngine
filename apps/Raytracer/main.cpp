@@ -1,13 +1,13 @@
 #include "TestScenes.h"
 
 #include <Duck/Core/ThreadPool.h>
-#include <Duck/PathTraceCpu/BackgroundRenderer.h>
-#include <Duck/PathTraceCpu/Camera.h>
-#include <Duck/PathTraceCpu/Film.h>
-#include <Duck/PathTraceCpu/NormalIntegrator.h>
-#include <Duck/PathTraceCpu/PathTracer.h>
-#include <Duck/PathTraceCpu/Scene.h>
-#include <Duck/PathTraceCpu/WhittedIntegrator.h>
+#include <Duck/RayTraceCpu/BackgroundRenderer.h>
+#include <Duck/RayTraceCpu/Camera.h>
+#include <Duck/RayTraceCpu/Film.h>
+#include <Duck/RayTraceCpu/NormalIntegrator.h>
+#include <Duck/RayTraceCpu/PathTracer.h>
+#include <Duck/RayTraceCpu/Scene.h>
+#include <Duck/RayTraceCpu/WhittedIntegrator.h>
 #include <Duck/Platform/Application.h>
 #include <Duck/VkCore/CpuFramebufferPresenter.h>
 #include <Duck/VkCore/FrameContext.h>
@@ -22,7 +22,7 @@
 #include <vector>
 
 using namespace Duck;
-using namespace Duck::PathTrace;
+using namespace Duck::RayTraceCpu;
 using namespace Duck::Vk;
 
 namespace

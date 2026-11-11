@@ -4,7 +4,7 @@
 #include <Duck/Core/Math.h>
 #include <Duck/Core/Random.h>
 #include <Duck/Core/Sampling.h>
-#include <Duck/PathTraceCpu/Optics.h>
+#include <Duck/RayTraceCpu/Optics.h>
 
 #include <array>
 #include <cmath>
@@ -16,7 +16,7 @@
 // lobes work in local frame where shading normal is +z and wo is on the +z side
 // wo points towords the viewr, wi toward where the light comes from
 // a delta lobe returns value = weight / |cos(wi)| from Sample, so Value * |cos| / pdf = weight
-namespace Duck::PathTrace
+namespace Duck::RayTraceCpu
 {
     struct LobeSample
     {

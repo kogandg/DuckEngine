@@ -1,13 +1,13 @@
-#include <Duck/PathTraceCpu/BackgroundRenderer.h>
+#include <Duck/RayTraceCpu/BackgroundRenderer.h>
 
 #include <Duck/Core/Assert.h>
-#include <Duck/PathTraceCpu/Integrator.h>
-#include <Duck/PathTraceCpu/Scene.h>
+#include <Duck/RayTraceCpu/Integrator.h>
+#include <Duck/RayTraceCpu/Scene.h>
 
 #include <utility>
 #include <chrono>
 
-namespace Duck::PathTrace
+namespace Duck::RayTraceCpu
 {
     BackgroundRenderer::BackgroundRenderer(int width, int height, unsigned threadCount)
         : pool(threadCount), film(width, height), back(width, height), shared(width, height),

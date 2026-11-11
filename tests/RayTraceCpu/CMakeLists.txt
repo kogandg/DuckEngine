@@ -1,1 +1,1 @@
-duck_test(PathTraceCpu DEPS Duck::PathTraceCpu)
+duck_test(RayTraceCpu DEPS Duck::RayTraceCpu)

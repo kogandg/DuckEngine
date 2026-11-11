@@ -12,7 +12,7 @@ namespace Duck
     class Random;
 }
 
-namespace Duck::PathTrace
+namespace Duck::RayTraceCpu
 {
     // one sample of the light reaching a point from one light
     struct LightSample

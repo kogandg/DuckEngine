@@ -2,20 +2,27 @@
 
 #include <Duck/Core/Assert.h>
 #include <Duck/Core/Ray.h>
+#include <Duck/Core/Math.h>
 
 #include <cmath>
 #include <cstdint>
 #include <optional>
+#include <algorithm>
+#include <concepts>
+#include <type_traits>
+#include <variant>
 
-namespace Duck::PathTrace
+namespace Duck::RayTraceCpu
 {
     struct Hit
     {
         Vec3 Point{0.0f};
-        Vec3 Normal{0.0f};
+        Vec3 Normal{0.0f}; // unit, facing incoming ray
+        Vec2 Uv{0.0f}; // surface coords for textures
         float T = 0.0f;
         bool FrontFace = true; // false if hit from the inside of a surface
         int MaterialId = 0;
+        int PrimitiveId = -1;
     };
 
     struct Sphere

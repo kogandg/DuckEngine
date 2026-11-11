@@ -1,12 +1,12 @@
 #include "RenderTestHelpers.h"
 
-#include <Duck/PathTraceCpu/PathTracer.h>
-#include <Duck/PathTraceCpu/WhittedIntegrator.h>
+#include <Duck/RayTraceCpu/PathTracer.h>
+#include <Duck/RayTraceCpu/WhittedIntegrator.h>
 
 #include <catch2/catch_test_macros.hpp>
 
 using namespace Duck;
-using namespace Duck::PathTrace;
+using namespace Duck::RayTraceCpu;
 using namespace Duck::Test;
 
 TEST_CASE("Whitted ambient matches path-traced sky light on an open floor", "[consistency]")

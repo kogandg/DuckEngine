@@ -9,7 +9,7 @@ namespace Duck
     class ThreadPool;
 }
 
-namespace Duck::PathTrace
+namespace Duck::RayTraceCpu
 {
     enum class OutputTransform
     {

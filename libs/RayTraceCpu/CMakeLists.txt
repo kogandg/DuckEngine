@@ -1,1 +1,1 @@
-duck_library(PathTraceCpu DEPS Duck::Core)
+duck_library(RayTraceCpu DEPS Duck::Core)

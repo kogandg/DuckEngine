@@ -1,8 +1,8 @@
-#include <Duck/PathTraceCpu/Camera.h>
+#include <Duck/RayTraceCpu/Camera.h>
 
 #include <cmath>
 
-namespace Duck::PathTrace
+namespace Duck::RayTraceCpu
 {
     Camera::Camera(const Vec3& position, const Vec3& target, const Vec3& up, float verticalFovDegrees,
                    float aspectRatio)

@@ -1,8 +1,8 @@
-#include <Duck/PathTraceCpu/Scene.h>
+#include <Duck/RayTraceCpu/Scene.h>
 
 #include <algorithm>
 
-namespace Duck::PathTrace
+namespace Duck::RayTraceCpu
 {
     namespace
     {

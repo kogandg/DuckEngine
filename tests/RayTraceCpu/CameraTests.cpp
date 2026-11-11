@@ -1,6 +1,6 @@
 #include "TestHelpers.h"
 
-#include <Duck/PathTraceCpu/Camera.h>
+#include <Duck/RayTraceCpu/Camera.h>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
@@ -8,7 +8,7 @@
 #include <cmath>
 
 using namespace Duck;
-using namespace Duck::PathTrace;
+using namespace Duck::RayTraceCpu;
 using namespace Duck::Test;
 using Catch::Matchers::WithinAbs;
 

@@ -1,9 +1,9 @@
-#include <Duck/PathTraceCpu/NormalIntegrator.h>
+#include <Duck/RayTraceCpu/NormalIntegrator.h>
 
-#include <Duck/PathTraceCpu/Scene.h>
-#include <Duck/PathTraceCpu/Shading.h>
+#include <Duck/RayTraceCpu/Scene.h>
+#include <Duck/RayTraceCpu/Shading.h>
 
-namespace Duck::PathTrace
+namespace Duck::RayTraceCpu
 {
     Vec3 NormalIntegrator::Li(const Scene& scene, const Ray& ray, Random&) const
     {

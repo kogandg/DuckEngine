@@ -6,7 +6,7 @@
 #include <optional>
 #include <algorithm>
 
-namespace Duck::PathTrace
+namespace Duck::RayTraceCpu
 {
     // mirror d about n. d points toward the surface, the result points away from it
     inline Vec3 Reflect(const Vec3& d, const Vec3& n) { return d - 2.0f * glm::dot(d, n) * n; }

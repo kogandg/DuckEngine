@@ -1,12 +1,12 @@
 #include <Duck/Core/Color.h>
 #include <Duck/Core/Framebuffer.h>
 #include <Duck/Core/ThreadPool.h>
-#include <Duck/PathTraceCpu/Film.h>
+#include <Duck/RayTraceCpu/Film.h>
 
 #include <catch2/catch_test_macros.hpp>
 
 using namespace Duck;
-using namespace Duck::PathTrace;
+using namespace Duck::RayTraceCpu;
 
 TEST_CASE("Film resolve averages in linear space and encodes sRGB once", "[film]")
 {

@@ -1,13 +1,13 @@
-#include <Duck/PathTraceCpu/Integrator.h>
+#include <Duck/RayTraceCpu/Integrator.h>
 
 #include <Duck/Core/Random.h>
 #include <Duck/Core/ThreadPool.h>
-#include <Duck/PathTraceCpu/Camera.h>
+#include <Duck/RayTraceCpu/Camera.h>
 
 #include <algorithm>
 #include <cstdint>
 
-namespace Duck::PathTrace
+namespace Duck::RayTraceCpu
 {
     void PixelIntegrator::RenderPass(const Scene& scene, const Camera& camera, Film& film, ThreadPool& pool)
     {

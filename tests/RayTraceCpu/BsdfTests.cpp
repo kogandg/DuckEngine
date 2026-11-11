@@ -1,14 +1,14 @@
 #include "TestHelpers.h"
 
-#include <Duck/PathTraceCpu/Bsdf.h>
-#include <Duck/PathTraceCpu/Materials.h>
+#include <Duck/RayTraceCpu/Bsdf.h>
+#include <Duck/RayTraceCpu/Materials.h>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 using namespace Duck;
-using namespace Duck::PathTrace;
+using namespace Duck::RayTraceCpu;
 using namespace Duck::Test;
 using Catch::Matchers::WithinAbs;
 

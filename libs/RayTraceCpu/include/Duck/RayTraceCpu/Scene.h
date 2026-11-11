@@ -1,14 +1,14 @@
 #pragma once
 
 #include <Duck/Core/Ray.h>
-#include <Duck/PathTraceCpu/Geometry.h>
-#include <Duck/PathTraceCpu/Lights.h>
-#include <Duck/PathTraceCpu/Materials.h>
+#include <Duck/RayTraceCpu/Geometry.h>
+#include <Duck/RayTraceCpu/Lights.h>
+#include <Duck/RayTraceCpu/Materials.h>
 
 #include <optional>
 #include <vector>
 
-namespace Duck::PathTrace
+namespace Duck::RayTraceCpu
 {
     struct Scene
     {

@@ -3,7 +3,7 @@
 #include <utility>
 
 using namespace Duck;
-using namespace Duck::PathTrace;
+using namespace Duck::RayTraceCpu;
 
 namespace
 {

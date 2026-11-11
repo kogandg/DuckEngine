@@ -1,10 +1,10 @@
-#include <Duck/PathTraceCpu/Film.h>
+#include <Duck/RayTraceCpu/Film.h>
 
 #include <Duck/Core/Assert.h>
 #include <Duck/Core/Color.h>
 #include <Duck/Core/ThreadPool.h>
 
-namespace Duck::PathTrace
+namespace Duck::RayTraceCpu
 {
     void Film::Reset()
     {

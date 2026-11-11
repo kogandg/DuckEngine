@@ -2,11 +2,11 @@
 
 #include <Duck/Core/Math.h>
 #include <Duck/Core/Ray.h>
-#include <Duck/PathTraceCpu/Geometry.h>
-#include <Duck/PathTraceCpu/Lights.h>
-#include <Duck/PathTraceCpu/Scene.h>
+#include <Duck/RayTraceCpu/Geometry.h>
+#include <Duck/RayTraceCpu/Lights.h>
+#include <Duck/RayTraceCpu/Scene.h>
 
-namespace Duck::PathTrace
+namespace Duck::RayTraceCpu
 {
     // rays leaving a surface ignore hits closer than this
     inline constexpr float RayEpsilon = 1e-6f;

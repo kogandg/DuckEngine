@@ -1,8 +1,8 @@
 #pragma once
 
-#include <Duck/PathTraceCpu/Integrator.h>
+#include <Duck/RayTraceCpu/Integrator.h>
 
-namespace Duck::PathTrace
+namespace Duck::RayTraceCpu
 {
     class NormalIntegrator final : public PixelIntegrator
     {

@@ -1,6 +1,6 @@
 #include "RenderTestHelpers.h"
 
-#include <Duck/PathTraceCpu/WhittedIntegrator.h>
+#include <Duck/RayTraceCpu/WhittedIntegrator.h>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
@@ -11,7 +11,7 @@
 #include <tuple>
 
 using namespace Duck;
-using namespace Duck::PathTrace;
+using namespace Duck::RayTraceCpu;
 using namespace Duck::Test;
 using Catch::Generators::table;
 using Catch::Matchers::WithinAbs;

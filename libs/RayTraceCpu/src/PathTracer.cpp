@@ -1,16 +1,16 @@
-#include <Duck/PathTraceCpu/PathTracer.h>
+#include <Duck/RayTraceCpu/PathTracer.h>
 
 #include <Duck/Core/Random.h>
 #include <Duck/Core/Ray.h>
 #include <Duck/Core/Sampling.h>
-#include <Duck/PathTraceCpu/Scene.h>
-#include <Duck/PathTraceCpu/Shading.h>
-#include <Duck/PathTraceCpu/Bsdf.h>
-#include <Duck/PathTraceCpu/Materials.h>
+#include <Duck/RayTraceCpu/Scene.h>
+#include <Duck/RayTraceCpu/Shading.h>
+#include <Duck/RayTraceCpu/Bsdf.h>
+#include <Duck/RayTraceCpu/Materials.h>
 
 #include <cmath>
 
-namespace Duck::PathTrace
+namespace Duck::RayTraceCpu
 {
     Vec3 PathTracer::Li(const Scene& scene, const Ray& cameraRay, Random& random) const
     {

@@ -1,15 +1,15 @@
 #pragma once
 
-#include <Duck/PathTraceCpu/Camera.h>
-#include <Duck/PathTraceCpu/Scene.h>
+#include <Duck/RayTraceCpu/Camera.h>
+#include <Duck/RayTraceCpu/Scene.h>
 
 #include <vector>
 
 struct TestScene
 {
     const char* Name = "";
-    Duck::PathTrace::Scene Scene;
-    Duck::PathTrace::Camera Camera;
+    Duck::RayTraceCpu::Scene Scene;
+    Duck::RayTraceCpu::Camera Camera;
 };
 
 std::vector<TestScene> MakeTestScenes(float aspectRatio);

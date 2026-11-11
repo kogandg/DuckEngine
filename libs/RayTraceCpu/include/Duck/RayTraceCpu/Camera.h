@@ -3,7 +3,7 @@
 #include <Duck/Core/Math.h>
 #include <Duck/Core/Ray.h>
 
-namespace Duck::PathTrace
+namespace Duck::RayTraceCpu
 {
     // pinhole camera, right handed, looks toward the target (down -z in local space)
     class Camera

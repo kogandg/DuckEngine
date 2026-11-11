@@ -1,16 +1,16 @@
 #pragma once
 
 #include <Duck/Core/Math.h>
-#include <Duck/PathTraceCpu/Bsdf.h>
-#include <Duck/PathTraceCpu/Geometry.h>
-#include <Duck/PathTraceCpu/Optics.h>
+#include <Duck/RayTraceCpu/Bsdf.h>
+#include <Duck/RayTraceCpu/Geometry.h>
+#include <Duck/RayTraceCpu/Optics.h>
 
 #include <cmath>
 #include <concepts>
 #include <type_traits>
 #include <variant>
 
-namespace Duck::PathTrace
+namespace Duck::RayTraceCpu
 {
     // glTF metallic-roughness material, plus KHR_materials_transmission, _ior, _specular, _emissive_strength, _volume
     // lobes:

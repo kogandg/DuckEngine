@@ -2,8 +2,8 @@
 
 #include <Duck/Core/Framebuffer.h>
 #include <Duck/Core/ThreadPool.h>
-#include <Duck/PathTraceCpu/Camera.h>
-#include <Duck/PathTraceCpu/Film.h>
+#include <Duck/RayTraceCpu/Camera.h>
+#include <Duck/RayTraceCpu/Film.h>
 
 #include <condition_variable>
 #include <cstdint>
@@ -12,7 +12,7 @@
 #include <stop_token>
 #include <thread>
 
-namespace Duck::PathTrace
+namespace Duck::RayTraceCpu
 {
     struct Scene;
     class IIntegrator;

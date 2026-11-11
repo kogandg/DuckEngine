@@ -1,12 +1,12 @@
 #include "TestHelpers.h"
 
-#include <Duck/PathTraceCpu/Lights.h>
+#include <Duck/RayTraceCpu/Lights.h>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 using namespace Duck;
-using namespace Duck::PathTrace;
+using namespace Duck::RayTraceCpu;
 using namespace Duck::Test;
 using Catch::Matchers::WithinAbs;
 

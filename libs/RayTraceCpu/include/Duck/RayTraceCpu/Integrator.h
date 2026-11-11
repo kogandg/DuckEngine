@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Duck/Core/Math.h>
-#include <Duck/PathTraceCpu/Film.h>
+#include <Duck/RayTraceCpu/Film.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -14,7 +14,7 @@ namespace Duck
     class ThreadPool;
 }
 
-namespace Duck::PathTrace
+namespace Duck::RayTraceCpu
 {
     class Camera;
     struct Scene;
