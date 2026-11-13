@@ -39,13 +39,14 @@ TEST_CASE("White lobes keep all the light", "[bsdf][furnace]")
                  Lobe{SpecularDielectricLobe{.Eta = 1.5f}},         // entering glass
                  Lobe{SpecularDielectricLobe{.Eta = 1.0f / 1.5f}}); // leaving, with total internal reflection
     Random random(41u);
+    IndependentSampler sampler(41u);
     for (int i = 0; i < 1000; i++)
     {
         const Vec3 normal = RandomUnitVector(random);
         Bsdf bsdf(normal);
         bsdf.Add(lobe);
         const Vec3 wo = RandomDirectionAbove(normal, random);
-        const auto sample = bsdf.Sample(wo, random);
+        const auto sample = bsdf.Sample(wo, sampler);
 
         const float cosine = std::abs(glm::dot(sample->Direction, normal));
         const float throughput = Throughput(*sample, normal);
@@ -59,6 +60,7 @@ TEST_CASE("White glTF materials keep all the light", "[bsdf][material]")
 {
     // with a white base, metal + coat + diffuse + glass add up to exactly 1, and each sample carries exactly 1
     Random random(61u);
+    IndependentSampler sampler(61u);
     for (int m = 0; m < 50; m++)
     {
         const GltfMaterial material{
@@ -76,7 +78,7 @@ TEST_CASE("White glTF materials keep all the light", "[bsdf][material]")
 
         for (int i = 0; i < 200; i++)
         {
-            const auto sample = bsdf.Sample(wo, random);
+            const auto sample = bsdf.Sample(wo, sampler);
             CAPTURE(material.Metallic, material.Transmission, material.Ior, material.Specular);
             REQUIRE(sample.has_value());
             REQUIRE_THAT(Throughput(*sample, hit.Normal), WithinAbs(1.0f, 1e-4f));

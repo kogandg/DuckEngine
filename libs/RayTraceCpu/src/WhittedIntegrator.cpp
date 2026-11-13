@@ -16,12 +16,13 @@ namespace Duck::RayTraceCpu
         float MirrorFade(float roughness) { return (1.0f - roughness) * (1.0f - roughness); }
     }
 
-    Vec3 WhittedIntegrator::Li(const RenderScene& scene, const Ray& ray, Random& random) const
+    Vec3 WhittedIntegrator::Li(const RenderScene& scene, const Ray& ray, ISampler& sampler) const
     {
-        return Trace(scene, ray, random, 0, 1.0f);
+        return Trace(scene, ray, sampler, 0, 1.0f);
     }
 
-    Vec3 WhittedIntegrator::Trace(const RenderScene& scene, const Ray& ray, Random& random, int depth, float weight) const
+    Vec3 WhittedIntegrator::Trace(const RenderScene& scene, const Ray& ray, ISampler& sampler, int depth,
+                                  float weight) const
     {
         if (depth > maxDepth || weight < MinWeight)
         {
@@ -46,7 +47,7 @@ namespace Duck::RayTraceCpu
         if (bsdf.HasNonDeltaLobes())
         {
             radiance += (bsdf.DiffuseReflectance() * scene.GetEnironment().Ambient(hit->Normal)) +
-                        DirectLighting(scene, *hit, random, [&](const Vec3& wi) { return bsdf.Evaluate(wo, wi); });
+                        DirectLighting(scene, *hit, sampler, [&](const Vec3& wi) { return bsdf.Evaluate(wo, wi); });
         }
 
         // perfect reflection and refraction rays
@@ -57,7 +58,7 @@ namespace Duck::RayTraceCpu
                                      const float strength = MaxComponent(pathWeight);
                                      if (strength > 0.0f)
                                      {
-                                         radiance += pathWeight * Trace(scene, SpawnRay(*hit, path.Direction), random,
+                                         radiance += pathWeight * Trace(scene, SpawnRay(*hit, path.Direction), sampler,
                                                                         depth + 1, carried * strength);
                                      }
                                  });

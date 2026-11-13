@@ -14,6 +14,6 @@ namespace Duck::RayTraceCpu
     protected:
         bool JitterSamples() const override { return false; }
 
-        Vec3 Li(const RenderScene& scene, const Ray& ray, Random&) const override;
+        Vec3 Li(const RenderScene& scene, const Ray& ray, ISampler&) const override;
     };
 }

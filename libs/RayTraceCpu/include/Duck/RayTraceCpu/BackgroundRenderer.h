@@ -4,6 +4,7 @@
 #include <Duck/Core/ThreadPool.h>
 #include <Duck/RayTraceCpu/Camera.h>
 #include <Duck/RayTraceCpu/Film.h>
+#include <Duck/RayTraceCpu/Sampler.h>
 
 #include <condition_variable>
 #include <cstdint>
@@ -33,7 +34,8 @@ namespace Duck::RayTraceCpu
 
         // throws away the current image and starts over. the camera is copied; scene and integrator are
         // referenced, so they must outlive the renderer and must not change while it uses them
-        void Restart(std::shared_ptr<const RenderScene> newScene, const Camera& camera, IIntegrator& integrator);
+        void Restart(std::shared_ptr<const RenderScene> newScene, const Camera& camera, IIntegrator& integrator,
+                     std::shared_ptr<const ISampler> sampler = std::make_shared<IndependentSampler>());
 
         // swaps the newest finished image into display if there is one. returns whether display changed
         // display must be width x height
@@ -66,6 +68,7 @@ namespace Duck::RayTraceCpu
         bool fresh = false;           // shared has an image the caller hasn't taken yet
         Progress progress;
         std::shared_ptr<const RenderScene> scene;
+        std::shared_ptr<const ISampler> sampler;
 
         // last: started after everything above exists, and stopped and joined before any of it is destroyed
         std::jthread thread;

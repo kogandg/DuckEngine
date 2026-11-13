@@ -31,6 +31,16 @@ namespace Duck::RayTraceCpu
                 sun->Direction = glm::normalize(sun->Direction);
             }
         }
+
+        // every shape with an emissive material is also an area light
+        for (size_t i = 0; i < shapes.size(); i++)
+        {
+            const Vec3 emission = UniformEmission(materials[static_cast<size_t>(ShapeMaterialId(shapes[i]))]);
+            if (MaxComponent(emission) > 0.0f)
+            {
+                lights.push_back(AreaLight{shapes[i], emission, static_cast<int>(i)});
+            }
+        }
     }
 
     std::optional<Hit> RenderScene::ClosestHit(const Ray& ray, float tMin, float tMax) const

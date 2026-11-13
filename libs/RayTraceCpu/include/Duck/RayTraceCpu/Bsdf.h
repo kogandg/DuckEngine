@@ -2,9 +2,9 @@
 
 #include <Duck/Core/Assert.h>
 #include <Duck/Core/Math.h>
-#include <Duck/Core/Random.h>
 #include <Duck/Core/Sampling.h>
 #include <Duck/RayTraceCpu/Optics.h>
+#include <Duck/RayTraceCpu/Sampler.h>
 
 #include <array>
 #include <cmath>
@@ -54,11 +54,10 @@ namespace Duck::RayTraceCpu
 
         Vec3 Evaluate(const Vec3&, const Vec3& wi) const { return wi.z > 0.0f ? Reflectance * InvPi : Vec3(0.0f); }
 
-        std::optional<LobeSample> Sample(const Vec3& wo, Random& random) const
+        std::optional<LobeSample> Sample(const Vec3& wo, ISampler& sampler) const
         {
-            const float u1 = random.NextFloat();
-            const float u2 = random.NextFloat();
-            const Vec3 wi = CosineHemisphereLocal(u1, u2);
+            const Vec2 u = sampler.Get2D();
+            const Vec3 wi = CosineHemisphereLocal(u.x, u.y);
             if (wi.z <= 0.0f)
             {
                 return std::nullopt;
@@ -84,7 +83,7 @@ namespace Duck::RayTraceCpu
 
         Vec3 Evaluate(const Vec3&, const Vec3&) const { return Vec3(0.0f); }
 
-        std::optional<LobeSample> Sample(const Vec3& wo, Random&) const
+        std::optional<LobeSample> Sample(const Vec3& wo, ISampler&) const
         {
             if (wo.z <= 0.0f)
             {
@@ -138,11 +137,12 @@ namespace Duck::RayTraceCpu
 
         Vec3 Evaluate(const Vec3&, const Vec3&) const { return Vec3(0.0f); }
 
-        std::optional<LobeSample> Sample(const Vec3& wo, Random& random) const
+        std::optional<LobeSample> Sample(const Vec3& wo, ISampler& sampler) const
         {
             const Split split = SplitAt(wo);
             const float r = split.Reflectance;
-            if (!split.Refracted || random.NextFloat() < r)
+            const float u = sampler.Get1D();
+            if (!split.Refracted || u < r)
             {
                 const Vec3 wi = split.Reflected;
                 return LobeSample{wi, Vec3(Scale * r / std::abs(wi.z)), r, true};
@@ -172,9 +172,9 @@ namespace Duck::RayTraceCpu
     // --------------- interface every lobe must provide ----------
 
     template <typename T>
-    concept LobeType = requires(const T& lobe, const Vec3& wo, const Vec3& wi, Random& random) {
+    concept LobeType = requires(const T& lobe, const Vec3& wo, const Vec3& wi, ISampler& sampler) {
         { lobe.Evaluate(wo, wi) } -> std::same_as<Vec3>; // 0 for delta lobes
-        { lobe.Sample(wo, random) } -> std::same_as<std::optional<LobeSample>>;
+        { lobe.Sample(wo, sampler) } -> std::same_as<std::optional<LobeSample>>;
         { lobe.SampleWeight(wo) } -> std::same_as<float>;     // rough share of the light
         { lobe.Specular(wo) } -> std::same_as<SpecularPaths>; // for Whitted
         { lobe.IsDelta() } -> std::same_as<bool>;             // only reachable by sampling,
@@ -246,7 +246,7 @@ namespace Duck::RayTraceCpu
         // picks one lobe in proportion to its weight and samples it.
         // exact while there's at most one non-delta lobe. once glossy lobes exist, a non-delta sample has
         // to add up f and pdf over every non-delta lobe
-        std::optional<BsdfSample> Sample(const Vec3& woWorld, Random& random) const
+        std::optional<BsdfSample> Sample(const Vec3& woWorld, ISampler& sampler) const
         {
             const Vec3 wo = frame.ToLocal(woWorld);
             std::array<float, MaxLobes> weights{};
@@ -262,7 +262,7 @@ namespace Duck::RayTraceCpu
                 return std::nullopt;
             }
 
-            float pick = random.NextFloat() * total;
+            float pick = sampler.Get1D() * total;
             int chosen = count - 1;
             for (int i = 0; i < count; i++)
             {
@@ -274,7 +274,7 @@ namespace Duck::RayTraceCpu
                 pick -= weights[static_cast<size_t>(i)];
             }
 
-            const auto sample = std::visit([&](const auto& lobe) { return lobe.Sample(wo, random); }, LobeAt(chosen));
+            const auto sample = std::visit([&](const auto& lobe) { return lobe.Sample(wo, sampler); }, LobeAt(chosen));
             if (!sample || sample->Pdf <= 0.0f)
             {
                 return std::nullopt;

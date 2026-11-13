@@ -1,6 +1,5 @@
 #include <Duck/RayTraceCpu/PathTracer.h>
 
-#include <Duck/Core/Random.h>
 #include <Duck/Core/Ray.h>
 #include <Duck/Core/Sampling.h>
 #include <Duck/RayTraceCpu/Scene.h>
@@ -12,7 +11,7 @@
 
 namespace Duck::RayTraceCpu
 {
-    Vec3 PathTracer::Li(const RenderScene& scene, const Ray& cameraRay, Random& random) const
+    Vec3 PathTracer::Li(const RenderScene& scene, const Ray& cameraRay, ISampler& sampler) const
     {
         Ray ray = cameraRay;
         Vec3 radiance(0.0f);
@@ -33,7 +32,7 @@ namespace Duck::RayTraceCpu
 
             const Vec3 wo = -ray.Direction;
             const Bsdf bsdf = GetBsdf(material, *hit, wo);
-            const auto sample = bsdf.Sample(wo, random);
+            const auto sample = bsdf.Sample(wo, sampler);
             if (!sample)
             {
                 break; //absorbed

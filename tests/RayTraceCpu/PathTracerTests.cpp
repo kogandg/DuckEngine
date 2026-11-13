@@ -53,6 +53,7 @@ TEST_CASE("Renders don't depend on the number of threads", "[threading]")
     scene.Spheres = {{{0.0f, 0.0f, -3.0f}, 1.0f, scene.AddMaterial(GltfMaterial::Lambert(Vec3(0.5f)))}};
     const RenderScene built(scene);
     const Camera camera = LookForward(Vec3(0.0f), 45.0f);
+    const IndependentSampler sampler;
     PathTracer pathTracer;
 
     ThreadPool single(1);
@@ -61,9 +62,9 @@ TEST_CASE("Renders don't depend on the number of threads", "[threading]")
     Film b(33, 33);
     for (int pass = 0; pass < 4; pass++)
     {
-        pathTracer.RenderPass(built, camera, a, single);
+        pathTracer.RenderPass(built, camera, a, single, sampler);
         a.Passes++;
-        pathTracer.RenderPass(built, camera, b, many);
+        pathTracer.RenderPass(built, camera, b, many, sampler);
         b.Passes++;
     }
 

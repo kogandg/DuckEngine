@@ -6,6 +6,8 @@
 #include <Duck/RayTraceCpu/Lights.h>
 #include <Duck/RayTraceCpu/RenderScene.h>
 
+#include <cmath>
+
 namespace Duck::RayTraceCpu
 {
     // rays leaving a surface ignore hits closer than this
@@ -27,18 +29,30 @@ namespace Duck::RayTraceCpu
     // light arriving straight from the lights, one sample per light: sum of f(wi) * Li * cos / pdf.
     // brdf(wi) returns f(wo, wi) for the surface being shaded, so Blinn-Phong etc. plug in later
     template <typename TBrdf>
-    Vec3 DirectLighting(const RenderScene& scene, const Hit& hit, Random& random, TBrdf&& brdf)
+    Vec3 DirectLighting(const RenderScene& scene, const Hit& hit, ISampler& sampler, TBrdf&& brdf)
     {
         Vec3 total(0.0f);
         for (const Light& light : scene.GetLights())
         {
-            const LightSample sample = SampleLight(light, hit.Point, random);
+            const LightSample sample = SampleLight(light, hit.Point, sampler);
             const float cosine = glm::dot(hit.Normal, sample.Direction);
             if (sample.Pdf <= 0.0f || cosine <= 0.0f)
             {
                 continue; // nothing sampled, or the light is behind the surface
             }
-            if (scene.Occluded(SpawnRay(hit, sample.Direction), RayEpsilon, sample.Distance - RayEpsilon))
+
+            //stop short of the light so area lights dont shadow themselves
+            Ray shadow = SpawnRay(hit, sample.Direction);
+            float shadowEnd = Infinity;
+            if (!std::isinf(sample.Distance))
+            {
+                const Vec3 target = hit.Point + sample.Direction * sample.Distance;
+                const Vec3 toTarget = target - shadow.Origin;
+                const float length = glm::length(toTarget);
+                shadow.Direction = toTarget / length;
+                shadowEnd = length - RayOffset; // stop just short of the light's own surface
+            }
+            if (scene.Occluded(shadow, RayEpsilon, shadowEnd))
             {
                 continue;
             }

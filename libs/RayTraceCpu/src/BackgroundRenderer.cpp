@@ -4,8 +4,8 @@
 #include <Duck/RayTraceCpu/Integrator.h>
 #include <Duck/RayTraceCpu/RenderScene.h>
 
-#include <utility>
 #include <chrono>
+#include <utility>
 
 namespace Duck::RayTraceCpu
 {
@@ -15,14 +15,17 @@ namespace Duck::RayTraceCpu
     {
     }
 
-    void BackgroundRenderer::Restart(std::shared_ptr<const RenderScene> newScene, const Camera& newCamera,
-                                     IIntegrator& newIntegrator)
+    void
+    BackgroundRenderer::Restart(std::shared_ptr<const RenderScene> newScene, const Camera& newCamera,
+                                IIntegrator& newIntegrator,
+                                std::shared_ptr<const ISampler> newSampler)
     {
         {
             std::lock_guard lock(mutex);
             scene = std::move(newScene);
             camera = newCamera;
             integrator = &newIntegrator;
+            sampler = std::move(newSampler);
             generation++;
             progress = {0, newIntegrator.RecommendedPasses()};
         }
@@ -56,6 +59,7 @@ namespace Duck::RayTraceCpu
             std::shared_ptr<const RenderScene> jobScene;
             IIntegrator* jobIntegrator = nullptr;
             std::optional<Camera> jobCamera;
+            std::shared_ptr<const ISampler> jobSampler;
             {
                 std::unique_lock lock(mutex);
                 // sleep until there's a new job, or the current one still wants passes. a stop request wakes it too
@@ -77,11 +81,12 @@ namespace Duck::RayTraceCpu
                 jobScene = scene;
                 jobCamera = camera;
                 jobIntegrator = integrator;
+                jobSampler = sampler;
             }
 
             // the slow part, without the lock: the main thread keeps running
             const auto start = std::chrono::steady_clock::now();
-            jobIntegrator->RenderPass(*jobScene, *jobCamera, film, pool);
+            jobIntegrator->RenderPass(*jobScene, *jobCamera, film, pool, *jobSampler);
             film.Passes++;
             film.Resolve(back, pool, jobIntegrator->GetOutputTransform());
             const float passMs =

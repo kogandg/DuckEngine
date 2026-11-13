@@ -39,14 +39,16 @@ namespace
         const int green = scene.AddMaterial(GltfMaterial::Lambert(Vec3(0.12f, 0.45f, 0.15f)));
         const int mirror = scene.AddMaterial(GltfMaterial::Metal(Vec3(0.95f)));
         const int glass = scene.AddMaterial(GltfMaterial::Glass(1.5f));
+        const int lamp = scene.AddMaterial(GltfMaterial::Emissive(Vec3(40.0f)));
 
         // box spans x and z in [-1, 1] and y in [0, 2], open toward the camera at z = +1
         scene.Quads = {
-            {{-1.0f, 0.0f, 1.0f}, {2.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -2.0f}, white}, // floor
-            {{-1.0f, 2.0f, 1.0f}, {2.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -2.0f}, white}, // ceiling
-            {{-1.0f, 0.0f, -1.0f}, {2.0f, 0.0f, 0.0f}, {0.0f, 2.0f, 0.0f}, white}, // back
-            {{-1.0f, 0.0f, 1.0f}, {0.0f, 0.0f, -2.0f}, {0.0f, 2.0f, 0.0f}, red},   // left
-            {{1.0f, 0.0f, 1.0f}, {0.0f, 0.0f, -2.0f}, {0.0f, 2.0f, 0.0f}, green},  // right
+            {{-1.0f, 0.0f, 1.0f}, {2.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -2.0f}, white},   // floor
+            {{-1.0f, 2.0f, 1.0f}, {2.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -2.0f}, white},   // ceiling
+            {{-1.0f, 0.0f, -1.0f}, {2.0f, 0.0f, 0.0f}, {0.0f, 2.0f, 0.0f}, white},   // back
+            {{-1.0f, 0.0f, 1.0f}, {0.0f, 0.0f, -2.0f}, {0.0f, 2.0f, 0.0f}, red},     // left
+            {{1.0f, 0.0f, 1.0f}, {0.0f, 0.0f, -2.0f}, {0.0f, 2.0f, 0.0f}, green},    // right
+            {{-0.25f, 1.995f, -0.25f}, {0.5f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.5f}, lamp}, // light
         };
         scene.Spheres = {
             {{-0.45f, 0.4f, -0.35f}, 0.4f, mirror},
@@ -54,7 +56,7 @@ namespace
         };
 
         // a point light just under the ceiling stands in for the usual area light
-        scene.Lights = {PointLight{{0.0f, 1.9f, 0.0f}, Vec3(3.0f * Pi)}};
+        // scene.Lights = {PointLight{{0.0f, 1.9f, 0.0f}, Vec3(3.0f * Pi)}};
 
         // closed room: black background, and a small flat ambient so shadows aren't pure black
         scene.Environment.SkyDown = scene.Environment.SkyUp = Vec3(0.0f);

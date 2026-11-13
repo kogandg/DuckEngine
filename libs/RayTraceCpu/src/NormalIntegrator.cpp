@@ -5,7 +5,7 @@
 
 namespace Duck::RayTraceCpu
 {
-    Vec3 NormalIntegrator::Li(const RenderScene& scene, const Ray& ray, Random&) const
+    Vec3 NormalIntegrator::Li(const RenderScene& scene, const Ray& ray, ISampler&) const
     {
         if (const auto hit = scene.ClosestHit(ray, RayEpsilon, Infinity))
         {

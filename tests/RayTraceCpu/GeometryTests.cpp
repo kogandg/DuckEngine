@@ -217,3 +217,18 @@ TEST_CASE("RenderScene normalizes directional lights", "[scene]")
     const auto& sun = std::get<DirectionalLight>(built.GetLights()[0]);
     CHECK_THAT(sun.Direction, Vec3Near(Vec3(0.0f, 1.0f, 0.0f), 1e-6f));
 }
+
+TEST_CASE("RenderScene turns emissive shapes into area lights", "[scene][emission]")
+{
+    Scene scene;
+    const int wall = scene.AddMaterial(GltfMaterial::Lambert(Vec3(0.5f)));
+    const int lamp = scene.AddMaterial(GltfMaterial::Emissive(Vec3(3.0f)));
+    scene.Spheres = {{{0.0f, 0.0f, 0.0f}, 1.0f, wall}};
+    scene.Quads = {{{0.0f, 2.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, lamp}};
+
+    const RenderScene built(scene);
+    REQUIRE(built.GetLights().size() == 1);
+    const auto& light = std::get<AreaLight>(built.GetLights()[0]);
+    CHECK(light.PrimitiveId == 1); // the quad: spheres come first
+    CHECK_THAT(light.Radiance, Vec3Near(Vec3(3.0f), 0.0f));
+}

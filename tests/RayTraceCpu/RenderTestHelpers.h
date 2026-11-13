@@ -9,6 +9,7 @@
 #include <Duck/RayTraceCpu/Scene.h>
 #include <Duck/Core/ThreadPool.h>
 #include <Duck/RayTraceCpu/RenderScene.h>
+#include <Duck/RayTraceCpu/Sampler.h>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -22,10 +23,11 @@ namespace Duck::Test
                                  const RayTraceCpu::Camera& camera, int size = 9, int passes = 1)
     {
         const RayTraceCpu::RenderScene built(scene);
+        const RayTraceCpu::IndependentSampler sampler;
         RayTraceCpu::Film film(size, size);
         for (int i = 0; i < passes; i++)
         {
-            integrator.RenderPass(built, camera, film, ThreadPool::Shared());
+            integrator.RenderPass(built, camera, film, ThreadPool::Shared(), sampler);
             film.Passes++;
         }
 
@@ -79,7 +81,20 @@ namespace Duck::Test
     // large horizontal quad through the origin
     inline RayTraceCpu::Quad Floor(int materialId, float halfSize = 100.0f)
     {
-        return {{-halfSize, 0.0f, -halfSize}, {2.0f * halfSize, 0.0f, 0.0f}, {0.0f, 0.0f, 2.0f * halfSize}, materialId};
+        return {{-halfSize, 0.0f, -halfSize}, {0.0f, 0.0f, 2.0f * halfSize}, {2.0f * halfSize, 0.0f, 0.0f}, materialId};
+    }
+
+    inline Vec3 AveragePixel(const HdrFramebuffer& image)
+    {
+        Vec3 sum(0.0f);
+        for (int y = 0; y < image.Height(); y++)
+        {
+            for (int x = 0; x < image.Width(); x++)
+            {
+                sum += image[x, y];
+            }
+        }
+        return sum / static_cast<float>(image.PixelCount());
     }
 
     // checks every pixel against expected and reports the worst one if any are off

@@ -15,6 +15,7 @@ using namespace Duck::RayTraceCpu;
 using namespace Duck::Test;
 using Catch::Generators::table;
 using Catch::Matchers::WithinAbs;
+using Catch::Matchers::WithinRel;
 
 // ---------- sky and local shading ----------
 
@@ -335,4 +336,34 @@ TEST_CASE("Whitted: an absorbing ball without refraction darkens with path lengt
     const Vec3 center = CenterPixel(Render(whitted, scene, LookForward(Vec3(0.0f), 1.0f)));
     // color^(2R / D) = color^4 = (0.0256, 0.41, 0.0625)
     CHECK_THAT(center, Vec3Near(glm::pow(color, Vec3(2.0f * radius / distance)), 1e-3f));
+}
+
+TEST_CASE("Whitted: a sphere light gives the analytic irradiance", "[whitted][emission]")
+{
+    // a sphere of radiance L and radius R, its center at distance d along the normal, gives E = pi L (R / d)^2,
+    // so a Lambert floor shows albedo / pi * E = albedo * L * R^2 / d^2
+    const float albedo = 0.5f;
+    const float radiance = 4.0f;
+    const float radius = 0.5f;
+    const float height = 2.0f;
+
+    Scene scene = DarkScene();
+    scene.Quads = {Floor(scene.AddMaterial(GltfMaterial::Lambert(Vec3(albedo))))};
+    scene.Spheres = {{{0.0f, height, 0.0f}, radius, scene.AddMaterial(GltfMaterial::Emissive(Vec3(radiance)))}};
+
+    // look at the spot under the light from the side, so the camera doesn't see the light itself
+    const Camera camera({2.0f, 0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, 1.0f, 1.0f);
+    WhittedIntegrator whitted;
+    const Vec3 average = AveragePixel(Render(whitted, scene, camera, 9, 256));
+
+    // one light sample per pixel per pass: ~1.2% noise over 9 * 9 * 256 samples
+    CHECK_THAT(average.x, WithinRel(albedo * radiance * radius * radius / (height * height), 0.05f));
+}
+
+TEST_CASE("Emission is one-sided: the back of a light is dark", "[whitted][emission]")
+{
+    Scene scene = DarkScene();
+    scene.Quads = {Floor(scene.AddMaterial(GltfMaterial::Emissive(Vec3(2.0f))))}; // front faces up
+    WhittedIntegrator whitted;
+    CheckAllPixels(Render(whitted, scene, LookUp({0.0f, -1.0f, 0.0f}, 30.0f)), Vec3(0.0f), 0.0f);
 }

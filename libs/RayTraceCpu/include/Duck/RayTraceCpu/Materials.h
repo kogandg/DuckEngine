@@ -79,7 +79,9 @@ namespace Duck::RayTraceCpu
             return bsdf;
         }
 
-        Vec3 EmissionAt(const Hit&) const { return Emission; }
+        Vec3 EmissionAt(const Hit& hit) const { return hit.FrontFace ? Emission : Vec3(0.0f); }
+
+        Vec3 UniformEmission() const { return Emission; }
 
         // fraction of light left after traveling distance through the inside.
         // sigma_a = -ln(AttenuationColor) / AttenuationDistance, so exp(-sigma_a * d) = color^(d / distance)
@@ -132,6 +134,7 @@ namespace Duck::RayTraceCpu
     concept MaterialType = requires(const T& material, const Hit& hit, const Vec3& wo, float distance) {
         { material.GetBsdf(hit, wo) } -> std::same_as<Bsdf>;
         { material.EmissionAt(hit) } -> std::same_as<Vec3>;
+        { material.UniformEmission() } -> std::same_as<Vec3>;
         { material.InteriorTransmittance(distance) } -> std::same_as<Vec3>;
     };
 
@@ -153,6 +156,11 @@ namespace Duck::RayTraceCpu
     inline Vec3 EmissionAt(const Material& material, const Hit& hit)
     {
         return std::visit([&](const auto& typed) { return typed.EmissionAt(hit); }, material);
+    }
+
+    inline Vec3 UniformEmission(const Material& material)
+    {
+        return std::visit([](const auto& typed) { return typed.UniformEmission(); }, material);
     }
 
     inline Vec3 InteriorTransmittance(const Material& material, float distance)
