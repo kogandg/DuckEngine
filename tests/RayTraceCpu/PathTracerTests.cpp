@@ -3,6 +3,7 @@
 #include <Duck/RayTraceCpu/PathTracer.h>
 #include <Duck/RayTraceCpu/WhittedIntegrator.h>
 #include <Duck/Core/ThreadPool.h>
+#include <Duck/RayTraceCpu/RenderScene.h>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
@@ -50,6 +51,7 @@ TEST_CASE("Renders don't depend on the number of threads", "[threading]")
     // per-pixel seeding (D-016): every thread count must give bit-identical images
     Scene scene = FurnaceScene();
     scene.Spheres = {{{0.0f, 0.0f, -3.0f}, 1.0f, scene.AddMaterial(GltfMaterial::Lambert(Vec3(0.5f)))}};
+    const RenderScene built(scene);
     const Camera camera = LookForward(Vec3(0.0f), 45.0f);
     PathTracer pathTracer;
 
@@ -59,9 +61,9 @@ TEST_CASE("Renders don't depend on the number of threads", "[threading]")
     Film b(33, 33);
     for (int pass = 0; pass < 4; pass++)
     {
-        pathTracer.RenderPass(scene, camera, a, single);
+        pathTracer.RenderPass(built, camera, a, single);
         a.Passes++;
-        pathTracer.RenderPass(scene, camera, b, many);
+        pathTracer.RenderPass(built, camera, b, many);
         b.Passes++;
     }
 

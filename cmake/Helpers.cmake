@@ -1,5 +1,5 @@
 if(MSVC)
-  add_compile_options(/W4 /permissive- /MP /Zc:__cplusplus /Zc:preprocessor /utf-8)
+  add_compile_options(/W4 /permissive- /MP /Zc:__cplusplus /Zc:preprocessor /utf-8 /arch:AVX2)
 endif()
 
 function(duck_library name)

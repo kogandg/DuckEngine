@@ -3,9 +3,11 @@
 #include <Duck/RayTraceCpu/Geometry.h>
 #include <Duck/RayTraceCpu/Optics.h>
 #include <Duck/RayTraceCpu/Scene.h>
+#include <Duck/RayTraceCpu/RenderScene.h>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
+#include <catch2/generators/catch_generators.hpp>
 
 using namespace Duck;
 using namespace Duck::RayTraceCpu;
@@ -139,25 +141,79 @@ TEST_CASE("Checker alternates on the XZ plane", "[geometry]")
     CHECK(plain.BaseColorAt({1.5f, 0.0f, 0.5f}) == Vec3(0.2f));
 }
 
-TEST_CASE("Scene finds the closest hit across shape types", "[geometry]")
+TEST_CASE("RenderScene finds the closest hit across shape types", "[geometry][scene]")
 {
     Scene scene;
-    scene.Spheres = {{{0.0f, 0.0f, -10.0f}, 1.0f, 0}};
-    scene.Quads = {{{-1.0f, -1.0f, -5.0f}, {2.0f, 0.0f, 0.0f}, {0.0f, 2.0f, 0.0f}, 1}};
+    const int first = scene.AddMaterial(GltfMaterial::Lambert(Vec3(0.5f)));
+    const int second = scene.AddMaterial(GltfMaterial::Lambert(Vec3(0.5f)));
+    scene.Spheres = {{{0.0f, 0.0f, -10.0f}, 1.0f, first}};
+    scene.Quads = {{{-1.0f, -1.0f, -5.0f}, {2.0f, 0.0f, 0.0f}, {0.0f, 2.0f, 0.0f}, second}};
 
-    const auto hit = scene.ClosestHit(ForwardRay, TMin, Infinity);
-    REQUIRE(hit.has_value());
-    CHECK(hit->MaterialId == 1); // the quad is in front
-    CHECK_THAT(hit->T, WithinAbs(5.0f, 1e-5f));
-    CHECK_FALSE(scene.ClosestHit(ForwardRay, TMin, 4.0f).has_value());
+    {
+        const RenderScene built(scene);
+        const auto hit = built.ClosestHit(ForwardRay, TMin, Infinity);
+        REQUIRE(hit.has_value());
+        CHECK(hit->MaterialId == second); // the quad is in front
+        CHECK(hit->PrimitiveId == 1);     // spheres come first in the shape list
+        CHECK_THAT(hit->T, WithinAbs(5.0f, 1e-5f));
+        CHECK_FALSE(built.ClosestHit(ForwardRay, TMin, 4.0f).has_value());
 
-    CHECK(scene.Occluded(ForwardRay, TMin, Infinity));
-    CHECK_FALSE(scene.Occluded(ForwardRay, TMin, 4.0f));
-    CHECK(scene.Occluded(ForwardRay, 6.0f, Infinity)); // only the sphere is past 6
+        CHECK(built.Occluded(ForwardRay, TMin, Infinity));
+        CHECK_FALSE(built.Occluded(ForwardRay, TMin, 4.0f));
+        CHECK(built.Occluded(ForwardRay, 6.0f, Infinity)); // only the sphere is past 6
+    }
 
-    scene.Spheres[0].Center = {0.0f, 0.0f, -3.0f}; // now the sphere is in front
-    const auto nearer = scene.ClosestHit(ForwardRay, TMin, Infinity);
+    // the description can change freely. the change shows up in the next build
+    scene.Spheres[0].Center = {0.0f, 0.0f, -3.0f};
+    const RenderScene rebuilt(scene);
+    const auto nearer = rebuilt.ClosestHit(ForwardRay, TMin, Infinity);
     REQUIRE(nearer.has_value());
-    CHECK(nearer->MaterialId == 0);
+    CHECK(nearer->MaterialId == first);
+    CHECK(nearer->PrimitiveId == 0);
     CHECK_THAT(nearer->T, WithinAbs(2.0f, 1e-5f));
+}
+
+TEST_CASE("Shape surface samples lie on the surface, inside the bounds, facing out the front", "[geometry]")
+{
+    const Shape shape = GENERATE(Shape{Sphere{{1.0f, 2.0f, -3.0f}, 0.5f, 0}},
+                                 Shape{Sphere{{1.0f, 2.0f, -3.0f}, -0.5f, 0}}, // inside out: front faces inward
+                                 Shape{Quad{{0.0f, 1.0f, 0.0f}, {2.0f, 0.0f, 0.0f}, {0.0f, 1.0f, -1.0f}, 0}});
+    const Aabb bounds = ShapeBounds(shape);
+
+    Random random(71u);
+    for (int i = 0; i < 1000; i++)
+    {
+        const float u1 = random.NextFloat();
+        const float u2 = random.NextFloat();
+        const SurfaceSample sample = SampleShapeSurface(shape, Vec2(u1, u2));
+        CAPTURE(sample.Point, sample.Normal);
+        REQUIRE(bounds.Contains(sample.Point, 1e-5f));
+        REQUIRE_THAT(glm::length(sample.Normal), WithinAbs(1.0f, 1e-5f));
+
+        // a ray coming at the sample from in front of it hits it there, from the front, with the same normal
+        const Ray ray{sample.Point + 0.1f * sample.Normal, -sample.Normal};
+        const auto hit = IntersectShape(shape, ray, 0.0f, Infinity);
+        REQUIRE(hit.has_value());
+        REQUIRE(hit->FrontFace);
+        REQUIRE_THAT(hit->Point, Vec3Near(sample.Point, 1e-4f));
+        REQUIRE_THAT(hit->Normal, Vec3Near(sample.Normal, 1e-4f));
+        REQUIRE((hit->Uv.x >= 0.0f && hit->Uv.x <= 1.0f && hit->Uv.y >= 0.0f && hit->Uv.y <= 1.0f));
+    }
+}
+
+TEST_CASE("Shape areas", "[geometry]")
+{
+    CHECK_THAT(Sphere({0.0f, 0.0f, 0.0f}, -0.5f, 0).Area(), WithinAbs(Pi, 1e-5f)); // 4 pi r^2, sign ignored
+    // |cross((2, 0, 0), (0, 1, -1))| = |(0, 2, 2)| = 2 sqrt 2
+    CHECK_THAT(Quad({0.0f, 0.0f, 0.0f}, {2.0f, 0.0f, 0.0f}, {0.0f, 1.0f, -1.0f}, 0).Area(),
+               WithinAbs(2.0f * std::sqrt(2.0f), 1e-5f));
+}
+
+TEST_CASE("RenderScene normalizes directional lights", "[scene]")
+{
+    Scene scene;
+    scene.Lights = {DirectionalLight{Vec3(0.0f, 2.0f, 0.0f), Vec3(1.0f)}};
+    const RenderScene built(scene);
+    const auto& sun = std::get<DirectionalLight>(built.GetLights()[0]);
+    CHECK_THAT(sun.Direction, Vec3Near(Vec3(0.0f, 1.0f, 0.0f), 1e-6f));
 }

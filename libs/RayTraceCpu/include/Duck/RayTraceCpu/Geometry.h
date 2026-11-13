@@ -199,7 +199,7 @@ namespace Duck::RayTraceCpu
 
         float Area() const { return area; }
 
-        SurfaceSample SampleSurface(const Vec2& u) const { return {Corner * u.x * EdgeU + u.y * EdgeV, normal}; }
+        SurfaceSample SampleSurface(const Vec2& u) const { return {Corner + u.x * EdgeU + u.y * EdgeV, normal}; }
 
     private:
         Vec3 normal{0.0f}; // unit cross(EdgeU, EdgeV)

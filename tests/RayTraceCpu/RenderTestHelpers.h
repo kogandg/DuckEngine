@@ -8,6 +8,7 @@
 #include <Duck/RayTraceCpu/Integrator.h>
 #include <Duck/RayTraceCpu/Scene.h>
 #include <Duck/Core/ThreadPool.h>
+#include <Duck/RayTraceCpu/RenderScene.h>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -20,10 +21,11 @@ namespace Duck::Test
     inline HdrFramebuffer Render(RayTraceCpu::IIntegrator& integrator, const RayTraceCpu::Scene& scene,
                                  const RayTraceCpu::Camera& camera, int size = 9, int passes = 1)
     {
+        const RayTraceCpu::RenderScene built(scene);
         RayTraceCpu::Film film(size, size);
         for (int i = 0; i < passes; i++)
         {
-            integrator.RenderPass(scene, camera, film, ThreadPool::Shared());
+            integrator.RenderPass(built, camera, film, ThreadPool::Shared());
             film.Passes++;
         }
 
