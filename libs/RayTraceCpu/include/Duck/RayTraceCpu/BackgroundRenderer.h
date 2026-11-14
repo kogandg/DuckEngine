@@ -64,6 +64,7 @@ namespace Duck::RayTraceCpu
         std::optional<Camera> camera;
         IIntegrator* integrator = nullptr;
         std::uint64_t generation = 0; // goes up on every Restart
+        std::stop_source jobStop; // stopped by Restart, so a pass of the old job ends early
         Framebuffer shared;           // newest finished image
         bool fresh = false;           // shared has an image the caller hasn't taken yet
         Progress progress;

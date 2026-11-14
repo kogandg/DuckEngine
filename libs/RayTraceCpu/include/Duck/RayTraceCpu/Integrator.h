@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <stop_token>
 
 
 namespace Duck
@@ -29,7 +30,7 @@ namespace Duck::RayTraceCpu
         virtual const char* Name() const = 0;
 
         // adds one pass onto film. Passes is the index of THIS pass
-        virtual void RenderPass(const RenderScene& scene, const Camera& camera, Film& film, ThreadPool& pool, const ISampler& sampler) = 0;
+        virtual void RenderPass(const RenderScene& scene, const Camera& camera, Film& film, ThreadPool& pool, const ISampler& sampler, std::stop_token cancel = {}) = 0;
 
         // how many passes are worth rendering before image stops improving noticeably
         virtual int RecommendedPasses() const { return 256; }
@@ -40,7 +41,8 @@ namespace Duck::RayTraceCpu
     class PixelIntegrator : public IIntegrator
     {
     public:
-        void RenderPass(const RenderScene& scene, const Camera& camera, Film& film, ThreadPool& pool, const ISampler& sampler) final;
+        void RenderPass(const RenderScene& scene, const Camera& camera, Film& film, ThreadPool& pool,
+                        const ISampler& sampler, std::stop_token cancel = {}) final;
 
     protected:
         // radiance arriving along ray

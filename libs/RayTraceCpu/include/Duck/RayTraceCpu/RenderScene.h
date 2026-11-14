@@ -4,7 +4,8 @@
 #include <Duck/RayTraceCpu/Geometry.h>
 #include <Duck/RayTraceCpu/Lights.h>
 #include <Duck/RayTraceCpu/Materials.h>
-#include <dUCK/RayTraceCpu/Environment.h>
+#include <Duck/RayTraceCpu/Environment.h>
+#include <Duck/RayTraceCpu/RayStats.h>
 
 #include <memory>
 #include <optional>
@@ -26,7 +27,7 @@ namespace Duck::RayTraceCpu
         RenderScene(RenderScene&&) = delete;
         RenderScene& operator=(RenderScene&&) = delete;
 
-        std::optional<Hit> ClosestHit(const Ray& ray, float tMin, float tMax) const;
+        std::optional<Hit> ClosestHit(const Ray& ray, float tMin, float tMax, TraversalStats* stats = nullptr) const;
 
         bool Occluded(const Ray& ray, float tMin, float tMax) const;
 

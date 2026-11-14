@@ -15,10 +15,8 @@ namespace Duck::RayTraceCpu
     {
     }
 
-    void
-    BackgroundRenderer::Restart(std::shared_ptr<const RenderScene> newScene, const Camera& newCamera,
-                                IIntegrator& newIntegrator,
-                                std::shared_ptr<const ISampler> newSampler)
+    void BackgroundRenderer::Restart(std::shared_ptr<const RenderScene> newScene, const Camera& newCamera,
+                                     IIntegrator& newIntegrator, std::shared_ptr<const ISampler> newSampler)
     {
         {
             std::lock_guard lock(mutex);
@@ -27,6 +25,8 @@ namespace Duck::RayTraceCpu
             integrator = &newIntegrator;
             sampler = std::move(newSampler);
             generation++;
+            jobStop.request_stop(); // the pass running now belongs to the old job
+            jobStop = {};           // fresh source for the new job
             progress = {0, newIntegrator.RecommendedPasses()};
         }
         changed.notify_one();
@@ -60,6 +60,7 @@ namespace Duck::RayTraceCpu
             IIntegrator* jobIntegrator = nullptr;
             std::optional<Camera> jobCamera;
             std::shared_ptr<const ISampler> jobSampler;
+            std::stop_token jobCancel;
             {
                 std::unique_lock lock(mutex);
                 // sleep until there's a new job, or the current one still wants passes. a stop request wakes it too
@@ -82,11 +83,16 @@ namespace Duck::RayTraceCpu
                 jobCamera = camera;
                 jobIntegrator = integrator;
                 jobSampler = sampler;
+                jobCancel = jobStop.get_token();
             }
 
             // the slow part, without the lock: the main thread keeps running
             const auto start = std::chrono::steady_clock::now();
-            jobIntegrator->RenderPass(*jobScene, *jobCamera, film, pool, *jobSampler);
+            jobIntegrator->RenderPass(*jobScene, *jobCamera, film, pool, *jobSampler, jobCancel);
+            if (jobCancel.stop_requested())
+            {
+                continue;
+            }
             film.Passes++;
             film.Resolve(back, pool, jobIntegrator->GetOutputTransform());
             const float passMs =

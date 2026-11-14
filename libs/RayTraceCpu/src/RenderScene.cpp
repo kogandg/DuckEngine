@@ -72,11 +72,13 @@ namespace Duck::RayTraceCpu
         }
     }
 
-    std::optional<Hit> RenderScene::ClosestHit(const Ray& ray, float tMin, float tMax) const
+    std::optional<Hit> RenderScene::ClosestHit(const Ray& ray, float tMin, float tMax, TraversalStats* stats) const
     {
         std::optional<Hit> closest;
+        int primitiveTests = 0;
         for (size_t i = 0; i < shapes.size(); i++)
         {
+            primitiveTests++;
             if (auto hit = IntersectShape(shapes[i], ray, tMin, tMax))
             {
                 hit->PrimitiveId = static_cast<int>(i);
@@ -84,13 +86,35 @@ namespace Duck::RayTraceCpu
                 closest = hit;
             }
         }
+
+        RayStats::Counters& counters = RayStats::ThreadCounters;
+        counters.ClosestHitRays++;
+        counters.PrimitiveTests += static_cast<uint64_t>(primitiveTests);
+        if (stats)
+        {
+            stats->PrimitiveTests += primitiveTests;
+        }
         return closest;
     }
 
     bool RenderScene::Occluded(const Ray& ray, float tMin, float tMax) const
     {
-        return std::ranges::any_of(shapes, [&](const Shape& shape)
-                                   { return IntersectShape(shape, ray, tMin, tMax).has_value(); });
+        int primitiveTests = 0;
+        bool blocked = false;
+        for (const Shape& shape : shapes)
+        {
+            primitiveTests++;
+            if (IntersectShape(shape, ray, tMin, tMax))
+            {
+                blocked = true;
+                break; // any hit will do
+            }
+        }
+
+        RayStats::Counters& counters = RayStats::ThreadCounters;
+        counters.OcclusionRays++;
+        counters.PrimitiveTests += static_cast<uint64_t>(primitiveTests);
+        return blocked;
     }
 
 }

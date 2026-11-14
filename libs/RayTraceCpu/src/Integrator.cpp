@@ -3,6 +3,7 @@
 #include <Duck/Core/Random.h>
 #include <Duck/Core/ThreadPool.h>
 #include <Duck/RayTraceCpu/Camera.h>
+#include <Duck/RayTraceCpu/RayStats.h>
 #include <Duck/RayTraceCpu/Sampler.h>
 
 #include <algorithm>
@@ -11,7 +12,8 @@
 
 namespace Duck::RayTraceCpu
 {
-    void PixelIntegrator::RenderPass(const RenderScene& scene, const Camera& camera, Film& film, ThreadPool& pool, const ISampler& samplerPrototype)
+    void PixelIntegrator::RenderPass(const RenderScene& scene, const Camera& camera, Film& film, ThreadPool& pool,
+                                     const ISampler& samplerPrototype, std::stop_token cancel)
     {
         const int width = film.Sum.Width();
         const int height = film.Sum.Height();
@@ -24,6 +26,10 @@ namespace Duck::RayTraceCpu
         pool.ParallelFor(tilesX * tilesY,
                          [&](int tile)
                          {
+                             if (cancel.stop_requested())
+                             {
+                                 return;
+                             }
                              const std::unique_ptr<ISampler> sampler = samplerPrototype.Clone();
 
                              // edges of the tile
@@ -34,6 +40,10 @@ namespace Duck::RayTraceCpu
 
                              for (int y = y0; y < y1; y++)
                              {
+                                 if (cancel.stop_requested())
+                                 {
+                                     break;
+                                 }
                                  for (int x = x0; x < x1; x++)
                                  {
                                      sampler->StartPixelSample({x, y}, pass);
@@ -46,6 +56,8 @@ namespace Duck::RayTraceCpu
                                      film.Sum[x, y] += Li(scene, camera.GetRay(s, t), *sampler);
                                  }
                              }
+
+                             RayStats::FlushThread();
                          });
     }
 }
