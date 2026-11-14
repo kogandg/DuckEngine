@@ -36,7 +36,7 @@ namespace Duck::RayTraceCpu
 
             for (int i = 0; i < mesh.TriangleCount(); i++)
             {
-                const Triangle triangle {&mesh, i, mesh.MaterialId};
+                const Triangle triangle(mesh, i, mesh.MaterialId);
                 if (triangle.Area() > 0.0f)
                 {
                     shapes.push_back(triangle);

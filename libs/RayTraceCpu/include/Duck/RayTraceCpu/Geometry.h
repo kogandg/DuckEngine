@@ -5,13 +5,13 @@
 #include <Duck/Core/Ray.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <concepts>
 #include <cstdint>
 #include <optional>
 #include <type_traits>
 #include <variant>
-#include <array>
 #include <vector>
 
 namespace Duck::RayTraceCpu
@@ -19,9 +19,9 @@ namespace Duck::RayTraceCpu
     struct Hit
     {
         Vec3 Point{0.0f};
-        Vec3 Normal{0.0f}; // unit, facing incoming ray. smooth on meshes with vertex normals
+        Vec3 Normal{0.0f};          // unit, facing incoming ray. smooth on meshes with vertex normals
         Vec3 GeometricNormal{0.0f}; // normal rays use to leave surface
-        Vec2 Uv{0.0f};     // surface coords for textures
+        Vec2 Uv{0.0f};              // surface coords for textures
         float T = 0.0f;
         bool FrontFace = true; // false if hit from the inside of a surface
         int MaterialId = 0;
@@ -225,48 +225,50 @@ namespace Duck::RayTraceCpu
 
     struct Triangle
     {
+        Triangle(const Mesh& mesh, int index, int materialId)
+            : Source(&mesh), Index(index), MaterialId(materialId), P0(Position(0)), Edge1(Position(1) - P0),
+              Edge2(Position(2) - P0)
+        {
+        }
+
         const Mesh* Source = nullptr;
-        int Index = 0; //which triangle of source
+        int Index = 0; // which triangle of source
         int MaterialId = 0;
+
+        // precomputed for the intersection test
+        Vec3 P0;
+        Vec3 Edge1; // p1 - p0
+        Vec3 Edge2; // p2 - p0
 
         int VertexIndex(int corner) const { return Source->Indices[static_cast<size_t>(3 * Index + corner)]; }
         const Vec3& Position(int corner) const { return Source->Positions[static_cast<size_t>(VertexIndex(corner))]; }
 
-        Vec3 FrontNormal() const
-        {
-            return glm::normalize(glm::cross(Position(1) - Position(0), Position(2) - Position(0)));
-        }
+        Vec3 FrontNormal() const { return glm::normalize(glm::cross(Edge1, Edge2)); }
 
         // Moller Trumbore, solves origin + t * direction = p0 + b1 * (p1-p0) + b2 * (p2-p0) directly
         std::optional<Hit> Intersect(const Ray& ray, float tMin, float tMax) const
         {
-            const Vec3& p0 = Position(0);
-            const Vec3& p1 = Position(1);
-            const Vec3& p2 = Position(2);
-            const Vec3 edge1 = p1 - p0;
-            const Vec3 edge2 = p2 - p0;
-
-            const Vec3 pvec = glm::cross(ray.Direction, edge2);
-            const float determinant = glm::dot(edge1, pvec);
+            const Vec3 pvec = glm::cross(ray.Direction, Edge2);
+            const float determinant = glm::dot(Edge1, pvec);
             if (determinant == 0.0f)
             {
                 return std::nullopt; // parallel to the triangles plane
             }
             const float inverse = 1.0f / determinant;
 
-            const Vec3 tvec = ray.Origin - p0;
+            const Vec3 tvec = ray.Origin - P0;
             const float b1 = glm::dot(tvec, pvec) * inverse;
             if (b1 < 0.0f || b1 > 1.0f)
             {
                 return std::nullopt;
             }
-            const Vec3 qvec = glm::cross(tvec, edge1);
+            const Vec3 qvec = glm::cross(tvec, Edge1);
             const float b2 = glm::dot(ray.Direction, qvec) * inverse;
             if (b2 < 0.0f || b1 + b2 > 1.0f)
             {
                 return std::nullopt;
             }
-            const float t = glm::dot(edge2, qvec) * inverse;
+            const float t = glm::dot(Edge2, qvec) * inverse;
             if (t < tMin || t > tMax)
             {
                 return std::nullopt;
@@ -276,9 +278,9 @@ namespace Duck::RayTraceCpu
             Hit hit;
             hit.T = t;
             hit.MaterialId = MaterialId;
-            hit.Point = b0 * p0 + b1 * p1 + b2 * p2; // on the triangle exactly, rather than ray.At(t)
+            hit.Point = P0 + b1 * Edge1 + b2 * Edge2; // on the triangle exactly, rather than ray.At(t)
 
-            const Vec3 front = glm::normalize(glm::cross(edge1, edge2));
+            const Vec3 front = FrontNormal();
             hit.FrontFace = glm::dot(ray.Direction, front) < 0.0f;
             hit.GeometricNormal = hit.FrontFace ? front : -front;
 
@@ -314,27 +316,26 @@ namespace Duck::RayTraceCpu
         Aabb Bounds() const
         {
             Aabb bounds;
-            bounds.Grow(Position(0));
-            bounds.Grow(Position(1));
-            bounds.Grow(Position(2));
+            bounds.Grow(P0);
+            bounds.Grow(P0 + Edge1);
+            bounds.Grow(P0 + Edge2);
             return bounds;
         }
 
         float Area() const
         {
-            return 0.5f * glm::length(glm::cross(Position(1) - Position(0), Position(2) - Position(0)));
+            return 0.5f * glm::length(glm::cross(Edge1, Edge2));
         }
 
         SurfaceSample SampleSurface(const Vec2& u) const
         {
             // uniform over the triangle: the square root keeps samples from bunching up at corner 0
             const float root = std::sqrt(u.x);
-            const float b0 = 1.0f - root;
             const float b1 = u.y * root;
-            return {b0 * Position(0) + b1 * Position(1) + (1.0f - b0 - b1) * Position(2), FrontNormal()};
+            const float b2 = 1.0f - root - b1;
+            return {P0 + b1 * Edge1 + b2 * Edge2, FrontNormal()};
         }
     };
-
 
     // -------- interface every shape must provide -------------
 
