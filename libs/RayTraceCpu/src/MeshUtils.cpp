@@ -17,7 +17,9 @@ namespace Duck::RayTraceCpu
             for (int segment = 0; segment <= segments; segment++) // the seam is doubled so uvs can run to 1
             {
                 const float phi = TwoPi * static_cast<float>(segment) / static_cast<float>(segments);
-                const Vec3 direction(std::sin(theta) * std::cos(phi), std::cos(theta), std::sin(theta) * std::sin(phi));
+                const float sinTheta = (ring == 0 || ring == rings) ? 0.0f : std::sin(theta);
+                const float cosTheta = ring == 0 ? 1.0f : (ring == rings ? -1.0f : std::cos(theta));
+                const Vec3 direction(sinTheta * std::cos(phi), cosTheta, sinTheta * std::sin(phi));
                 mesh.Positions.push_back(center + radius * direction);
                 if (smooth)
                 {

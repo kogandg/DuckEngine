@@ -154,6 +154,7 @@ TEST_CASE("RenderScene finds the closest hit across shape types", "[geometry][sc
         const auto hit = built.ClosestHit(ForwardRay, TMin, Infinity);
         REQUIRE(hit.has_value());
         CHECK(hit->MaterialId == second); // the quad is in front
+        CHECK(hit->GeometryId == 0);      // loose shapes are geometry 0
         CHECK(hit->PrimitiveId == 1);     // spheres come first in the shape list
         CHECK_THAT(hit->T, WithinAbs(5.0f, 1e-5f));
         CHECK_FALSE(built.ClosestHit(ForwardRay, TMin, 4.0f).has_value());
@@ -169,6 +170,7 @@ TEST_CASE("RenderScene finds the closest hit across shape types", "[geometry][sc
     const auto nearer = rebuilt.ClosestHit(ForwardRay, TMin, Infinity);
     REQUIRE(nearer.has_value());
     CHECK(nearer->MaterialId == first);
+    CHECK(nearer->GeometryId == 0);
     CHECK(nearer->PrimitiveId == 0);
     CHECK_THAT(nearer->T, WithinAbs(2.0f, 1e-5f));
 }
@@ -229,6 +231,7 @@ TEST_CASE("RenderScene turns emissive shapes into area lights", "[scene][emissio
     const RenderScene built(scene);
     REQUIRE(built.GetLights().size() == 1);
     const auto& light = std::get<AreaLight>(built.GetLights()[0]);
+    CHECK(light.GeometryId == 0);
     CHECK(light.PrimitiveId == 1); // the quad: spheres come first
     CHECK_THAT(light.Radiance, Vec3Near(Vec3(3.0f), 0.0f));
 }

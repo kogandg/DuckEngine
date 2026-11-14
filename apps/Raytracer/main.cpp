@@ -190,11 +190,21 @@ private:
         int quads = 0;
         int triangles = 0;
         const RenderScene& built = *builtScenes[currentScene];
-        for (const Shape& shape : built.GetShapes())
+        for (const Geometry& geometry : built.GetGeometries())
         {
-            spheres += std::holds_alternative<Sphere>(shape) ? 1 : 0;
-            quads += std::holds_alternative<Quad>(shape) ? 1 : 0;
-            triangles += std::holds_alternative<Triangle>(shape) ? 1 : 0;
+            if (const auto* list = std::get_if<ShapeList>(&geometry))
+            {
+                for (const Shape& shape : list->Shapes())
+                {
+                    spheres += std::holds_alternative<Sphere>(shape) ? 1 : 0;
+                    quads += std::holds_alternative<Quad>(shape) ? 1 : 0;
+                    triangles += std::holds_alternative<Triangle>(shape) ? 1 : 0;
+                }
+            }
+            else
+            {
+                triangles += GeometryPrimitiveCount(geometry);
+            }
         }
 
         const std::string lines[] = {

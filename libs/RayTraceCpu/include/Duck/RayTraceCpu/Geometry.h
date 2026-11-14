@@ -25,7 +25,8 @@ namespace Duck::RayTraceCpu
         float T = 0.0f;
         bool FrontFace = true; // false if hit from the inside of a surface
         int MaterialId = 0;
-        int PrimitiveId = -1;
+        int GeometryId = -1;  // which of the render scenes geometries was hit
+        int PrimitiveId = -1; // which primitive inside that geometry
     };
 
     struct Aabb
@@ -223,30 +224,35 @@ namespace Duck::RayTraceCpu
         int TriangleCount() const { return static_cast<int>(Indices.size()) / 3; }
     };
 
+    // where a ray crosses a triangle. the weight of corner 0 is 1 - B1 - B2
+    struct TriangleHit
+    {
+        float T = 0.0f;
+        float B1 = 0.0f; // weight of corner 1
+        float B2 = 0.0f; // weight of corner 2
+    };
+
+    // one triangle by its corners, with no mesh attached, so it can be copied anywhere: MeshGeometry stores them,
+    // and area lights keep their own. vertex normals and uvs belong to the mesh (MeshGeometry::MakeHit)
     struct Triangle
     {
-        Triangle(const Mesh& mesh, int index, int materialId)
-            : Source(&mesh), Index(index), MaterialId(materialId), P0(Position(0)), Edge1(Position(1) - P0),
-              Edge2(Position(2) - P0)
+        Triangle() = default;
+        Triangle(const Vec3& p0, const Vec3& p1, const Vec3& p2, int materialId)
+            : P0(p0), Edge1(p1 - p0), Edge2(p2 - p0), MaterialId(materialId)
         {
         }
 
-        const Mesh* Source = nullptr;
-        int Index = 0; // which triangle of source
-        int MaterialId = 0;
-
         // precomputed for the intersection test
-        Vec3 P0;
-        Vec3 Edge1; // p1 - p0
-        Vec3 Edge2; // p2 - p0
-
-        int VertexIndex(int corner) const { return Source->Indices[static_cast<size_t>(3 * Index + corner)]; }
-        const Vec3& Position(int corner) const { return Source->Positions[static_cast<size_t>(VertexIndex(corner))]; }
+        Vec3 P0{0.0f};
+        Vec3 Edge1{0.0f}; // p1 - p0
+        Vec3 Edge2{0.0f}; // p2 - p0
+        int MaterialId = 0;
 
         Vec3 FrontNormal() const { return glm::normalize(glm::cross(Edge1, Edge2)); }
 
         // Moller Trumbore, solves origin + t * direction = p0 + b1 * (p1-p0) + b2 * (p2-p0) directly
-        std::optional<Hit> Intersect(const Ray& ray, float tMin, float tMax) const
+        // only finds where the ray crosses, which is all a closest hit search needs for the candidates it rejects
+        std::optional<TriangleHit> IntersectBarycentric(const Ray& ray, float tMin, float tMax) const
         {
             const Vec3 pvec = glm::cross(ray.Direction, Edge2);
             const float determinant = glm::dot(Edge1, pvec);
@@ -273,44 +279,33 @@ namespace Duck::RayTraceCpu
             {
                 return std::nullopt;
             }
-            const float b0 = 1.0f - b1 - b2;
+            return TriangleHit{t, b1, b2};
+        }
 
+        // the full hit, flat shaded: face normal, and uv = (b1, b2)
+        Hit MakeFlatHit(const Ray& ray, const TriangleHit& where) const
+        {
             Hit hit;
-            hit.T = t;
+            hit.T = where.T;
             hit.MaterialId = MaterialId;
-            hit.Point = P0 + b1 * Edge1 + b2 * Edge2; // on the triangle exactly, rather than ray.At(t)
+            hit.Point = P0 + where.B1 * Edge1 + where.B2 * Edge2; // on the triangle exactly, rather than ray.At(t)
 
             const Vec3 front = FrontNormal();
             hit.FrontFace = glm::dot(ray.Direction, front) < 0.0f;
             hit.GeometricNormal = hit.FrontFace ? front : -front;
-
-            Vec3 shading = front;
-            if (!Source->Normals.empty())
-            {
-                const auto normal = [&](int corner)
-                { return Source->Normals[static_cast<size_t>(VertexIndex(corner))]; };
-                const Vec3 blended = b0 * normal(0) + b1 * normal(1) + b2 * normal(2);
-                if (glm::dot(blended, blended) > 0.0f)
-                {
-                    shading = glm::normalize(blended);
-                    if (glm::dot(shading, front) < 0.0f)
-                    {
-                        shading = -shading; // vertex normals disagree with the winding: the winding wins
-                    }
-                }
-            }
-            hit.Normal = hit.FrontFace ? shading : -shading;
-
-            if (Source->Uvs.empty())
-            {
-                hit.Uv = Vec2(b1, b2);
-            }
-            else
-            {
-                const auto uv = [&](int corner) { return Source->Uvs[static_cast<size_t>(VertexIndex(corner))]; };
-                hit.Uv = b0 * uv(0) + b1 * uv(1) + b2 * uv(2);
-            }
+            hit.Normal = hit.GeometricNormal;
+            hit.Uv = Vec2(where.B1, where.B2);
             return hit;
+        }
+
+        std::optional<Hit> Intersect(const Ray& ray, float tMin, float tMax) const
+        {
+            const auto where = IntersectBarycentric(ray, tMin, tMax);
+            if (!where)
+            {
+                return std::nullopt;
+            }
+            return MakeFlatHit(ray, *where);
         }
 
         Aabb Bounds() const
@@ -322,17 +317,14 @@ namespace Duck::RayTraceCpu
             return bounds;
         }
 
-        float Area() const
-        {
-            return 0.5f * glm::length(glm::cross(Edge1, Edge2));
-        }
+        float Area() const { return 0.5f * glm::length(glm::cross(Edge1, Edge2)); }
 
         SurfaceSample SampleSurface(const Vec2& u) const
         {
             // uniform over the triangle: the square root keeps samples from bunching up at corner 0
             const float root = std::sqrt(u.x);
             const float b1 = u.y * root;
-            const float b2 = 1.0f - root - b1;
+            const float b2 = root - b1;
             return {P0 + b1 * Edge1 + b2 * Edge2, FrontNormal()};
         }
     };

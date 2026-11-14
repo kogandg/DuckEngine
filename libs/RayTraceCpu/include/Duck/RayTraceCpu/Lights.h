@@ -54,7 +54,8 @@ namespace Duck::RayTraceCpu
     {
         Shape Surface;
         Vec3 Radiance{0.0f}; // W/(m^2 sr)
-        int PrimitiveId = -1;
+        int GeometryId = -1;  // together, the primitive this light is: matches Hit::GeometryId and
+        int PrimitiveId = -1; // Hit::PrimitiveId when a ray hits it (for MIS later)
 
         LightSample Sample(const Vec3& point, ISampler& sampler) const
         {
@@ -102,4 +103,4 @@ namespace Duck::RayTraceCpu
     {
         return std::visit([&](const auto& typed) { return typed.Sample(point, sampler); }, light);
     }
-}
+}

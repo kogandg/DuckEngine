@@ -9,47 +9,22 @@
 namespace Duck::RayTraceCpu
 {
     RenderScene::RenderScene(const Scene& scene)
-        : materials(scene.Materials), meshes(scene.Meshes), lights(scene.Lights), environment(scene.Environment)
+        : materials(scene.Materials), lights(scene.Lights), environment(scene.Environment)
     {
-        size_t triangleCount = 0;
-        for (const Mesh& mesh : meshes)
+        std::vector<Shape> looseShapes;
+        looseShapes.reserve(scene.Spheres.size() + scene.Quads.size());
+        looseShapes.insert(looseShapes.end(), scene.Spheres.begin(), scene.Spheres.end());
+        looseShapes.insert(looseShapes.end(), scene.Quads.begin(), scene.Quads.end());
+        for (const Shape& shape : looseShapes)
         {
-            triangleCount += static_cast<size_t>(mesh.TriangleCount());
-        }
-        shapes.reserve(scene.Spheres.size() + scene.Quads.size() + triangleCount);
-        shapes.insert(shapes.end(), scene.Spheres.begin(), scene.Spheres.end());
-        shapes.insert(shapes.end(), scene.Quads.begin(), scene.Quads.end());
-
-        for (const Mesh& mesh : meshes)
-        {
-            const int vertexCount = static_cast<int>(mesh.Positions.size());
-            DUCK_VERIFY(mesh.Indices.size() % 3 == 0, "Mesh has {} indices, not a multiple of 3", mesh.Indices.size());
-            DUCK_VERIFY(mesh.Normals.empty() || static_cast<int>(mesh.Normals.size()) == vertexCount,
-                        "Mesh has {} normals for {} vertices", mesh.Normals.size(), vertexCount);
-            DUCK_VERIFY(mesh.Uvs.empty() || static_cast<int>(mesh.Uvs.size()) == vertexCount,
-                        "Mesh has {} uvs for {} vertices", mesh.Uvs.size(), vertexCount);
-            for (const int index : mesh.Indices)
-            {
-                DUCK_VERIFY(index >= 0 && index < vertexCount, "Mesh index {} out of range ({} vertices)", index,
-                            vertexCount);
-            }
-
-            for (int i = 0; i < mesh.TriangleCount(); i++)
-            {
-                const Triangle triangle(mesh, i, mesh.MaterialId);
-                if (triangle.Area() > 0.0f)
-                {
-                    shapes.push_back(triangle);
-                }
-            }
-        }
-
-        for (const Shape& shape : shapes)
-        {
-            const int materialId = ShapeMaterialId(shape);
-            DUCK_VERIFY(materialId >= 0 && materialId < static_cast<int>(materials.size()),
-                        "Shape uses material {} but the scene has {} materials", materialId, materials.size());
             DUCK_VERIFY(ShapeArea(shape) > 0.0f, "Shape has no area (zero radius or zero-length edge)");
+        }
+
+        geometries.reserve(1 + scene.Meshes.size());
+        geometries.emplace_back(ShapeList(std::move(looseShapes)));
+        for (const Mesh& mesh : scene.Meshes)
+        {
+            geometries.emplace_back(MeshGeometry(mesh));
         }
 
         for (Light& light : lights)
@@ -61,13 +36,21 @@ namespace Duck::RayTraceCpu
             }
         }
 
-        // every shape with an emissive material is also an area light
-        for (size_t i = 0; i < shapes.size(); i++)
+        for (size_t g = 0; g < geometries.size(); g++)
         {
-            const Vec3 emission = UniformEmission(materials[static_cast<size_t>(ShapeMaterialId(shapes[i]))]);
-            if (MaxComponent(emission) > 0.0f)
+            for (int p = 0; p < GeometryPrimitiveCount(geometries[g]); p++)
             {
-                lights.push_back(AreaLight{shapes[i], emission, static_cast<int>(i)});
+                const Shape primitive = GeometryPrimitive(geometries[g], p);
+                const int materialId = ShapeMaterialId(primitive);
+                DUCK_VERIFY(materialId >= 0 && materialId < static_cast<int>(materials.size()),
+                            "Shape uses material {} but the scene has {} materials", materialId, materials.size());
+
+                // every primitive with an emissive material is also an area light
+                const Vec3 emission = UniformEmission(materials[static_cast<size_t>(materialId)]);
+                if (MaxComponent(emission) > 0.0f)
+                {
+                    lights.push_back(AreaLight{primitive, emission, static_cast<int>(g), p});
+                }
             }
         }
     }
@@ -76,13 +59,12 @@ namespace Duck::RayTraceCpu
     {
         std::optional<Hit> closest;
         int primitiveTests = 0;
-        for (size_t i = 0; i < shapes.size(); i++)
+        for (size_t g = 0; g < geometries.size(); g++)
         {
-            primitiveTests++;
-            if (auto hit = IntersectShape(shapes[i], ray, tMin, tMax))
+            if (auto hit = GeometryClosestHit(geometries[g], ray, tMin, tMax, primitiveTests))
             {
-                hit->PrimitiveId = static_cast<int>(i);
-                tMax = hit->T; // anything further away cant be the closest now
+                hit->GeometryId = static_cast<int>(g);
+                tMax = hit->T; // later geometries only need to beat this one
                 closest = hit;
             }
         }
@@ -101,13 +83,12 @@ namespace Duck::RayTraceCpu
     {
         int primitiveTests = 0;
         bool blocked = false;
-        for (const Shape& shape : shapes)
+        for (const Geometry& geometry : geometries)
         {
-            primitiveTests++;
-            if (IntersectShape(shape, ray, tMin, tMax))
+            if (GeometryOccluded(geometry, ray, tMin, tMax, primitiveTests))
             {
                 blocked = true;
-                break; // any hit will do
+                break;
             }
         }
 
@@ -116,5 +97,4 @@ namespace Duck::RayTraceCpu
         counters.PrimitiveTests += static_cast<uint64_t>(primitiveTests);
         return blocked;
     }
-
 }
