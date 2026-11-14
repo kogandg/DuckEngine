@@ -20,6 +20,12 @@ namespace Duck::RayTraceCpu
     public:
         explicit RenderScene(const Scene& scene);
 
+        // triangles point into this scenes meshes, copying or moving would leave them pointing at the old ones
+        RenderScene(const RenderScene&) = delete;
+        RenderScene& operator=(const RenderScene&) = delete;
+        RenderScene(RenderScene&&) = delete;
+        RenderScene& operator=(RenderScene&&) = delete;
+
         std::optional<Hit> ClosestHit(const Ray& ray, float tMin, float tMax) const;
 
         bool Occluded(const Ray& ray, float tMin, float tMax) const;
@@ -27,10 +33,11 @@ namespace Duck::RayTraceCpu
         const Material& GetMaterial(int id) const { return materials[static_cast<size_t>(id)]; }
         std::span<const Shape> GetShapes() const { return shapes; }
         std::span<const Light> GetLights() const { return lights; }
-        const Environment& GetEnironment() const { return environment; }
+        const Environment& GetEnvironment() const { return environment; }
 
     private:
         std::vector<Material> materials;
+        std::vector<Mesh> meshes;
         std::vector<Shape> shapes;
         std::vector<Light> lights;
         Environment environment;

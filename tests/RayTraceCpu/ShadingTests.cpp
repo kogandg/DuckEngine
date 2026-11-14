@@ -31,6 +31,7 @@ TEST_CASE("Rays leaving a surface right next to an edge still hit the neighborin
     Hit hit;
     hit.Point = {0.0005f, 0.0f, 0.0f};
     hit.Normal = {0.0f, 1.0f, 0.0f};
+    hit.GeometricNormal = {0.0f, 1.0f, 0.0f};
     const Ray ray = SpawnRay(hit, glm::normalize(Vec3(-1.0f, 0.1f, 0.0f)));
 
     const auto next = built.ClosestHit(ray, RayEpsilon, Infinity);

@@ -19,9 +19,9 @@ namespace Duck::RayTraceCpu
     // a ray leaving the surface at hit. the one place to add an offset along the normal later
     inline Ray SpawnRay(const Hit& hit, const Vec3& direction)
     {
-        const float side = glm::dot(direction, hit.Normal) > 0.0f ? 1.0f : -1.0f;
+        const float side = glm::dot(direction, hit.GeometricNormal) > 0.0f ? 1.0f : -1.0f;
         
-        return {hit.Point + side * RayOffset * hit.Normal, direction};
+        return {hit.Point + side * RayOffset * hit.GeometricNormal, direction};
     }
 
     inline Vec3 LambertBrdf(const Vec3& albedo) { return albedo * InvPi; }

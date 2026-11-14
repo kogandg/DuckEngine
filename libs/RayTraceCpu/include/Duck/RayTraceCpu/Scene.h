@@ -3,7 +3,7 @@
 #include <Duck/RayTraceCpu/Geometry.h>
 #include <Duck/RayTraceCpu/Lights.h>
 #include <Duck/RayTraceCpu/Materials.h>
-#include <dUCK/RayTraceCpu/Environment.h>
+#include <Duck/RayTraceCpu/Environment.h>
 
 #include <optional>
 #include <vector>
@@ -13,8 +13,11 @@ namespace Duck::RayTraceCpu
     struct Scene
     {
         std::vector<Material> Materials;
+
         std::vector<Sphere> Spheres;
         std::vector<Quad> Quads;
+        std::vector<Mesh> Meshes;
+
         std::vector<Light> Lights;
 
         RayTraceCpu::Environment Environment;

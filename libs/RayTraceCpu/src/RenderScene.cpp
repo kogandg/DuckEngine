@@ -9,11 +9,40 @@
 namespace Duck::RayTraceCpu
 {
     RenderScene::RenderScene(const Scene& scene)
-        : materials(scene.Materials), lights(scene.Lights), environment(scene.Environment)
+        : materials(scene.Materials), meshes(scene.Meshes), lights(scene.Lights), environment(scene.Environment)
     {
-        shapes.reserve(scene.Spheres.size() + scene.Quads.size());
+        size_t triangleCount = 0;
+        for (const Mesh& mesh : meshes)
+        {
+            triangleCount += static_cast<size_t>(mesh.TriangleCount());
+        }
+        shapes.reserve(scene.Spheres.size() + scene.Quads.size() + triangleCount);
         shapes.insert(shapes.end(), scene.Spheres.begin(), scene.Spheres.end());
         shapes.insert(shapes.end(), scene.Quads.begin(), scene.Quads.end());
+
+        for (const Mesh& mesh : meshes)
+        {
+            const int vertexCount = static_cast<int>(mesh.Positions.size());
+            DUCK_VERIFY(mesh.Indices.size() % 3 == 0, "Mesh has {} indices, not a multiple of 3", mesh.Indices.size());
+            DUCK_VERIFY(mesh.Normals.empty() || static_cast<int>(mesh.Normals.size()) == vertexCount,
+                        "Mesh has {} normals for {} vertices", mesh.Normals.size(), vertexCount);
+            DUCK_VERIFY(mesh.Uvs.empty() || static_cast<int>(mesh.Uvs.size()) == vertexCount,
+                        "Mesh has {} uvs for {} vertices", mesh.Uvs.size(), vertexCount);
+            for (const int index : mesh.Indices)
+            {
+                DUCK_VERIFY(index >= 0 && index < vertexCount, "Mesh index {} out of range ({} vertices)", index,
+                            vertexCount);
+            }
+
+            for (int i = 0; i < mesh.TriangleCount(); i++)
+            {
+                const Triangle triangle {&mesh, i, mesh.MaterialId};
+                if (triangle.Area() > 0.0f)
+                {
+                    shapes.push_back(triangle);
+                }
+            }
+        }
 
         for (const Shape& shape : shapes)
         {

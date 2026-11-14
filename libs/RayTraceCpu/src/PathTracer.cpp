@@ -22,7 +22,7 @@ namespace Duck::RayTraceCpu
             const auto hit = scene.ClosestHit(ray, RayEpsilon, Infinity);
             if (!hit)
             {
-                radiance += throughput * scene.GetEnironment().SkyColor(ray.Direction);
+                radiance += throughput * scene.GetEnvironment().SkyColor(ray.Direction);
                 break;
             }
 

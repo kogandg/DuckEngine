@@ -32,7 +32,7 @@ namespace Duck::RayTraceCpu
         const auto hit = scene.ClosestHit(ray, RayEpsilon, Infinity);
         if (!hit)
         {
-            return scene.GetEnironment().SkyColor(ray.Direction);
+            return scene.GetEnvironment().SkyColor(ray.Direction);
         }
 
         const Material& material = scene.GetMaterial(hit->MaterialId);
@@ -46,7 +46,7 @@ namespace Duck::RayTraceCpu
         Vec3 radiance = EmissionAt(material, *hit);
         if (bsdf.HasNonDeltaLobes())
         {
-            radiance += (bsdf.DiffuseReflectance() * scene.GetEnironment().Ambient(hit->Normal)) +
+            radiance += (bsdf.DiffuseReflectance() * scene.GetEnvironment().Ambient(hit->Normal)) +
                         DirectLighting(scene, *hit, sampler, [&](const Vec3& wi) { return bsdf.Evaluate(wo, wi); });
         }
 

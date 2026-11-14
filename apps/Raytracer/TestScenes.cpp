@@ -1,5 +1,8 @@
 #include "TestScenes.h"
 
+#include <Duck/RayTraceCpu/MeshUtils.h>
+#include <glm/gtc/matrix_transform.hpp>
+
 #include <utility>
 
 using namespace Duck;
@@ -8,6 +11,22 @@ using namespace Duck::RayTraceCpu;
 namespace
 {
     constexpr Vec3 WorldUp{0.0f, 1.0f, 0.0f};
+
+    // closed box of six quads. every face's cross(EdgeU, EdgeV) points out of the box,
+    // which glass needs (FrontFace = entering)
+    void AddBox(Scene& scene, const Vec3& min, const Vec3& max, int materialId)
+    {
+        const Vec3 size = max - min;
+        const Vec3 dx(size.x, 0.0f, 0.0f);
+        const Vec3 dy(0.0f, size.y, 0.0f);
+        const Vec3 dz(0.0f, 0.0f, size.z);
+        scene.Quads.push_back({min, dz, dy, materialId});                   // -X
+        scene.Quads.push_back({{max.x, min.y, min.z}, dy, dz, materialId}); // +X
+        scene.Quads.push_back({min, dx, dz, materialId});                   // -Y
+        scene.Quads.push_back({{min.x, max.y, min.z}, dz, dx, materialId}); // +Y
+        scene.Quads.push_back({min, dy, dx, materialId});                   // -Z
+        scene.Quads.push_back({{min.x, min.y, max.z}, dx, dy, materialId}); // +Z
+    }
 
     TestScene MakeSpheres(float aspectRatio)
     {
@@ -43,11 +62,11 @@ namespace
 
         // box spans x and z in [-1, 1] and y in [0, 2], open toward the camera at z = +1
         scene.Quads = {
-            {{-1.0f, 0.0f, 1.0f}, {2.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -2.0f}, white},   // floor
-            {{-1.0f, 2.0f, 1.0f}, {2.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -2.0f}, white},   // ceiling
-            {{-1.0f, 0.0f, -1.0f}, {2.0f, 0.0f, 0.0f}, {0.0f, 2.0f, 0.0f}, white},   // back
-            {{-1.0f, 0.0f, 1.0f}, {0.0f, 0.0f, -2.0f}, {0.0f, 2.0f, 0.0f}, red},     // left
-            {{1.0f, 0.0f, 1.0f}, {0.0f, 0.0f, -2.0f}, {0.0f, 2.0f, 0.0f}, green},    // right
+            {{-1.0f, 0.0f, 1.0f}, {2.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -2.0f}, white},    // floor
+            {{-1.0f, 2.0f, 1.0f}, {2.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -2.0f}, white},    // ceiling
+            {{-1.0f, 0.0f, -1.0f}, {2.0f, 0.0f, 0.0f}, {0.0f, 2.0f, 0.0f}, white},    // back
+            {{-1.0f, 0.0f, 1.0f}, {0.0f, 0.0f, -2.0f}, {0.0f, 2.0f, 0.0f}, red},      // left
+            {{1.0f, 0.0f, 1.0f}, {0.0f, 0.0f, -2.0f}, {0.0f, 2.0f, 0.0f}, green},     // right
             {{-0.25f, 1.995f, -0.25f}, {0.5f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.5f}, lamp}, // light
         };
         scene.Spheres = {
@@ -96,59 +115,72 @@ namespace
                 .Scene = std::move(scene),
                 .Camera = Camera({0.0f, 1.8f, 2.5f}, {0.0f, 1.2f, -3.0f}, WorldUp, 40.0f, aspectRatio)};
     }
-}
 
-// closed box of six quads. every face's cross(EdgeU, EdgeV) points out of the box,
-// which glass needs (FrontFace = entering)
-void AddBox(Scene& scene, const Vec3& min, const Vec3& max, int materialId)
-{
-    const Vec3 size = max - min;
-    const Vec3 dx(size.x, 0.0f, 0.0f);
-    const Vec3 dy(0.0f, size.y, 0.0f);
-    const Vec3 dz(0.0f, 0.0f, size.z);
-    scene.Quads.push_back({min, dz, dy, materialId});                   // -X
-    scene.Quads.push_back({{max.x, min.y, min.z}, dy, dz, materialId}); // +X
-    scene.Quads.push_back({min, dx, dz, materialId});                   // -Y
-    scene.Quads.push_back({{min.x, max.y, min.z}, dz, dx, materialId}); // +Y
-    scene.Quads.push_back({min, dy, dx, materialId});                   // -Z
-    scene.Quads.push_back({{min.x, min.y, max.z}, dx, dy, materialId}); // +Z
-}
-
-// glass of increasing thickness, plus balls: solid, hollow, and without refraction
-TestScene MakeAbsorption(float aspectRatio)
-{
-    Scene scene;
-    const int floor = scene.AddMaterial(GltfMaterial::Lambert(Vec3(0.8f)));
-    const Vec3 color(0.4f, 0.8f, 0.5f);
-    const int glass = scene.AddMaterial(GltfMaterial::ColoredGlass(color, 0.5f));
-    const int noRefraction = scene.AddMaterial(GltfMaterial::ColoredGlass(color, 0.5f, 1.0f)); // ior 1
-
-    scene.Quads = {{{-20.0f, 0.0f, 10.0f}, {40.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -40.0f}, floor}};
-
-    // front row: blocks 0.25, 0.5, 1 and 2 units deep along the view. each step doubles the depth,
-    // so each block should show the previous one's color squared.
-    // lifted slightly so the bottom face doesn't sit exactly on the floor
-    const float depths[] = {0.25f, 0.5f, 1.0f, 2.0f};
-    for (int i = 0; i < 4; i++)
+    // glass of increasing thickness, plus balls: solid, hollow, and without refraction
+    TestScene MakeAbsorption(float aspectRatio)
     {
-        const float x = -2.4f + 1.3f * static_cast<float>(i);
-        AddBox(scene, {x, 0.01f, -2.0f - depths[i]}, {x + 1.0f, 1.0f, -2.0f}, noRefraction);
+        Scene scene;
+        const int floor = scene.AddMaterial(GltfMaterial::Lambert(Vec3(0.8f)));
+        const Vec3 color(0.4f, 0.8f, 0.5f);
+        const int glass = scene.AddMaterial(GltfMaterial::ColoredGlass(color, 0.5f));
+        const int noRefraction = scene.AddMaterial(GltfMaterial::ColoredGlass(color, 0.5f, 1.0f)); // ior 1
+
+        scene.Quads = {{{-20.0f, 0.0f, 10.0f}, {40.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -40.0f}, floor}};
+
+        // front row: blocks 0.25, 0.5, 1 and 2 units deep along the view. each step doubles the depth,
+        // so each block should show the previous one's color squared.
+        // lifted slightly so the bottom face doesn't sit exactly on the floor
+        const float depths[] = {0.25f, 0.5f, 1.0f, 2.0f};
+        for (int i = 0; i < 4; i++)
+        {
+            const float x = -2.4f + 1.3f * static_cast<float>(i);
+            AddBox(scene, {x, 0.01f, -2.0f - depths[i]}, {x + 1.0f, 1.0f, -2.0f}, noRefraction);
+        }
+
+        // back row: solid ball, hollow ball (thin shell), and a ball with ior 1 (no bending)
+        scene.Spheres = {
+            {{-1.5f, 0.6f, -6.0f}, 0.6f, glass},
+            {{0.0f, 0.6f, -6.0f}, 0.6f, glass},
+            {{0.0f, 0.6f, -6.0f}, -0.55f, glass},
+            {{1.5f, 0.6f, -6.0f}, 0.6f, noRefraction},
+        };
+
+        scene.Lights = {DirectionalLight{glm::normalize(Vec3(0.3f, 1.0f, 0.6f)), Vec3(Pi)}};
+
+        return {.Name = "Absorption",
+                .Scene = std::move(scene),
+                .Camera = Camera({0.0f, 2.5f, 2.2f}, {0.0f, 0.6f, -4.0f}, WorldUp, 50.0f, aspectRatio)};
     }
 
-    // back row: solid ball, hollow ball (thin shell), and a ball with ior 1 (no bending)
-    scene.Spheres = {
-        {{-1.5f, 0.6f, -6.0f}, 0.6f, glass},
-        {{0.0f, 0.6f, -6.0f}, 0.6f, glass},
-        {{0.0f, 0.6f, -6.0f}, -0.55f, glass},
-        {{1.5f, 0.6f, -6.0f}, 0.6f, noRefraction},
-    };
+    // analytic sphere, smooth mesh sphere, flat mesh sphere, and a rotated glass box made of triangles
+    TestScene MakeMeshes(float aspectRatio)
+    {
+        Scene scene;
 
-    scene.Lights = {DirectionalLight{glm::normalize(Vec3(0.3f, 1.0f, 0.6f)), Vec3(Pi)}};
+        const int floor = scene.AddMaterial(GltfMaterial::Lambert(Vec3(0.6f)));
+        const int red = scene.AddMaterial(GltfMaterial::Lambert(Vec3(0.7f, 0.15f, 0.1f)));
+        const int glass = scene.AddMaterial(GltfMaterial::ColoredGlass(Vec3(0.4f, 0.8f, 0.5f), 1.5f));
 
-    return {.Name = "Absorption",
-            .Scene = std::move(scene),
-            .Camera = Camera({0.0f, 2.5f, 2.2f}, {0.0f, 0.6f, -4.0f}, WorldUp, 50.0f, aspectRatio)};
+        scene.Quads = {{{-20.0f, 0.0f, 10.0f}, {40.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -40.0f}, floor}};
+
+        scene.Spheres = {{{-1.6f, 0.6f, -3.0f}, 0.6f, red}};
+        scene.Meshes.push_back(MakeUvSphereMesh({0.0f, 0.6f, -3.0f}, 0.6f, 32, 16, red));
+        scene.Meshes.push_back(MakeUvSphereMesh({1.6f, 0.6f, -3.0f}, 0.6f, 12, 6, red, false));
+
+        Mesh box = MakeBoxMesh(Vec3(-0.3f), Vec3(0.3f), glass);
+        TransformMesh(box, glm::translate(Mat4(1.0f), Vec3(0.0f, 0.31f, -1.6f)) *
+                               glm::rotate(Mat4(1.0f), Radians(30.0f), Vec3(0.0f, 1.0f, 0.0f)));
+        scene.Meshes.push_back(std::move(box));
+
+        scene.Lights = {DirectionalLight{glm::normalize(Vec3(0.4f, 1.0f, 0.6f)), Vec3{Pi}}};
+
+        return {.Name = "Meshes",
+                .Scene = std::move(scene),
+                .Camera = Camera({0.0f, 1.2f, 1.5f}, {0.0f, 0.5f, -3.0f}, WorldUp, 45.0f, aspectRatio)};
+    }
 }
+
+
 
 std::vector<TestScene> MakeTestScenes(float aspectRatio)
 {
@@ -157,5 +189,6 @@ std::vector<TestScene> MakeTestScenes(float aspectRatio)
     scenes.push_back(MakeSpheres(aspectRatio));
     scenes.push_back(MakeCornellBox(aspectRatio));
     scenes.push_back(MakeWhitted(aspectRatio));
+    scenes.push_back(MakeMeshes(aspectRatio));
     return scenes;
 }
