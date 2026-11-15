@@ -21,17 +21,20 @@ namespace Duck::RayTraceCpu
     {
     public:
         ShapeList() = default;
-        explicit ShapeList(std::vector<Shape> shapes) : shapes(std::move(shapes)) {}
+        explicit ShapeList(std::vector<Shape> shapes);
 
         int PrimitiveCount() const { return static_cast<int>(shapes.size()); }
         Shape GetPrimitive(int id) const { return shapes[static_cast<size_t>(id)]; }
         std::span<const Shape> Shapes() const { return shapes; }
+
+        const Bvh& GetBvh() const { return bvh; }
 
         std::optional<Hit> ClosestHit(const Ray& ray, float tMin, float tMax, TraversalStats& stats) const;
         bool Occluded(const Ray& ray, float tMin, float tMax, TraversalStats& stats) const;
 
     private:
         std::vector<Shape> shapes;
+        Bvh bvh;
     };
 
     // a mesh packaged for intersection, with its triangles precomputed

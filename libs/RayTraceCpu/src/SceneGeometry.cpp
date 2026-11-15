@@ -3,38 +3,45 @@
 #include <Duck/Core/Assert.h>
 
 #include <array>
+#include <utility>
 
 namespace Duck::RayTraceCpu
 {
     // --------- ShapeList --------
 
+    ShapeList::ShapeList(std::vector<Shape> shapeList) : shapes(std::move(shapeList))
+    {
+        std::vector<Aabb> bounds;
+        bounds.reserve(shapes.size());
+        for (const Shape& shape : shapes)
+        {
+            bounds.push_back(ShapeBounds(shape));
+        }
+        bvh = Bvh(bounds);
+    }
+
     std::optional<Hit> ShapeList::ClosestHit(const Ray& ray, float tMin, float tMax, TraversalStats& stats) const
     {
         std::optional<Hit> closest;
-        for (size_t i = 0; i < shapes.size(); i++)
-        {
-            stats.PrimitiveTests++;
-            if (auto hit = IntersectShape(shapes[i], ray, tMin, tMax))
-            {
-                hit->PrimitiveId = static_cast<int>(i);
-                tMax = hit->T; // anything further away cant be the closest now
-                closest = hit;
-            }
-        }
+        bvh.ClosestHit(ray, tMin, tMax, stats,
+                       [&](int shape, float currentMax)
+                       {
+                           auto hit = IntersectShape(shapes[static_cast<size_t>(shape)], ray, tMin, currentMax);
+                           if (!hit)
+                           {
+                               return currentMax;
+                           }
+                           hit->PrimitiveId = shape;
+                           closest = hit;
+                           return hit->T;
+                       });
         return closest;
     }
 
     bool ShapeList::Occluded(const Ray& ray, float tMin, float tMax, TraversalStats& stats) const
     {
-        for (const Shape& shape : shapes)
-        {
-            stats.PrimitiveTests++;
-            if (IntersectShape(shape, ray, tMin, tMax))
-            {
-                return true; // any hit will do
-            }
-        }
-        return false;
+        return bvh.AnyHit(ray, tMin, tMax, stats, [&](int shape)
+                          { return IntersectShape(shapes[static_cast<size_t>(shape)], ray, tMin, tMax).has_value(); });
     }
 
     // ------ MeshGeometry --------
@@ -80,58 +87,21 @@ namespace Duck::RayTraceCpu
 
     std::optional<Hit> MeshGeometry::ClosestHit(const Ray& ray, float tMin, float tMax, TraversalStats& stats) const
     {
-        if (bvh.IsEmpty())
-        {
-            return std::nullopt;
-        }
-
-        const TraversalRay traversalRay(ray);
-        const std::span<const BvhNode> nodes = bvh.Nodes();
-        const std::span<const int> primitives = bvh.PrimitiveIndices();
-
-        // find the closest crossing first, and only build the full hit for that one
         int closest = -1;
         TriangleHit closestWhere;
-
-        std::array<int, Bvh::MaxDepth + 1> stack;
-        int stackSize = 0;
-        stack[stackSize] = 0; // root
-        stackSize++;
-
-        while (stackSize > 0)
-        {
-            stackSize--;
-            const BvhNode& node = nodes[static_cast<size_t>(stack[stackSize])];
-
-            stats.NodeTests++;
-            if (node.Bounds.EntryDistance(traversalRay, tMin, tMax) == Infinity)
-            {
-                continue;
-            }
-
-            if (node.IsLeaf())
-            {
-                for (int i = node.First; i < node.First + node.Count; i++)
-                {
-                    const int triangle = primitives[static_cast<size_t>(i)];
-                    stats.PrimitiveTests++;
-                    if (const auto where = triangles[static_cast<size_t>(triangle)].IntersectBarycentric(ray, tMin, tMax))
-                    {
-                        closest = triangle;
-                        closestWhere = *where;
-                        tMax = where->T;
-                    }
-                }
-            }
-            else
-            {
-                DUCK_ASSERT(stackSize + 2 <= static_cast<int>(stack.size()), "BVH deeper than the traversal stack");
-                stack[stackSize] = node.First + 1;
-                stackSize++;
-                stack[stackSize] = node.First; // the left child is on top so its visited next
-                stackSize++;
-            }
-        }
+        bvh.ClosestHit(ray, tMin, tMax, stats,
+                       [&](int triangle, float currentMax)
+                       {
+                           const auto where =
+                               triangles[static_cast<size_t>(triangle)].IntersectBarycentric(ray, tMin, currentMax);
+                           if (!where)
+                           {
+                               return currentMax;
+                           }
+                           closest = triangle;
+                           closestWhere = *where;
+                           return where->T;
+                       });
 
         if (closest < 0)
         {
@@ -142,48 +112,9 @@ namespace Duck::RayTraceCpu
 
     bool MeshGeometry::Occluded(const Ray& ray, float tMin, float tMax, TraversalStats& stats) const
     {
-        if (bvh.IsEmpty())
-        {
-            return false;
-        }
-
-        const TraversalRay traversalRay(ray);
-        const std::span<const BvhNode> nodes = bvh.Nodes();
-        const std::span<const int> primitives = bvh.PrimitiveIndices();
-
-        std::array<int, Bvh::MaxDepth + 1> stack;
-        int stackSize = 0;
-        stack[stackSize++] = 0;
-
-        while (stackSize > 0)
-        {
-            const BvhNode& node = nodes[static_cast<size_t>(stack[--stackSize])];
-            stats.NodeTests++;
-            if (node.Bounds.EntryDistance(traversalRay, tMin, tMax) == Infinity)
-            {
-                continue;
-            }
-
-            if (node.IsLeaf())
-            {
-                for (int i = node.First; i < node.First + node.Count; i++)
-                {
-                    stats.PrimitiveTests++;
-                    if (triangles[static_cast<size_t>(primitives[static_cast<size_t>(i)])].IntersectBarycentric(
-                            ray, tMin, tMax))
-                    {
-                        return true; // any hit will do
-                    }
-                }
-            }
-            else
-            {
-                DUCK_ASSERT(stackSize + 2 <= static_cast<int>(stack.size()), "BVH deeper than the traversal stack");
-                stack[stackSize++] = node.First + 1;
-                stack[stackSize++] = node.First;
-            }
-        }
-        return false;
+        return bvh.AnyHit(
+            ray, tMin, tMax, stats, [&](int triangle)
+            { return triangles[static_cast<size_t>(triangle)].IntersectBarycentric(ray, tMin, tMax).has_value(); });
     }
 
     Hit MeshGeometry::MakeHit(int triangle, const Ray& ray, const TriangleHit& where) const
