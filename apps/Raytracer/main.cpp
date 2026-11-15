@@ -12,6 +12,7 @@
 #include <Duck/RayTraceCpu/PathTracer.h>
 #include <Duck/RayTraceCpu/RayStats.h>
 #include <Duck/RayTraceCpu/RenderScene.h>
+#include <Duck/RayTraceCpu/Sampler.h>
 #include <Duck/RayTraceCpu/Scene.h>
 #include <Duck/RayTraceCpu/WhittedIntegrator.h>
 #include <Duck/VkCore/CpuFramebufferPresenter.h>
@@ -56,6 +57,9 @@ public:
         integrators.push_back(std::make_unique<NormalIntegrator>());
         integrators.push_back(std::make_unique<CostIntegrator>());
 
+        samplers.push_back(std::make_shared<SobolSampler>());
+        samplers.push_back(std::make_shared<IndependentSampler>());
+
         for (const TestScene& test : scenes)
         {
             builtScenes.push_back(BuildScene(test.Scene));
@@ -97,7 +101,8 @@ protected:
 private:
     void RestartRender()
     {
-        renderer.Restart(builtScenes[currentScene], scenes[currentScene].Camera, *integrators[currentIntegrator]);
+        renderer.Restart(builtScenes[currentScene], scenes[currentScene].Camera, *integrators[currentIntegrator],
+                         samplers[currentSampler]);
     }
 
     void HandleInput()
@@ -158,9 +163,16 @@ private:
             changed = true;
         }
 
+        if (input.WasPressed(Key::S))
+        {
+            currentSampler = (currentSampler + 1) % samplers.size();
+            changed = true;
+        }
+
         if (changed)
         {
-            Log::Info("{} with {}", scenes[currentScene].Name, integrators[currentIntegrator]->Name());
+            Log::Info("{} with {} ({} sampler)", scenes[currentScene].Name, integrators[currentIntegrator]->Name(),
+                      samplers[currentSampler]->Name());
             RestartRender();
         }
     }
@@ -213,6 +225,7 @@ private:
                         scenes.size()),
             std::format("Integrator  {} ({}/{})  [Up/Down]", integrators[currentIntegrator]->Name(),
                         currentIntegrator + 1, integrators.size()),
+            std::format("Sampler     {}  [S]", samplers[currentSampler]->Name()),
             std::format("Progress    [{}{}] {}/{} passes  {}", std::string(static_cast<size_t>(filled), '#'),
                         std::string(static_cast<size_t>(BarWidth - filled), '-'), progress.Passes,
                         progress.TargetPasses, progress.Done() ? "done" : "rendering"),
@@ -247,6 +260,9 @@ private:
     std::vector<TestScene> scenes;
     std::vector<std::shared_ptr<const RenderScene>> builtScenes;
     size_t currentScene = 0;
+
+    std::vector<std::shared_ptr<const ISampler>> samplers;
+    size_t currentSampler = 0;
 
     std::vector<std::unique_ptr<IIntegrator>> integrators;
     size_t currentIntegrator = 0;
