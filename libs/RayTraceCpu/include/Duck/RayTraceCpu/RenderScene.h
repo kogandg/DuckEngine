@@ -83,6 +83,11 @@ namespace Duck::RayTraceCpu
         AreaSample SampleAreaLightSurface(int light, Vec2 u) const;
         // the light arriving at point from a random point on an area light, with its pdf per solid angle
         LightSample SampleAreaLight(int light, const Vec3& point, ISampler& sampler) const;
+        //the area light hit is on, or -1 if it isnt on one
+        int AreaLightAt(const Hit& hit) const;
+        // the density, per solid angle seen from `from`, of light sampling picking the point hit on an area light:
+        // the chance ChooseAreaLight picks it, times the chance SampleAreaLight lands on that point
+        float AreaLightPdf(int light, const Hit& hit, const Vec3& from) const;
 
 
 
@@ -99,6 +104,8 @@ namespace Duck::RayTraceCpu
 
         std::vector<AreaLight> areaLights;
         std::vector<float> areaLightCdf;
+
+        std::vector<int> firstAreaLight; // instance i's lights are [firstAreaLight[i], firstAreaLight[i + 1])
     };
 
     inline std::shared_ptr<const RenderScene> BuildScene(const Scene& scene)

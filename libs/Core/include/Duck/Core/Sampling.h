@@ -60,4 +60,14 @@ namespace Duck
         return glm::normalize(local.x * tangent + local.y * bitangent + local.z * normal);
     }
 
+
+    // MIS weight for a sample from the strategy with density f, when another strategy could have made it with g.
+    // squaring favours whichever strategy is better at that sample even more than the balance heuristic does
+    // (Veachs power heuristic with beta = 2). g = 0 gives 1: no other strategy competes
+    inline float PowerHeuristic(float f, float g)
+    {
+        const float f2 = f * f;
+        const float g2 = g * g;
+        return f2 + g2 > 0.0f ? f2 / (f2 + g2) : 0.0f;
+    }
 } 

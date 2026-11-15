@@ -5,6 +5,7 @@
 #include <Duck/RayTraceCpu/Geometry.h>
 #include <Duck/RayTraceCpu/Lights.h>
 #include <Duck/RayTraceCpu/RenderScene.h>
+#include <Duck/Core/Sampling.h>
 
 #include <cmath>
 
@@ -58,8 +59,8 @@ namespace Duck::RayTraceCpu
     // every listed light (sun, point lights) is sampled: there are few, and each is one cheap shadow ray. of the area
     // lights only one is, picked at random: dividing by the chance of picking it keeps the average equal to the sum
     // over all of them, so the cost stays one shadow ray however many emissive objects there are
-    template <typename TBrdf>
-    Vec3 DirectLighting(const RenderScene& scene, const Hit& hit, ISampler& sampler, TBrdf&& brdf)
+    template <typename TBrdf, typename TBsdfPdf>
+    Vec3 DirectLighting(const RenderScene& scene, const Hit& hit, ISampler& sampler, TBrdf&& brdf, TBsdfPdf&& bsdfPdf)
     {
         Vec3 total(0.0f);
         for (const Light& light : scene.GetLights())
@@ -70,10 +71,22 @@ namespace Duck::RayTraceCpu
         if (const auto choice = scene.ChooseAreaLight(sampler.Get1D()))
         {
             const LightSample sample = scene.SampleAreaLight(choice->Index, hit.Point, sampler);
-            total += ShadowedContribution(scene, hit, sample, brdf) / choice->Probability;
+            if (sample.Pdf > 0.0f)
+            {
+                const float weight = PowerHeuristic(sample.Pdf * choice->Probability, bsdfPdf(sample.Direction));
+                total += ShadowedContribution(scene, hit, sample, brdf) / (weight * choice->Probability);
+            }
         }
         return total;
     }
+
+    // light sampling on its own (Whitted): nothing else can find the lights, so every sample has full weight
+    template <typename TBrdf>
+    Vec3 DirectLighting(const RenderScene& scene, const Hit& hit, ISampler& sampler, TBrdf&& brdf)
+    {
+        return DirectLighting(scene, hit, sampler, brdf, [](const Vec3&) { return 0.0f; });
+    }
+
 
     // light coming back along the ray from hit. if the ray hit this surface from the inside, it crossed the
     // objects interior to get there and was partly absorbed on the way. (no nested media)

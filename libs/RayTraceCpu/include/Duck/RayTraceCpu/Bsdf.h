@@ -65,6 +65,8 @@ namespace Duck::RayTraceCpu
             return LobeSample{.Wi = wi, .Value = Evaluate(wo, wi), .Pdf = wi.z * InvPi, .IsDelta = false};
         }
 
+        float Pdf(const Vec3&, const Vec3& wi) const { return wi.z > 0.0f ? wi.z * InvPi : 0.0f; }
+
         float SampleWeight(const Vec3&) const { return MaxComponent(Reflectance); }
         SpecularPaths Specular(const Vec3&) const { return {}; }
 
@@ -92,6 +94,8 @@ namespace Duck::RayTraceCpu
             const Vec3 wi(-wo.x, -wo.y, wo.z);
             return LobeSample{.Wi = wi, .Value = Fresnel(wo.z) / wi.z, .Pdf = 1.0f, .IsDelta = true};
         }
+
+        float Pdf(const Vec3&, const Vec3&) const { return 0.0f; }
 
         float SampleWeight(const Vec3& wo) const { return MaxComponent(Fresnel(wo.z)); }
 
@@ -152,6 +156,8 @@ namespace Duck::RayTraceCpu
                 .Wi = wi, .Value = Scale * (1.0f - r) * Tint / std::abs(wi.z), .Pdf = 1.0f - r, .IsDelta = true};
         }
 
+        float Pdf(const Vec3&, const Vec3&) const { return 0.0f; }
+
         float SampleWeight(const Vec3&) const { return Scale; }
 
         SpecularPaths Specular(const Vec3& wo) const
@@ -178,6 +184,7 @@ namespace Duck::RayTraceCpu
         { lobe.SampleWeight(wo) } -> std::same_as<float>;     // rough share of the light
         { lobe.Specular(wo) } -> std::same_as<SpecularPaths>; // for Whitted
         { lobe.IsDelta() } -> std::same_as<bool>;             // only reachable by sampling,
+        { lobe.Pdf(wo, wi) } -> std::same_as<float>;          // of Sample returning wi, 0 for delta lobes
     };
 
     using Lobe = std::variant<LambertLobe, SpecularReflectionLobe, SpecularDielectricLobe>;
@@ -250,13 +257,7 @@ namespace Duck::RayTraceCpu
         {
             const Vec3 wo = frame.ToLocal(woWorld);
             std::array<float, MaxLobes> weights{};
-            float total = 0.0f;
-            for (int i = 0; i < count; i++)
-            {
-                weights[static_cast<size_t>(i)] =
-                    std::visit([&](const auto& lobe) { return lobe.SampleWeight(wo); }, LobeAt(i));
-                total += weights[static_cast<size_t>(i)];
-            }
+            const float total = LobeWeights(wo, weights);
             if (total <= 0.0f)
             {
                 return std::nullopt;
@@ -285,6 +286,27 @@ namespace Duck::RayTraceCpu
                               .Value = sample->Value,
                               .Pdf = sample->Pdf * choice,
                               .IsDelta = sample->IsDelta};
+        }
+
+        // the density Sample has of returning wiWorld, the same pdf it reports. delta lobes add nothing: no
+        // other direction picked by chance can ever land exactly on theirs. light sampling needs this for MIS
+        float Pdf(const Vec3& woWorld, const Vec3& wiWorld) const
+        {
+            const Vec3 wo = frame.ToLocal(woWorld);
+            const Vec3 wi = frame.ToLocal(wiWorld);
+            std::array<float, MaxLobes> weights{};
+            const float total = LobeWeights(wo, weights);
+            if (total <= 0.0f)
+            {
+                return 0.0f;
+            }
+            float pdf = 0.0f;
+            for (int i = 0; i < count; i++)
+            {
+                pdf += weights[static_cast<size_t>(i)] / total *
+                       std::visit([&](const auto& lobe) { return lobe.Pdf(wo, wi); }, LobeAt(i));
+            }
+            return pdf;
         }
 
         // every perfect reflection / refraction direction, for Whitted
@@ -333,6 +355,19 @@ namespace Duck::RayTraceCpu
 
     private:
         const Lobe& LobeAt(int index) const { return lobes[static_cast<size_t>(index)]; }
+
+        // how likely Sample is to pick each lobe, unnormalized. returns the total
+        float LobeWeights(const Vec3& wo, std::array<float, MaxLobes>& weights) const
+        {
+            float total = 0.0f;
+            for (int i = 0; i < count; i++)
+            {
+                weights[static_cast<size_t>(i)] =
+                    std::visit([&](const auto& lobe) { return lobe.SampleWeight(wo); }, LobeAt(i));
+                total += weights[static_cast<size_t>(i)];
+            }
+            return total;
+        }
 
         ShadingFrame frame;
         std::array<Lobe, MaxLobes> lobes{};

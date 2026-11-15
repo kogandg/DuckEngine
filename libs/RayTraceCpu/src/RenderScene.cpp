@@ -139,6 +139,7 @@ namespace Duck::RayTraceCpu
             const Instance& instance = instances[i];
             const Geometry& geometry = geometries[static_cast<size_t>(instance.GeometryId)];
             const size_t firstLight = areaLights.size(); // this instances lights start here
+            firstAreaLight.push_back(static_cast<int>(firstLight));
             for (int p = 0; p < GeometryPrimitiveCount(geometry); p++)
             {
                 const Shape primitive = GeometryPrimitive(geometry, p);
@@ -171,6 +172,7 @@ namespace Duck::RayTraceCpu
                 areaLight.AreaCdf.push_back(areaLight.TotalArea);
             }
         }
+        firstAreaLight.push_back(static_cast<int>(areaLights.size()));
 
         BuildAreaLightCdf();
     }
@@ -376,5 +378,47 @@ namespace Duck::RayTraceCpu
             }
         }
         return sum / (Grid * Grid);
+    }
+
+    int RenderScene::AreaLightAt(const Hit& hit) const
+    {
+        if (hit.InstanceId < 0)
+        {
+            return -1;
+        }
+        const size_t instance = static_cast<size_t>(hit.InstanceId);
+        for (int light = firstAreaLight[instance]; light < firstAreaLight[instance + 1]; light++)
+        {
+            if (areaLights[static_cast<size_t>(light)].MaterialId == hit.MaterialId)
+            {
+                return light;
+            }
+        }
+        return -1;
+    }
+
+    float RenderScene::AreaLightPdf(int lightIndex, const Hit& hit, const Vec3& from) const
+    {
+        const AreaLight& light = areaLights[static_cast<size_t>(lightIndex)];
+        const Instance& instance = instances[static_cast<size_t>(light.InstanceId)];
+
+        // the same density SampleAreaLightSurface gives, worked out from the world normal instead of the object
+        // one: there areaScale = |det M| * |M^-T n_object|, and |M^-T n_object| = 1 / |M^T n_world|
+        float areaPdf = 1.0f / light.TotalArea;
+        if (!instance.IsIdentity)
+        {
+            const Vec3 stretched = glm::transpose(Mat3(instance.ObjectToWorld)) * hit.GeometricNormal;
+            areaPdf *= glm::length(stretched) / instance.VolumeScale;
+        }
+
+        // per area to per solid angle, as in SampleAreaLight
+        const Vec3 toLight = hit.Point - from;
+        const float distanceSquared = glm::dot(toLight, toLight);
+        const float cosLight = std::abs(glm::dot(hit.GeometricNormal, toLight)) / std::sqrt(distanceSquared);
+        if (cosLight <= 0.0f)
+        {
+            return 0.0f;
+        }
+        return AreaLightProbability(lightIndex) * areaPdf * distanceSquared / cosLight;
     }
 }
