@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Duck/RayTraceCpu/Camera.h>
-#include <Duck/RayTraceCpu/Scene.h>
+#include <Duck/RayTraceCpu/Scene/Scene.h>
 
 #include <vector>
 

@@ -1,9 +1,9 @@
 #pragma once
 
-#include <Duck/RayTraceCpu/Environment.h>
-#include <Duck/RayTraceCpu/Geometry.h>
-#include <Duck/RayTraceCpu/Lights.h>
-#include <Duck/RayTraceCpu/Materials.h>
+#include <Duck/RayTraceCpu/Scene/Environment.h>
+#include <Duck/RayTraceCpu/Scene/Geometry.h>
+#include <Duck/RayTraceCpu/Lights/Lights.h>
+#include <Duck/RayTraceCpu/Materials/Materials.h>
 
 #include <optional>
 #include <variant>

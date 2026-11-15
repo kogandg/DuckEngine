@@ -5,10 +5,10 @@
 #include <Duck/Core/Framebuffer.h>
 #include <Duck/RayTraceCpu/Camera.h>
 #include <Duck/RayTraceCpu/Film.h>
-#include <Duck/RayTraceCpu/Integrator.h>
+#include <Duck/RayTraceCpu/Integrators/Integrator.h>
 #include <Duck/RayTraceCpu/Scene.h>
 #include <Duck/Core/ThreadPool.h>
-#include <Duck/RayTraceCpu/RenderScene.h>
+#include <Duck/RayTraceCpu/Scene/RenderScene.h>
 #include <Duck/RayTraceCpu/Sampler.h>
 
 #include <catch2/catch_test_macros.hpp>

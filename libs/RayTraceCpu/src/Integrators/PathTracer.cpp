@@ -1,10 +1,10 @@
-#include <Duck/RayTraceCpu/PathTracer.h>
+#include <Duck/RayTraceCpu/Integrators/PathTracer.h>
 
 #include <Duck/Core/Ray.h>
 #include <Duck/Core/Sampling.h>
-#include <Duck/RayTraceCpu/Bsdf.h>
-#include <Duck/RayTraceCpu/Materials.h>
-#include <Duck/RayTraceCpu/Scene.h>
+#include <Duck/RayTraceCpu/Materials/Bsdf.h>
+#include <Duck/RayTraceCpu/Materials/Materials.h>
+#include <Duck/RayTraceCpu/Scene/Scene.h>
 #include <Duck/RayTraceCpu/Shading.h>
 
 #include <cmath>

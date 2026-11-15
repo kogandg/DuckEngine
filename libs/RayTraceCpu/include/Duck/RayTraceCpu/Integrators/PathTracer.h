@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Duck/RayTraceCpu/Integrator.h>
+#include <Duck/RayTraceCpu/Integrators/Integrator.h>
 
 namespace Duck::RayTraceCpu
 {

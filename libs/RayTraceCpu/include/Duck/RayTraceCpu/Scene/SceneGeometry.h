@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Duck/RayTraceCpu/Geometry.h>
+#include <Duck/RayTraceCpu/Scene/Geometry.h>
 #include <Duck/Core/Bvh.h>
 #include <Duck/RayTraceCpu/RayStats.h>
 

@@ -2,9 +2,9 @@
 
 #include <Duck/Core/Math.h>
 #include <Duck/Core/Ray.h>
-#include <Duck/RayTraceCpu/Geometry.h>
-#include <Duck/RayTraceCpu/Lights.h>
-#include <Duck/RayTraceCpu/RenderScene.h>
+#include <Duck/RayTraceCpu/Scene/Geometry.h>
+#include <Duck/RayTraceCpu/Lights/Lights.h>
+#include <Duck/RayTraceCpu/Scene/RenderScene.h>
 #include <Duck/Core/Sampling.h>
 
 #include <cmath>

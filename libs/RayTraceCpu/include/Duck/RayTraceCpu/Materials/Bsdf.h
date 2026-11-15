@@ -3,7 +3,7 @@
 #include <Duck/Core/Assert.h>
 #include <Duck/Core/Math.h>
 #include <Duck/Core/Sampling.h>
-#include <Duck/RayTraceCpu/Optics.h>
+#include <Duck/RayTraceCpu/Materials/Optics.h>
 #include <Duck/RayTraceCpu/Sampler.h>
 
 #include <array>

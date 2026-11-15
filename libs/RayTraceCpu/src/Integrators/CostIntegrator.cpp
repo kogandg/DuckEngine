@@ -1,7 +1,7 @@
-#include <Duck/RayTraceCpu/CostIntegrator.h>
+#include <Duck/RayTraceCpu/Integrators/CostIntegrator.h>
 
 #include <Duck/RayTraceCpu/RayStats.h>
-#include <Duck/RayTraceCpu/RenderScene.h>
+#include <Duck/RayTraceCpu/Scene/RenderScene.h>
 #include <Duck/RayTraceCpu/Shading.h>
 
 #include <algorithm>

@@ -1,9 +1,9 @@
 #pragma once
 
 #include <Duck/Core/Math.h>
-#include <Duck/RayTraceCpu/Bsdf.h>
-#include <Duck/RayTraceCpu/Geometry.h>
-#include <Duck/RayTraceCpu/Optics.h>
+#include <Duck/RayTraceCpu/Materials/Bsdf.h>
+#include <Duck/RayTraceCpu/Scene/Geometry.h>
+#include <Duck/RayTraceCpu/Materials/Optics.h>
 
 #include <cmath>
 #include <concepts>

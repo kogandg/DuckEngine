@@ -1,6 +1,6 @@
 #include "TestHelpers.h"
 
-#include <Duck/RayTraceCpu/Optics.h>
+#include <Duck/RayTraceCpu/Materials/Optics.h>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>

@@ -1,10 +1,10 @@
-#include <Duck/RayTraceCpu/WhittedIntegrator.h>
+#include <Duck/RayTraceCpu/Integrators/WhittedIntegrator.h>
 
 #include <Duck/Core/Ray.h>
-#include <Duck/RayTraceCpu/Bsdf.h>
-#include <Duck/RayTraceCpu/Materials.h>
-#include <Duck/RayTraceCpu/Optics.h>
-#include <Duck/RayTraceCpu/Scene.h>
+#include <Duck/RayTraceCpu/Materials/Bsdf.h>
+#include <Duck/RayTraceCpu/Materials/Materials.h>
+#include <Duck/RayTraceCpu/Materials/Optics.h>
+#include <Duck/RayTraceCpu/Scene/Scene.h>
 #include <Duck/RayTraceCpu/Shading.h>
 
 namespace Duck::RayTraceCpu

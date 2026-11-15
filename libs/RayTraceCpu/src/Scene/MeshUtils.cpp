@@ -1,4 +1,4 @@
-#include <Duck/RayTraceCpu/MeshUtils.h>
+#include <Duck/RayTraceCpu/Scene/MeshUtils.h>
 
 #include <Duck/Core/Assert.h>
 

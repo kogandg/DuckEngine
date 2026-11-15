@@ -1,10 +1,10 @@
 #include "RenderTestHelpers.h"
 
-#include <Duck/RayTraceCpu/Geometry.h>
-#include <Duck/RayTraceCpu/MeshUtils.h>
-#include <Duck/RayTraceCpu/RenderScene.h>
-#include <Duck/RayTraceCpu/Scene.h>
-#include <Duck/RayTraceCpu/WhittedIntegrator.h>
+#include <Duck/RayTraceCpu/Scene/Geometry.h>
+#include <Duck/RayTraceCpu/Scene/MeshUtils.h>
+#include <Duck/RayTraceCpu/Scene/RenderScene.h>
+#include <Duck/RayTraceCpu/Scene/Scene.h>
+#include <Duck/RayTraceCpu/Integrators/WhittedIntegrator.h>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>

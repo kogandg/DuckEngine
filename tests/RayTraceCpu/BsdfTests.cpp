@@ -1,7 +1,7 @@
 #include "TestHelpers.h"
 
-#include <Duck/RayTraceCpu/Bsdf.h>
-#include <Duck/RayTraceCpu/Materials.h>
+#include <Duck/RayTraceCpu/Materials/Bsdf.h>
+#include <Duck/RayTraceCpu/Materials/Materials.h>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>

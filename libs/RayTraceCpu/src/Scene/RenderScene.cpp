@@ -1,10 +1,10 @@
-#include <Duck/RayTraceCpu/RenderScene.h>
+#include <Duck/RayTraceCpu/Scene/RenderScene.h>
 
 #include <Duck/Core/Assert.h>
 #include <Duck/Core/Color.h>
 #include <Duck/Core/Log.h>
 #include <Duck/Core/Stopwatch.h>
-#include <Duck/RayTraceCpu/Scene.h>
+#include <Duck/RayTraceCpu/Scene/Scene.h>
 
 #include <algorithm>
 #include <utility>

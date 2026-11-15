@@ -1,9 +1,9 @@
 #include "TestHelpers.h"
 
-#include <Duck/RayTraceCpu/Geometry.h>
-#include <Duck/RayTraceCpu/Optics.h>
-#include <Duck/RayTraceCpu/RenderScene.h>
-#include <Duck/RayTraceCpu/Scene.h>
+#include <Duck/RayTraceCpu/Scene/Geometry.h>
+#include <Duck/RayTraceCpu/Materials/Optics.h>
+#include <Duck/RayTraceCpu/Scene/RenderScene.h>
+#include <Duck/RayTraceCpu/Scene/Scene.h>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>

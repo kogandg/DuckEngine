@@ -1,4 +1,4 @@
-#include <Duck/RayTraceCpu/Integrator.h>
+#include <Duck/RayTraceCpu/Integrators/Integrator.h>
 
 #include <Duck/Core/Random.h>
 #include <Duck/Core/ThreadPool.h>

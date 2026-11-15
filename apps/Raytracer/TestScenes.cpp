@@ -1,6 +1,6 @@
 #include "TestScenes.h"
 
-#include <Duck/RayTraceCpu/MeshUtils.h>
+#include <Duck/RayTraceCpu/Scene/MeshUtils.h>
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <utility>

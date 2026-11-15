@@ -1,8 +1,8 @@
 #include <Duck/RayTraceCpu/BackgroundRenderer.h>
 
 #include <Duck/Core/Assert.h>
-#include <Duck/RayTraceCpu/Integrator.h>
-#include <Duck/RayTraceCpu/RenderScene.h>
+#include <Duck/RayTraceCpu/Integrators/Integrator.h>
+#include <Duck/RayTraceCpu/Scene/RenderScene.h>
 
 #include <chrono>
 #include <utility>

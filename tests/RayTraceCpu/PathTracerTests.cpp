@@ -1,9 +1,9 @@
 #include "RenderTestHelpers.h"
 
-#include <Duck/RayTraceCpu/PathTracer.h>
-#include <Duck/RayTraceCpu/WhittedIntegrator.h>
+#include <Duck/RayTraceCpu/Integrators/PathTracer.h>
+#include <Duck/RayTraceCpu/Integrators/WhittedIntegrator.h>
 #include <Duck/Core/ThreadPool.h>
-#include <Duck/RayTraceCpu/RenderScene.h>
+#include <Duck/RayTraceCpu/Scene/RenderScene.h>
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <catch2/catch_test_macros.hpp>

@@ -1,8 +1,8 @@
 #include <Duck/Core/Bvh.h>
 #include <Duck/Core/Random.h>
-#include <Duck/RayTraceCpu/MeshUtils.h>
+#include <Duck/RayTraceCpu/Scene/MeshUtils.h>
 #include <Duck/RayTraceCpu/RayStats.h>
-#include <Duck/RayTraceCpu/SceneGeometry.h>
+#include <Duck/RayTraceCpu/Scene/SceneGeometry.h>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>

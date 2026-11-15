@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Duck/Core/Math.h>
-#include <Duck/RayTraceCpu/Geometry.h>
+#include <Duck/RayTraceCpu/Scene/Geometry.h>
 #include <Duck/RayTraceCpu/Sampler.h>
 
 #include <cmath>

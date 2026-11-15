@@ -1,4 +1,4 @@
-#include <Duck/RayTraceCpu/SceneGeometry.h>
+#include <Duck/RayTraceCpu/Scene/SceneGeometry.h>
 
 #include <Duck/Core/Assert.h>
 
