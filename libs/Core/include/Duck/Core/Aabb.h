@@ -1,8 +1,8 @@
 #pragma once
 
-#include <Duck/Core/Ray.h>
 #include <Duck/Core/Assert.h>
 #include <Duck/Core/Math.h>
+#include <Duck/Core/Ray.h>
 
 #include <algorithm>
 
@@ -23,7 +23,7 @@ namespace Duck
         Vec3 Min{Infinity};
         Vec3 Max{-Infinity};
 
-         void Grow(const Vec3& point)
+        void Grow(const Vec3& point)
         {
             Min = glm::min(Min, point);
             Max = glm::max(Max, point);
@@ -34,6 +34,13 @@ namespace Duck
             Max = glm::max(Max, other.Max);
         }
         bool IsEmpty() const { return glm::any(glm::greaterThan(Min, Max)); }
+
+        float SurfaceArea() const
+        {
+            DUCK_ASSERT(!IsEmpty(), "Empty box has no surface area");
+            const Vec3 size = Max - Min;
+            return 2.0f * (size.x * size.y + size.y * size.z + size.z * size.x);
+        }
 
         bool Contains(const Vec3& point, float tolerance = 0.0f) const
         {

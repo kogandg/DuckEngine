@@ -1,16 +1,30 @@
 #pragma once
 
 #include <Duck/Core/Aabb.h>
-#include <Duck/Core/Ray.h>
 #include <Duck/Core/Assert.h>
+#include <Duck/Core/Ray.h>
 #include <Duck/RayTraceCpu/RayStats.h>
 
+#include <array>
 #include <span>
-#include <vector>
 #include <utility>
+#include <vector>
 
 namespace Duck::RayTraceCpu
 {
+    enum class BvhSplitMethod
+    {
+        Midpoint, // halve the lognest side
+        SAH,      // binned surface area heuristic
+    };
+
+    struct BvhBuildSettings
+    {
+        BvhSplitMethod Split = BvhSplitMethod::SAH;
+        int MaxLeafSize = 4;
+        int BinCount = 16; // SAH only
+    };
+
     struct BvhNode
     {
         Aabb Bounds;
@@ -25,14 +39,21 @@ namespace Duck::RayTraceCpu
     {
     public:
         static constexpr int MaxDepth = 64;
+        static constexpr int MaxBins = 32;
+
+        // relative costs SAH weights to split with
+        static constexpr float TraversalCost = 1.0f;
+        static constexpr float IntersectionCost = 1.0f;
 
         Bvh() = default;
-        explicit Bvh(std::span<const Aabb> primitiveBounds, int maxLeafSize = 4);
+        explicit Bvh(std::span<const Aabb> primitiveBounds, const BvhBuildSettings& settings = {});
 
         bool IsEmpty() const { return nodes.empty(); }
         const BvhNode& Root() const { return nodes.front(); }
         std::span<const BvhNode> Nodes() const { return nodes; }
         std::span<const int> PrimitiveIndices() const { return primitiveIndices; }
+
+        float SahCost() const;
 
         template <typename TestPrimitive>
         void ClosestHit(const Ray& ray, float tMin, float tMax, TraversalStats& stats,
@@ -42,9 +63,13 @@ namespace Duck::RayTraceCpu
         bool AnyHit(const Ray& ray, float tMin, float tMax, TraversalStats& stats, TestPrimitive&& testPrimitive) const;
 
     private:
-        void UpdateBounds(BvhNode& node, std::span<const Aabb> primitiveBounds) const;
-        void Subdivide(int nodeIndex, int depth, std::span<const Aabb> primitiveBounds, std::span<const Vec3> centroids,
-                       int maxLeafSize);
+        struct BuildInput;
+
+        void UpdateBounds(BvhNode& node, const BuildInput& input) const;
+        void Subdivide(int nodeIndex, int depth, const BuildInput& input);
+
+        int SplitMidpoint(const BvhNode& node, const Aabb& centroidBounds, const BuildInput& input);
+        int SplitSah(const BvhNode& node, const Aabb& centroidBounds, const BuildInput& input);
 
         std::vector<BvhNode> nodes; // nodes[0] is the root
         std::vector<int> primitiveIndices;
@@ -82,7 +107,7 @@ namespace Duck::RayTraceCpu
 
         while (stackSize > 0)
         {
-            stackSize--;     
+            stackSize--;
             const StackEntry entry = stack[stackSize];
             if (entry.Entry > tMax)
             {
