@@ -46,3 +46,12 @@ TEST_CASE("LinearToSrgb never decreases", "[color]")
     }
     CHECK(decreases == 0);
 }
+
+TEST_CASE("Luminance weighs green most and blue least", "[color]")
+{
+    CHECK_THAT(Luminance(Vec3(1.0f)), WithinAbs(1.0f, 1e-6f)); // white keeps its brightness
+    CHECK_THAT(Luminance(Vec3(1.0f, 0.0f, 0.0f)), WithinAbs(0.2126f, 1e-6f));
+    CHECK_THAT(Luminance(Vec3(0.0f, 1.0f, 0.0f)), WithinAbs(0.7152f, 1e-6f));
+    CHECK_THAT(Luminance(Vec3(0.0f, 0.0f, 1.0f)), WithinAbs(0.0722f, 1e-6f));
+    CHECK_THAT(Luminance(Vec3(3.0f, 1.5f, 0.5f)), WithinAbs(3.0f * 0.2126f + 1.5f * 0.7152f + 0.5f * 0.0722f, 1e-5f));
+}

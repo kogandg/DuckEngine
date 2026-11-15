@@ -7,6 +7,8 @@
 
 #include <cmath>
 
+#include <glm/gtc/matrix_transform.hpp>
+
 using namespace Duck;
 using Catch::Matchers::WithinAbs;
 
@@ -56,4 +58,32 @@ TEST_CASE("Flat boxes can be hit", "[box]")
     const Aabb flat{Vec3(-1.0f, 0.0f, -1.0f), Vec3(1.0f, 0.0f, 1.0f)};
     CHECK_THAT(Enter(flat, {0.2f, 2.0f, 0.3f}, {0.0f, -1.0f, 0.0f}), WithinAbs(2.0f, 1e-6f));
     CHECK(Enter(flat, {0.0f, 2.0f, 0.0f}, glm::normalize(Vec3(0.3f, -1.0f, 0.2f))) < Infinity);
+}
+
+TEST_CASE("Box surface area", "[box]")
+{
+    CHECK_THAT(UnitBox.SurfaceArea(), WithinAbs(24.0f, 1e-5f)); // six faces of 2 x 2
+    const Aabb flat{Vec3(0.0f), Vec3(2.0f, 0.0f, 3.0f)};
+    CHECK_THAT(flat.SurfaceArea(), WithinAbs(12.0f, 1e-5f)); // both sides of a 2 x 3 sheet
+}
+
+TEST_CASE("Transformed box holds every transformed corner", "[box]")
+{
+    const Mat4 transform = glm::translate(Mat4(1.0f), Vec3(5.0f, 0.0f, 0.0f)) *
+                           glm::rotate(Mat4(1.0f), Radians(45.0f), Vec3(0.0f, 1.0f, 0.0f));
+    const Aabb moved = UnitBox.Transformed(transform);
+
+    // a unit box turned 45 degrees about y reaches sqrt 2 along x and z, and still 1 along y
+    const float reach = std::sqrt(2.0f);
+    CHECK_THAT(moved.Min.x, WithinAbs(5.0f - reach, 1e-5f));
+    CHECK_THAT(moved.Max.x, WithinAbs(5.0f + reach, 1e-5f));
+    CHECK_THAT(moved.Min.y, WithinAbs(-1.0f, 1e-5f));
+    CHECK_THAT(moved.Max.y, WithinAbs(1.0f, 1e-5f));
+    CHECK_THAT(moved.Max.z, WithinAbs(reach, 1e-5f));
+
+    for (int corner = 0; corner < 8; corner++)
+    {
+        const Vec3 point((corner & 1) ? 1.0f : -1.0f, (corner & 2) ? 1.0f : -1.0f, (corner & 4) ? 1.0f : -1.0f);
+        CHECK(moved.Contains(Vec3(transform * Vec4(point, 1.0f)), 1e-5f));
+    }
 }

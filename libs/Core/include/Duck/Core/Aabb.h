@@ -48,6 +48,18 @@ namespace Duck
                    glm::all(glm::lessThanEqual(point, Max + tolerance));
         }
 
+        Aabb Transformed(const Mat4& transform) const
+        {
+            DUCK_ASSERT(!IsEmpty(), "Cant transform an empty box");
+            Aabb result;
+            for (int corner = 0; corner < 8; corner++)
+            {
+                const Vec3 point((corner & 1 ) ? Max.x : Min.x, (corner & 2) ? Max.y : Min.y, (corner & 4) ? Max.z : Min.z);
+                result.Grow(Vec3(transform * Vec4(point, 1.0f)));
+            }
+            return result;
+        }
+
         // slab test. the t where the ray enters the box (tMin if it starts inside), or Infinity on a miss
         float EntryDistance(const TraversalRay& ray, float tMin, float tMax) const
         {

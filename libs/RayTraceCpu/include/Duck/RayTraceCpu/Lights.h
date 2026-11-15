@@ -8,6 +8,7 @@
 #include <concepts>
 #include <type_traits>
 #include <variant>
+#include <vector>
 
 namespace Duck::RayTraceCpu
 {
@@ -48,38 +49,24 @@ namespace Duck::RayTraceCpu
         }
     };
 
+    // a point on a lights surface in world space
+    struct AreaSample
+    {
+        Vec3 Point{0.0f};
+        Vec3 Normal{0.0f}; //unit
+        float Pdf = 0.0f; //per unit of world space area
+    };
+
     // light given off of a shapes surface
     // every point on its front side emits Radiance equally in every direction
     struct AreaLight
     {
-        Shape Surface;
-        Vec3 Radiance{0.0f}; // W/(m^2 sr)
-        int GeometryId = -1;  // together, the primitive this light is: matches Hit::GeometryId and
-        int PrimitiveId = -1; // Hit::PrimitiveId when a ray hits it (for MIS later)
-
-        LightSample Sample(const Vec3& point, ISampler& sampler) const
-        {
-            const SurfaceSample surface = SampleShapeSurface(Surface, sampler.Get2D());
-
-            const Vec3 toLight = surface.Point - point;
-            const float distanceSquared = glm::dot(toLight, toLight);
-            if (distanceSquared <= 0.0f)
-            {
-                return {};
-            }
-
-            const float distance = std::sqrt(distanceSquared);
-            const Vec3 direction = toLight / distance;
-
-            const float cosLight = -glm::dot(surface.Normal, direction);
-            if (cosLight <= 0.0f)
-            {
-                return {}; // back of the light or edge on
-            }
-
-            const float pdf = distanceSquared / (cosLight * ShapeArea(Surface));
-            return {direction, distance, Radiance, pdf, false};
-        }
+        int InstanceId = -1;
+        int MaterialId = -1;
+        Vec3 Radiance{0.0f};         // W/(m^2 sr)
+        std::vector<int> Primitives; // which of the instances geometrys primitives emit
+        std::vector<float> AreaCdf;  // running total of their areas, in the geometry's own space
+        float TotalArea = 0.0f;      // the last AreaCdf entry
     };
 
     // what every light type must provide
@@ -89,7 +76,7 @@ namespace Duck::RayTraceCpu
     };
 
     // every light type. a variant keeps them in one list which NNE needs to sample randomly
-    using Light = std::variant<DirectionalLight, PointLight, AreaLight>;
+    using Light = std::variant<DirectionalLight, PointLight>;
 
     template <typename TVariant>
     struct AllLightTypes;
@@ -103,4 +90,4 @@ namespace Duck::RayTraceCpu
     {
         return std::visit([&](const auto& typed) { return typed.Sample(point, sampler); }, light);
     }
-}
+}

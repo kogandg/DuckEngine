@@ -3,15 +3,20 @@
 #include <Duck/Core/Aabb.h>
 #include <Duck/Core/Assert.h>
 #include <Duck/Core/Ray.h>
-#include <Duck/RayTraceCpu/RayStats.h>
 
 #include <array>
 #include <span>
 #include <utility>
 #include <vector>
 
-namespace Duck::RayTraceCpu
+namespace Duck
 {
+    struct TraversalStats
+    {
+        int NodeTests = 0;
+        int PrimitiveTests = 0;
+    };
+
     enum class BvhSplitMethod
     {
         Midpoint, // halve the lognest side
@@ -23,6 +28,17 @@ namespace Duck::RayTraceCpu
         BvhSplitMethod Split = BvhSplitMethod::SAH;
         int MaxLeafSize = 4;
         int BinCount = 16; // SAH only
+    };
+
+    struct BvhBuildStats
+    {
+        double BuildMs = 0.0;
+        int Primitives = 0;
+        int Nodes = 0;
+        int Leaves = 0;
+        int MaxDepth = 0;
+        int LargestLeaf = 0;
+        float SahCost = 0.0f;
     };
 
     struct BvhNode
@@ -55,6 +71,8 @@ namespace Duck::RayTraceCpu
 
         float SahCost() const;
 
+        const BvhBuildStats& BuildStats() const { return buildStats; }
+
         template <typename TestPrimitive>
         void ClosestHit(const Ray& ray, float tMin, float tMax, TraversalStats& stats,
                         TestPrimitive&& testPrimitive) const;
@@ -71,8 +89,12 @@ namespace Duck::RayTraceCpu
         int SplitMidpoint(const BvhNode& node, const Aabb& centroidBounds, const BuildInput& input);
         int SplitSah(const BvhNode& node, const Aabb& centroidBounds, const BuildInput& input);
 
+        void CollectBuildStats(double buildMs);
+
         std::vector<BvhNode> nodes; // nodes[0] is the root
         std::vector<int> primitiveIndices;
+
+        BvhBuildStats buildStats;
     };
 
     template <typename TestPrimitive>

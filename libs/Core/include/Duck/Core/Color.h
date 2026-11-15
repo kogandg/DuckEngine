@@ -22,6 +22,9 @@ namespace Duck
 
     inline Rgba8 PackRgba8(const Vec3& color) { return PackRgba8(Vec4(color, 1.0f)); }
 
+    // how bright a linear rgb color looks: the eye is most sensitive to green and least to blue (Rec. 709 weights)
+    inline float Luminance(const Vec3& linear) { return glm::dot(linear, Vec3(0.2126f, 0.7152f, 0.0722f)); }
+
     inline float LinearToSrgb(float linear)
     {
         linear = glm::clamp(linear, 0.0f, 1.0f);

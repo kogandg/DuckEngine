@@ -164,13 +164,12 @@ namespace
         scene.Quads = {{{-20.0f, 0.0f, 10.0f}, {40.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -40.0f}, floor}};
 
         scene.Spheres = {{{-1.6f, 0.6f, -3.0f}, 0.6f, red}};
-        scene.Meshes.push_back(MakeUvSphereMesh({0.0f, 0.6f, -3.0f}, 0.6f, 32, 16, red));
-        scene.Meshes.push_back(MakeUvSphereMesh({1.6f, 0.6f, -3.0f}, 0.6f, 12, 6, red, false));
+        scene.AddInstance(scene.AddMesh(MakeUvSphereMesh({0.0f, 0.6f, -3.0f}, 0.6f, 32, 16, red)));
+        scene.AddInstance(scene.AddMesh(MakeUvSphereMesh({1.6f, 0.6f, -3.0f}, 0.6f, 12, 6, red, false)));
 
-        Mesh box = MakeBoxMesh(Vec3(-0.3f), Vec3(0.3f), glass);
-        TransformMesh(box, glm::translate(Mat4(1.0f), Vec3(0.0f, 0.31f, -1.6f)) *
-                               glm::rotate(Mat4(1.0f), Radians(30.0f), Vec3(0.0f, 1.0f, 0.0f)));
-        scene.Meshes.push_back(std::move(box));
+        const int box = scene.AddMesh(MakeBoxMesh(Vec3(-0.3f), Vec3(0.3f), glass));
+        scene.AddInstance(box, glm::translate(Mat4(1.0f), Vec3(0.0f, 0.31f, -1.6f)) *
+                                   glm::rotate(Mat4(1.0f), Radians(30.0f), Vec3(0.0f, 1.0f, 0.0f)));
 
         scene.Lights = {DirectionalLight{glm::normalize(Vec3(0.4f, 1.0f, 0.6f)), Vec3{Pi}}};
 
@@ -192,7 +191,7 @@ namespace
             for (int z = 0; z < 3; z++)
             {
                 const Vec3 center(1.3f * static_cast<float>(x), 0.6f, -2.5f - 1.3f * static_cast<float>(z));
-                scene.Meshes.push_back(MakeUvSphereMesh(center, 0.6f, 64, 32, blue));
+                scene.AddInstance(scene.AddMesh(MakeUvSphereMesh(center, 0.6f, 64, 32, blue)));
             }
         }
         scene.Lights = {DirectionalLight{glm::normalize(Vec3(0.4f, 1.0f, 0.6f)), Vec3{Pi}}};
@@ -200,6 +199,48 @@ namespace
         return {.Name = "Dense meshes",
                 .Scene = std::move(scene),
                 .Camera = Camera({0.0f, 2.0f, 1.0f}, {0.0f, 0.4f, -3.8f}, WorldUp, 45.0f, aspectRatio)};
+    }
+
+    // one sphere mesh and one box mesh, each stored once and placed hundreds of times: rotated, scaled, and some
+    // mirrored. needs the top level BVH to be fast
+    TestScene MakeInstances(float aspectRatio)
+    {
+        Scene scene;
+        const int floor = scene.AddMaterial(GltfMaterial::Lambert(Vec3(0.6f)));
+        const int orange = scene.AddMaterial(GltfMaterial::Lambert(Vec3(0.8f, 0.4f, 0.1f)));
+        const int teal = scene.AddMaterial(GltfMaterial::Lambert(Vec3(0.1f, 0.5f, 0.5f)));
+
+        scene.Quads = {{{-30.0f, 0.0f, 10.0f}, {60.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -60.0f}, floor}};
+
+        const int sphere = scene.AddMesh(MakeUvSphereMesh(Vec3(0.0f), 0.35f, 32, 16, orange));
+        const int box = scene.AddMesh(MakeBoxMesh(Vec3(-0.3f), Vec3(0.3f), teal));
+
+        for (int x = -10; x <= 10; x++)
+        {
+            for (int z = 0; z < 25; z++)
+            {
+                const float fx = static_cast<float>(x);
+                const float fz = static_cast<float>(z);
+                const float scale = 0.7f + 0.3f * std::sin(1.7f * fx + 0.9f * fz); // varies without randomness
+                const Mat4 place = glm::translate(Mat4(1.0f), Vec3(0.9f * fx, 0.35f * scale, -2.0f - 0.9f * fz)) *
+                                   glm::rotate(Mat4(1.0f), 0.4f * fx + 0.7f * fz, Vec3(0.0f, 1.0f, 0.0f));
+                if ((x + z) % 2 == 0)
+                {
+                    scene.AddInstance(sphere, place * glm::scale(Mat4(1.0f), Vec3(scale)));
+                }
+                else
+                {
+                    // every third box mirrored: shading must not change
+                    const float mirror = (z % 3 == 0) ? -1.0f : 1.0f;
+                    scene.AddInstance(box, place * glm::scale(Mat4(1.0f), Vec3(mirror * scale, scale, scale)));
+                }
+            }
+        }
+        scene.Lights = {DirectionalLight{glm::normalize(Vec3(0.4f, 1.0f, 0.6f)), Vec3{Pi}}};
+
+        return {.Name = "Instances",
+                .Scene = std::move(scene),
+                .Camera = Camera({0.0f, 3.0f, 2.0f}, {0.0f, 0.0f, -8.0f}, WorldUp, 50.0f, aspectRatio)};
     }
 }
 
@@ -214,5 +255,6 @@ std::vector<TestScene> MakeTestScenes(float aspectRatio)
     scenes.push_back(MakeWhitted(aspectRatio));
     scenes.push_back(MakeMeshes(aspectRatio));
     scenes.push_back(MakeDenseMeshes(aspectRatio));
+    scenes.push_back(MakeInstances(aspectRatio));
     return scenes;
 }

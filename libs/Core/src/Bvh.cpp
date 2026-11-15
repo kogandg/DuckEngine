@@ -1,11 +1,12 @@
-#include <Duck/RayTraceCpu/Bvh.h>
+#include <Duck/Core/Bvh.h>
 
 #include <Duck/Core/Assert.h>
+#include <Duck/Core/Stopwatch.h>
 
 #include <algorithm>
 #include <numeric>
 
-namespace Duck::RayTraceCpu
+namespace Duck
 {
     struct Bvh::BuildInput
     {
@@ -19,6 +20,8 @@ namespace Duck::RayTraceCpu
 
     Bvh::Bvh(std::span<const Aabb> primitiveBounds, const BvhBuildSettings& settings)
     {
+        const Stopwatch stopwatch;
+
         DUCK_VERIFY(settings.MaxLeafSize >= 1, "A BVH leaf must be able to hold a primitive");
         DUCK_VERIFY(settings.BinCount >= 2 && settings.BinCount <= MaxBins, "BVH bin count {} not in [2, {}]",
                     settings.BinCount, MaxBins);
@@ -48,6 +51,36 @@ namespace Duck::RayTraceCpu
         Subdivide(0, 0, input);
 
         nodes.shrink_to_fit();
+
+        CollectBuildStats(stopwatch.ElapsedMs());
+    }
+
+    void Bvh::CollectBuildStats(double buildMs)
+    {
+        buildStats = {};
+        buildStats.BuildMs = buildMs;
+        buildStats.Primitives = static_cast<int>(primitiveIndices.size());
+        buildStats.Nodes = static_cast<int>(nodes.size());
+        buildStats.SahCost = SahCost();
+
+        std::vector<std::pair<int, int>> stack{{0, 0}}; // node, depth
+        while (!stack.empty())
+        {
+            const auto [index, depth] = stack.back();
+            stack.pop_back();
+            const BvhNode& node = nodes[static_cast<size_t>(index)];
+            if (node.IsLeaf())
+            {
+                buildStats.Leaves++;
+                buildStats.MaxDepth = std::max(buildStats.MaxDepth, depth);
+                buildStats.LargestLeaf = std::max(buildStats.LargestLeaf, node.Count);
+            }
+            else
+            {
+                stack.push_back({node.First, depth + 1});
+                stack.push_back({node.First + 1, depth + 1});
+            }
+        }
     }
 
     void Bvh::UpdateBounds(BvhNode& node, const BuildInput& input) const

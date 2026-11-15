@@ -222,8 +222,9 @@ private:
                         perSecond(delta.ClosestHitRays), perSecond(delta.OcclusionRays)),
             std::format("Per ray     {:.1f} primitive tests   {:.1f} box tests", perRay(delta.PrimitiveTests),
                         perRay(delta.NodeTests)),
-            std::format("Geometry    {} spheres  {} quads  {} triangles  {} lights", spheres, quads, triangles,
-                        built.GetLights().size()),
+            std::format("Geometry    {} spheres  {} quads  {} triangles  {} delta lights  {} area lights  {} instances",
+                        spheres, quads, triangles, built.GetLights().size(), built.GetAreaLights().size(),
+                        built.GetInstances().size()),
         };
         Console::SetStatus(lines);
 

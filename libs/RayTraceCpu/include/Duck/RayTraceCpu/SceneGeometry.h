@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Duck/RayTraceCpu/Geometry.h>
-#include <Duck/RayTraceCpu/Bvh.h>
+#include <Duck/Core/Bvh.h>
 #include <Duck/RayTraceCpu/RayStats.h>
 
 #include <optional>
@@ -89,5 +89,10 @@ namespace Duck::RayTraceCpu
     {
         return std::visit([&](const auto& typed) { return typed.Occluded(ray, tMin, tMax, stats); },
                           geometry);
+    }
+
+    inline const Bvh& GeometryBvh(const Geometry& geometry)
+    {
+        return std::visit([](const auto& typed) -> const Bvh& { return typed.GetBvh(); }, geometry);
     }
 }

@@ -138,19 +138,20 @@ TEST_CASE("RenderScene splits meshes into triangles and skips degenerate ones", 
     const int lamp = scene.AddMaterial(GltfMaterial::Emissive(Vec3(1.0f)));
     scene.Spheres = {{{0.0f, 0.0f, -10.0f}, 1.0f, gray}};
     // 8 x 4 globe: 64 triangles, of which the 16 touching the poles have zero area
-    scene.Meshes.push_back(MakeUvSphereMesh({0.0f, 0.0f, -3.0f}, 1.0f, 8, 4, gray));
-    scene.Meshes.push_back(MakeBoxMesh(Vec3(5.0f), Vec3(6.0f), lamp)); // 12 emissive triangles
+    scene.AddInstance(scene.AddMesh(MakeUvSphereMesh({0.0f, 0.0f, -3.0f}, 1.0f, 8, 4, gray)));
+    scene.AddInstance(scene.AddMesh(MakeBoxMesh(Vec3(5.0f), Vec3(6.0f), lamp))); // 12 emissive triangles
 
     const RenderScene built(scene);
     REQUIRE(built.GetGeometries().size() == 3); // loose shapes, then one per mesh
     CHECK(GeometryPrimitiveCount(built.GetGeometries()[0]) == 1);
     CHECK(GeometryPrimitiveCount(built.GetGeometries()[1]) == 48);
     CHECK(GeometryPrimitiveCount(built.GetGeometries()[2]) == 12);
-    CHECK(built.GetLights().size() == 12); // one area light per emissive triangle
+    REQUIRE(built.GetAreaLights().size() == 1); // the whole emissive box is one light
+    CHECK(built.GetAreaLights()[0].Primitives.size() == 12);
 
     const auto hit = built.ClosestHit({Vec3(0.0f), Forward}, 0.0f, Infinity);
     REQUIRE(hit.has_value());
-    CHECK(hit->GeometryId == 1); // the mesh sphere
+    CHECK(hit->GeometryId == 1);                // the mesh sphere
     CHECK_THAT(hit->T, WithinAbs(2.0f, 1e-3f)); // the mesh sphere's front, not the sphere behind it
 }
 
@@ -159,7 +160,7 @@ TEST_CASE("Whitted: a smooth mesh sphere shades like the real one", "[whitted][m
     // lit head-on, the point facing the camera has a vertex normal of exactly (0, 0, 1): albedo / pi * E
     Scene scene = DarkScene();
     const int gray = scene.AddMaterial(GltfMaterial::Lambert(Vec3(0.5f)));
-    scene.Meshes.push_back(MakeUvSphereMesh({0.0f, 0.0f, -3.0f}, 1.0f, 64, 32, gray));
+    scene.AddInstance(scene.AddMesh(MakeUvSphereMesh({0.0f, 0.0f, -3.0f}, 1.0f, 64, 32, gray)));
     scene.Lights = {DirectionalLight{Vec3(0.0f, 0.0f, 1.0f), Vec3(Pi)}};
 
     WhittedIntegrator whitted;

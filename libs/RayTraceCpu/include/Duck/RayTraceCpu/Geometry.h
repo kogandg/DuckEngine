@@ -26,6 +26,7 @@ namespace Duck::RayTraceCpu
         float T = 0.0f;
         bool FrontFace = true; // false if hit from the inside of a surface
         int MaterialId = 0;
+        int InstanceId = -1; // which placement of a geometry was hit
         int GeometryId = -1;  // which of the render scenes geometries was hit
         int PrimitiveId = -1; // which primitive inside that geometry
     };
@@ -47,23 +48,24 @@ namespace Duck::RayTraceCpu
         // only hits with tMin <= t <= tMax count
         std::optional<Hit> Intersect(const Ray& ray, float tMin, float tMax) const
         {
-            DUCK_ASSERT(std::abs(glm::dot(ray.Direction, ray.Direction) - 1.0f) < 1e-4f,
-                        "Ray direction must be normalized");
-
+            // |origin + t * direction - center|^2 = r^2 is a * t^2 + 2 * b * t + c = 0
+            const float a = glm::dot(ray.Direction, ray.Direction);
             const Vec3 oc = ray.Origin - Center;
             const float b = glm::dot(oc, ray.Direction);
-            const Vec3 perpendicular = oc - b * ray.Direction; // closest approach offset
+            // b^2 - a * c written as a * (r^2 - |closest approach|^2), which keeps its precision when the ray
+            // passes far from the sphere
+            const Vec3 perpendicular = oc - (b / a) * ray.Direction;
             const float discriminant = Radius * Radius - glm::dot(perpendicular, perpendicular);
             if (discriminant < 0.0f)
             {
                 return std::nullopt;
             }
 
-            const float root = std::sqrt(discriminant);
-            float t = -b - root;
+            const float root = std::sqrt(a * discriminant);
+            float t = (-b - root) / a;
             if (t < tMin || t > tMax)
             {
-                t = -b + root;
+                t = (-b + root) / a;
                 if (t < tMin || t > tMax)
                 {
                     return std::nullopt;

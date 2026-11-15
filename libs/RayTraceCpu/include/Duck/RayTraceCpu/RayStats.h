@@ -4,12 +4,6 @@
 
 namespace Duck::RayTraceCpu
 {
-    struct TraversalStats
-    {
-        int NodeTests = 0;
-        int PrimitiveTests = 0;
-    };
-
     namespace RayStats
     {
         struct Counters

@@ -2,12 +2,12 @@
 
 #include <Duck/RayTraceCpu/Geometry.h>
 #include <Duck/RayTraceCpu/Optics.h>
-#include <Duck/RayTraceCpu/Scene.h>
 #include <Duck/RayTraceCpu/RenderScene.h>
+#include <Duck/RayTraceCpu/Scene.h>
 
 #include <catch2/catch_test_macros.hpp>
-#include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include <catch2/generators/catch_generators.hpp>
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 using namespace Duck;
 using namespace Duck::RayTraceCpu;
@@ -229,9 +229,10 @@ TEST_CASE("RenderScene turns emissive shapes into area lights", "[scene][emissio
     scene.Quads = {{{0.0f, 2.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, lamp}};
 
     const RenderScene built(scene);
-    REQUIRE(built.GetLights().size() == 1);
-    const auto& light = std::get<AreaLight>(built.GetLights()[0]);
-    CHECK(light.GeometryId == 0);
-    CHECK(light.PrimitiveId == 1); // the quad: spheres come first
+    CHECK(built.GetLights().empty()); // only the lights the scene lists itself
+    REQUIRE(built.GetAreaLights().size() == 1);
+    const AreaLight& light = built.GetAreaLights()[0];
+    CHECK(light.InstanceId == 0);                   // the loose shapes, placed once
+    CHECK(light.Primitives == std::vector<int>{1}); // the quad: spheres come first
     CHECK_THAT(light.Radiance, Vec3Near(Vec3(3.0f), 0.0f));
 }

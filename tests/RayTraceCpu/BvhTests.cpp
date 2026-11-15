@@ -1,16 +1,22 @@
+#include <Duck/Core/Bvh.h>
 #include <Duck/Core/Random.h>
-#include <Duck/RayTraceCpu/Bvh.h>
 #include <Duck/RayTraceCpu/MeshUtils.h>
-#include <Duck/RayTraceCpu/SceneGeometry.h>
 #include <Duck/RayTraceCpu/RayStats.h>
+#include <Duck/RayTraceCpu/SceneGeometry.h>
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
 
-#include <vector>
 #include <cmath>
+#include <optional>
+#include <span>
+#include <vector>
 
 using namespace Duck;
 using namespace Duck::RayTraceCpu;
+using Catch::Matchers::WithinAbs;
+using Catch::Matchers::WithinRel;
 
 namespace
 {
@@ -79,6 +85,7 @@ TEST_CASE("BVH of nothing is empty, of one primitive is a single leaf", "[bvh]")
 
 TEST_CASE("BVH over random boxes is a valid tree", "[bvh]")
 {
+    const BvhSplitMethod method = GENERATE(BvhSplitMethod::Midpoint, BvhSplitMethod::SAH);
     Random random(5u);
     std::vector<Aabb> boxes;
     for (int i = 0; i < 10000; i++)
@@ -87,7 +94,7 @@ TEST_CASE("BVH over random boxes is a valid tree", "[bvh]")
         boxes.push_back({center - 0.005f, center + 0.005f});
     }
 
-    const TreeInfo info = CheckBvh(Bvh(boxes), boxes);
+    const TreeInfo info = CheckBvh(Bvh(boxes, {.Split = method}), boxes);
     CHECK(info.MaxLeafSize <= 4);
     CHECK(info.MaxDepth < 40); // well spread boxes give a shallow tree, about log2(10000 / 4) ~ 12
 }
@@ -95,8 +102,9 @@ TEST_CASE("BVH over random boxes is a valid tree", "[bvh]")
 TEST_CASE("BVH stops splitting primitives it can't separate", "[bvh]")
 {
     // identical centroids: no split plane can separate them, and the build must not recurse forever
+    const BvhSplitMethod method = GENERATE(BvhSplitMethod::Midpoint, BvhSplitMethod::SAH);
     const std::vector<Aabb> same(50, Aabb{Vec3(0.0f), Vec3(1.0f)});
-    const Bvh bvh(same);
+    const Bvh bvh(same, {.Split = method});
     CHECK(bvh.Nodes().size() == 1);
     CheckBvh(bvh, same);
 }
@@ -111,6 +119,45 @@ TEST_CASE("BVH over a mesh's triangles", "[bvh][mesh]")
     }
     const TreeInfo info = CheckBvh(geometry.GetBvh(), boxes);
     CHECK(info.MaxLeafSize <= 4);
+}
+
+namespace
+{
+    std::vector<Aabb> TriangleBoxes(const MeshGeometry& geometry)
+    {
+        std::vector<Aabb> boxes;
+        for (const Triangle& triangle : geometry.Triangles())
+        {
+            boxes.push_back(triangle.Bounds());
+        }
+        return boxes;
+    }
+}
+
+TEST_CASE("SAH builds a cheaper tree than the midpoint split", "[bvh]")
+{
+    const std::vector<Aabb> boxes = TriangleBoxes(MeshGeometry(MakeUvSphereMesh(Vec3(0.0f), 1.0f, 64, 32, 0)));
+    const Bvh midpoint(boxes, {.Split = BvhSplitMethod::Midpoint});
+    const Bvh sah(boxes, {.Split = BvhSplitMethod::SAH});
+    CHECK(sah.SahCost() < midpoint.SahCost()); // about 28 against 33
+}
+
+TEST_CASE("BVH build stats describe the tree that was built", "[bvh]")
+{
+    const std::vector<Aabb> boxes = TriangleBoxes(MeshGeometry(MakeUvSphereMesh(Vec3(0.0f), 1.0f, 32, 16, 0)));
+    const Bvh bvh(boxes);
+    const TreeInfo info = CheckBvh(bvh, boxes);
+
+    const BvhBuildStats& stats = bvh.BuildStats();
+    CHECK(stats.Primitives == static_cast<int>(boxes.size()));
+    CHECK(stats.Nodes == static_cast<int>(bvh.Nodes().size()));
+    CHECK(stats.Leaves == info.Leaves);
+    CHECK(stats.MaxDepth == info.MaxDepth);
+    CHECK(stats.LargestLeaf == info.MaxLeafSize);
+    CHECK_THAT(stats.SahCost, WithinRel(bvh.SahCost(), 1e-6f));
+    CHECK(stats.BuildMs >= 0.0);
+
+    CHECK(Bvh(std::span<const Aabb>()).BuildStats().Nodes == 0); // empty: all zero
 }
 
 namespace
@@ -175,4 +222,59 @@ TEST_CASE("BVH traversal finds the same hits as testing every triangle", "[bvh][
         }
     }
     CHECK(hits > 4000); // most rays should hit, or the test isn't testing much
+}
+
+TEST_CASE("Shape list BVH finds the same hits as testing every shape", "[bvh][shapes]")
+{
+    Random random(9u);
+    std::vector<Shape> shapes;
+    for (int i = 0; i < 2000; i++)
+    {
+        const Vec3 center(10.0f * random.NextFloat(), 10.0f * random.NextFloat(), 10.0f * random.NextFloat());
+        if (i % 3 == 0)
+        {
+            shapes.push_back(Sphere{center, 0.1f + 0.2f * random.NextFloat(), 0});
+        }
+        else if (i % 3 == 1)
+        {
+            shapes.push_back(Quad(center, {0.5f * random.NextFloat() + 0.01f, 0.0f, 0.1f},
+                                  {0.0f, 0.4f, 0.3f * random.NextFloat()}, 0));
+        }
+        else
+        {
+            shapes.push_back(Triangle(center, center + Vec3(0.3f, 0.0f, 0.0f), center + Vec3(0.0f, 0.3f, 0.2f), 0));
+        }
+    }
+    const ShapeList list(shapes);
+
+    int hits = 0;
+    for (int i = 0; i < 5000; i++)
+    {
+        const Vec3 origin(14.0f * random.NextFloat() - 2.0f, 14.0f * random.NextFloat() - 2.0f, -3.0f);
+        const Vec3 target(10.0f * random.NextFloat(), 10.0f * random.NextFloat(), 10.0f * random.NextFloat());
+        const Ray ray{origin, glm::normalize(target - origin)};
+        CAPTURE(i);
+
+        std::optional<float> expected;
+        float tMax = Infinity;
+        for (const Shape& shape : shapes)
+        {
+            if (const auto hit = IntersectShape(shape, ray, 0.001f, tMax))
+            {
+                expected = hit->T;
+                tMax = hit->T;
+            }
+        }
+
+        TraversalStats stats;
+        const auto hit = list.ClosestHit(ray, 0.001f, Infinity, stats);
+        REQUIRE(hit.has_value() == expected.has_value());
+        REQUIRE(list.Occluded(ray, 0.001f, Infinity, stats) == expected.has_value());
+        if (hit)
+        {
+            hits++;
+            REQUIRE(hit->T == *expected);
+        }
+    }
+    CHECK(hits > 1000);
 }
