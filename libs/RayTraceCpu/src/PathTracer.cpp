@@ -79,7 +79,7 @@ namespace Duck::RayTraceCpu
 
             if (bounce >= RouletteStartBounce)
             {
-                const float survive = std::min(MaxComponent(throughput), 0.95f);
+                const float survive = std::min(MaxComponent(throughput), 1.0f);
                 if (sampler.Get1D() >= survive)
                 {
                     break;

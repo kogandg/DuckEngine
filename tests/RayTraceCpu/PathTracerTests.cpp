@@ -4,13 +4,17 @@
 #include <Duck/RayTraceCpu/WhittedIntegrator.h>
 #include <Duck/Core/ThreadPool.h>
 #include <Duck/RayTraceCpu/RenderScene.h>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 using namespace Duck;
 using namespace Duck::RayTraceCpu;
 using namespace Duck::Test;
+using Catch::Matchers::WithinAbs;
+using Catch::Matchers::WithinRel;
 
 TEST_CASE("Path tracer furnace: a diffuse ball shows its albedo exactly", "[pathtracer][furnace]")
 {
@@ -77,4 +81,22 @@ TEST_CASE("Renders don't depend on the number of threads", "[threading]")
         }
     }
     CHECK(different == 0);
+}
+
+TEST_CASE("Next event estimation and BSDF sampling agree", "[pathtracer][emission][mis]")
+{
+    // MIS has to split the light correctly between light samples, diffuse bounces and the coat's mirror bounces,
+    // on lights whose pdf depends on their transform. any mistake shows up as a different average
+    Scene scene = DarkScene();
+    scene.Quads = {Floor(scene.AddMaterial(GltfMaterial::Plastic(Vec3(0.5f), 0.0f)))};
+    // ... the same two lamps as the AreaLightPdf test
+    const Camera camera({0.0f, 3.0f, 2.5f}, {0.0f, 0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, 70.0f, 1.0f);
+
+    PathTracer withNee(8, true);
+    PathTracer bsdfOnly(8, false);
+    const Vec3 expected = AveragePixel(Render(bsdfOnly, scene, camera, 9, 32768));
+    const Vec3 average = AveragePixel(Render(withNee, scene, camera, 9, 2048));
+    CHECK_THAT(average.x, WithinRel(expected.x, 0.02f));
+    CHECK_THAT(average.y, WithinRel(expected.y, 0.02f));
+    CHECK_THAT(average.z, WithinRel(expected.z, 0.02f));
 }

@@ -74,7 +74,7 @@ namespace Duck::RayTraceCpu
             if (sample.Pdf > 0.0f)
             {
                 const float weight = PowerHeuristic(sample.Pdf * choice->Probability, bsdfPdf(sample.Direction));
-                total += ShadowedContribution(scene, hit, sample, brdf) / (weight * choice->Probability);
+                total += ShadowedContribution(scene, hit, sample, brdf) * (weight / choice->Probability);
             }
         }
         return total;

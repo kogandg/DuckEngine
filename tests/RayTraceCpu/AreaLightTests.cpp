@@ -216,3 +216,45 @@ TEST_CASE("Even a very dim area light can still be picked", "[lights][emission]"
     CHECK(built.ChooseAreaLight(0.0f)->Index == 0);
     CHECK_THAT(built.AreaLightProbability(0) + built.AreaLightProbability(1), WithinAbs(1.0f, 1e-6f));
 }
+
+TEST_CASE("AreaLightPdf matches the density light sampling picks the point with", "[lights][emission][mis]")
+{
+    // MIS needs both: the pdf a light sample reports, and the pdf of the same point when a ray just hits it
+    Scene scene;
+    const int lamp = scene.AddMaterial(GltfMaterial::Emissive(Vec3(3.0f, 2.0f, 1.0f)));
+    scene.AddInstance(scene.AddShapes({Sphere{Vec3(0.0f), 0.3f, lamp}}),
+                      glm::translate(Mat4(1.0f), Vec3(-0.5f, 1.5f, 0.5f)) *
+                          glm::scale(Mat4(1.0f), Vec3(2.0f, 0.5f, 1.0f)));
+    const Quad unit{{-0.5f, 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, lamp};
+    scene.AddInstance(scene.AddShapes({unit}),
+                      glm::translate(Mat4(1.0f), Vec3(0.5f, 1.2f, -0.5f)) *
+                          glm::rotate(Mat4(1.0f), 2.6f, glm::normalize(Vec3(1.0f, 0.3f, 0.2f))) *
+                          glm::scale(Mat4(1.0f), Vec3(0.6f, 1.0f, 0.3f)));
+    const RenderScene built(scene);
+
+    IndependentSampler sampler(3u);
+    int checked = 0;
+    for (int i = 0; i < 2000; i++)
+    {
+        sampler.StartPixelSample({i, 0}, 0);
+        const Vec3 point(sampler.Get1D() * 4.0f - 2.0f, 0.01f + sampler.Get1D() * 0.5f, sampler.Get1D() * 4.0f - 2.0f);
+        const auto choice = built.ChooseAreaLight(sampler.Get1D());
+        REQUIRE(choice);
+        const LightSample sample = built.SampleAreaLight(choice->Index, point, sampler);
+        if (sample.Pdf <= 0.0f)
+        {
+            continue;
+        }
+        const auto hit = built.ClosestHit({point, sample.Direction}, 1e-6f, Infinity);
+        // skip points behind the other light, and edge-on ones where 1 / cos turns float noise into big differences
+        if (!hit || std::abs(hit->T - sample.Distance) > 1e-3f ||
+            std::abs(glm::dot(hit->GeometricNormal, sample.Direction)) < 0.1f)
+        {
+            continue;
+        }
+        checked++;
+        REQUIRE(built.AreaLightAt(*hit) == choice->Index);
+        CHECK_THAT(built.AreaLightPdf(choice->Index, *hit, point), WithinRel(choice->Probability * sample.Pdf, 1e-3f));
+    }
+    CHECK(checked > 500);
+}

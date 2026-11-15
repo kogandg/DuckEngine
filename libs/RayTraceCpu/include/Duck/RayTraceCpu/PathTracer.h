@@ -7,7 +7,7 @@ namespace Duck::RayTraceCpu
     class PathTracer final : public PixelIntegrator
     {
     public:
-        explicit PathTracer(int maxBounceCount = 8, bool nextEventEstimation = true) : maxBounces(maxBounceCount), nee(nextEventEstimation) {}
+        explicit PathTracer(int maxBounceCount = 64, bool nextEventEstimation = true) : maxBounces(maxBounceCount), nee(nextEventEstimation) {}
 
         const char* Name() const override { return "Path Tracer"; }
 
