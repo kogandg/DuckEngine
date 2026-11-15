@@ -1,6 +1,7 @@
 #include "RenderTestHelpers.h"
 
-#include <Duck/RayTraceCpu/Shading.h>
+#include <Duck/RayTraceCpu/Lights/DirectLighting.h>
+#include <Duck/RayTraceCpu/Scene/Hit.h>
 #include <Duck/RayTraceCpu/Materials/Materials.h>
 #include <Duck/RayTraceCpu/Scene/Scene.h>
 #include <Duck/RayTraceCpu/Scene/RenderScene.h>

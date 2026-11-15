@@ -6,7 +6,7 @@
 #include <Duck/RayTraceCpu/Camera.h>
 #include <Duck/RayTraceCpu/Film.h>
 #include <Duck/RayTraceCpu/Integrators/Integrator.h>
-#include <Duck/RayTraceCpu/Scene.h>
+#include <Duck/RayTraceCpu/Scene/Scene.h>
 #include <Duck/Core/ThreadPool.h>
 #include <Duck/RayTraceCpu/Scene/RenderScene.h>
 #include <Duck/RayTraceCpu/Sampler.h>

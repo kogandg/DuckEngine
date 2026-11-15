@@ -4,7 +4,7 @@
 #include <Duck/RayTraceCpu/Scene/MeshUtils.h>
 #include <Duck/RayTraceCpu/Scene/RenderScene.h>
 #include <Duck/RayTraceCpu/Scene/Scene.h>
-#include <Duck/RayTraceCpu/Shading.h>
+#include <Duck/RayTraceCpu/Lights/DirectLighting.h>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>

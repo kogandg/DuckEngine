@@ -1,32 +1,15 @@
 #pragma once
 
 #include <Duck/Core/Math.h>
-#include <Duck/Core/Ray.h>
-#include <Duck/RayTraceCpu/Scene/Geometry.h>
-#include <Duck/RayTraceCpu/Lights/Lights.h>
-#include <Duck/RayTraceCpu/Scene/RenderScene.h>
 #include <Duck/Core/Sampling.h>
+#include <Duck/RayTraceCpu/Lights/Lights.h>
+#include <Duck/RayTraceCpu/Scene/Hit.h>
+#include <Duck/RayTraceCpu/Scene/RenderScene.h>
 
 #include <cmath>
 
 namespace Duck::RayTraceCpu
 {
-    // rays leaving a surface ignore hits closer than this
-    inline constexpr float RayEpsilon = 1e-6f;
-
-    // how far SpawnRay pushes an origin off it surface
-    inline constexpr float RayOffset = 1e-4f;
-
-    // a ray leaving the surface at hit. the one place to add an offset along the normal later
-    inline Ray SpawnRay(const Hit& hit, const Vec3& direction)
-    {
-        const float side = glm::dot(direction, hit.GeometricNormal) > 0.0f ? 1.0f : -1.0f;
-        
-        return {hit.Point + side * RayOffset * hit.GeometricNormal, direction};
-    }
-
-    inline Vec3 LambertBrdf(const Vec3& albedo) { return albedo * InvPi; }
-
     // f(wi) * Li * cos / pdf for one light sample, or 0 if the light is behind the surface or something blocks it
     template <typename TBrdf>
     Vec3 ShadowedContribution(const RenderScene& scene, const Hit& hit, const LightSample& sample, TBrdf&& brdf)
@@ -85,13 +68,5 @@ namespace Duck::RayTraceCpu
     Vec3 DirectLighting(const RenderScene& scene, const Hit& hit, ISampler& sampler, TBrdf&& brdf)
     {
         return DirectLighting(scene, hit, sampler, brdf, [](const Vec3&) { return 0.0f; });
-    }
-
-
-    // light coming back along the ray from hit. if the ray hit this surface from the inside, it crossed the
-    // objects interior to get there and was partly absorbed on the way. (no nested media)
-    inline Vec3 SegmentTransmittance(const Material& material, const Hit& hit)
-    {
-        return hit.FrontFace ? Vec3(1.0f) : InteriorTransmittance(material, hit.T);
     }
 }

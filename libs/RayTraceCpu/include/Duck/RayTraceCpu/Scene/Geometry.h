@@ -4,6 +4,7 @@
 #include <Duck/Core/Math.h>
 #include <Duck/Core/Ray.h>
 #include <Duck/Core/Aabb.h>
+#include <Duck/RayTraceCpu/Scene/Hit.h>
 
 #include <algorithm>
 #include <array>
@@ -17,26 +18,6 @@
 
 namespace Duck::RayTraceCpu
 {
-    struct Hit
-    {
-        Vec3 Point{0.0f};
-        Vec3 Normal{0.0f};          // unit, facing incoming ray. smooth on meshes with vertex normals
-        Vec3 GeometricNormal{0.0f}; // normal rays use to leave surface
-        Vec2 Uv{0.0f};              // surface coords for textures
-        float T = 0.0f;
-        bool FrontFace = true; // false if hit from the inside of a surface
-        int MaterialId = 0;
-        int InstanceId = -1; // which placement of a geometry was hit
-        int GeometryId = -1;  // which of the render scenes geometries was hit
-        int PrimitiveId = -1; // which primitive inside that geometry
-    };
-
-    struct SurfaceSample
-    {
-        Vec3 Point{0.0f};
-        Vec3 Normal{0.0f}; // unit vector on the front side
-    };
-
     struct Sphere
     {
         Vec3 Center{0.0f};

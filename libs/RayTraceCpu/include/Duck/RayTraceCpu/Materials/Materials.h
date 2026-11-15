@@ -4,6 +4,7 @@
 #include <Duck/RayTraceCpu/Materials/Bsdf.h>
 #include <Duck/RayTraceCpu/Scene/Geometry.h>
 #include <Duck/RayTraceCpu/Materials/Optics.h>
+#include <Duck/RayTraceCpu/Scene/Hit.h>
 
 #include <cmath>
 #include <concepts>
@@ -166,5 +167,12 @@ namespace Duck::RayTraceCpu
     inline Vec3 InteriorTransmittance(const Material& material, float distance)
     {
         return std::visit([&](const auto& typed) { return typed.InteriorTransmittance(distance); }, material);
+    }
+
+    // light coming back along the ray from hit. if the ray hit this surface from the inside, it crossed the
+    // objects interior to get there and was partly absorbed on the way. (no nested media)
+    inline Vec3 SegmentTransmittance(const Material& material, const Hit& hit)
+    {
+        return hit.FrontFace ? Vec3(1.0f) : InteriorTransmittance(material, hit.T);
     }
 }

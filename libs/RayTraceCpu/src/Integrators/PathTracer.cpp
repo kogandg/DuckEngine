@@ -2,10 +2,10 @@
 
 #include <Duck/Core/Ray.h>
 #include <Duck/Core/Sampling.h>
+#include <Duck/RayTraceCpu/Lights/DirectLighting.h>
 #include <Duck/RayTraceCpu/Materials/Bsdf.h>
 #include <Duck/RayTraceCpu/Materials/Materials.h>
 #include <Duck/RayTraceCpu/Scene/Scene.h>
-#include <Duck/RayTraceCpu/Shading.h>
 
 #include <cmath>
 
@@ -60,8 +60,9 @@ namespace Duck::RayTraceCpu
             const bool sampleLights = nee && bsdf.HasNonDeltaLobes();
             if (sampleLights)
             {
-                radiance += throughput * DirectLighting(
-                                             scene, *hit, sampler, [&](const Vec3& wi) { return bsdf.Evaluate(wo, wi); },
+                radiance +=
+                    throughput * DirectLighting(
+                                     scene, *hit, sampler, [&](const Vec3& wi) { return bsdf.Evaluate(wo, wi); },
                                      [&](const Vec3& wi) { return bsdf.Pdf(wo, wi); });
             }
 

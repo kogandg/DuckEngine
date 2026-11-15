@@ -2,7 +2,7 @@
 
 #include <Duck/RayTraceCpu/RayStats.h>
 #include <Duck/RayTraceCpu/Scene/RenderScene.h>
-#include <Duck/RayTraceCpu/Shading.h>
+#include <Duck/RayTraceCpu/Scene/Hit.h>
 
 #include <algorithm>
 #include <cmath>
@@ -11,7 +11,7 @@ namespace Duck::RayTraceCpu
 {
     namespace
     {
-        // Google's Turbo colormap,even perceptual steps from dark blue to dark red. x in [0, 1], returns a display
+        // Googles Turbo colormap,even perceptual steps from dark blue to dark red. x in [0, 1], returns a display
         // color
         Vec3 Turbo(float x)
         {

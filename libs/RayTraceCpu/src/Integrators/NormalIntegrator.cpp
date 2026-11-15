@@ -1,7 +1,8 @@
 #include <Duck/RayTraceCpu/Integrators/NormalIntegrator.h>
 
+#include <Duck/RayTraceCpu/Scene/Hit.h>
+#include <Duck/RayTraceCpu/Scene/RenderScene.h>
 #include <Duck/RayTraceCpu/Scene/Scene.h>
-#include <Duck/RayTraceCpu/Shading.h>
 
 namespace Duck::RayTraceCpu
 {
