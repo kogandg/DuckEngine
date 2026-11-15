@@ -36,6 +36,8 @@ namespace Duck::RayTraceCpu
         virtual int RecommendedPasses() const { return 256; }
         //how the film should turn this integrators accumulated values into display pixels
         virtual OutputTransform GetOutputTransform() const { return OutputTransform::Srgb; }
+        // when pixels can stop sampling early. off by default
+        virtual AdaptiveSettings GetAdaptiveSettings() const { return {}; }
     };
 
     class PixelIntegrator : public IIntegrator

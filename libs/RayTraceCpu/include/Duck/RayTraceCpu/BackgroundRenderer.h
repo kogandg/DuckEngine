@@ -8,16 +8,25 @@
 
 #include <condition_variable>
 #include <cstdint>
+#include <memory>
 #include <mutex>
 #include <optional>
 #include <stop_token>
 #include <thread>
-#include <memory>
 
 namespace Duck::RayTraceCpu
 {
     class RenderScene;
     class IIntegrator;
+
+    struct RenderSettings
+    {
+        std::shared_ptr<const ISampler> Sampler;
+        int MaxPasses = 256;
+        AdaptiveSettings Adaptive;
+
+        static RenderSettings For(const IIntegrator& integrator, std::shared_ptr<const ISampler> sampler);
+    };
 
     // renders passes on its own thread (plus a thread pool) so the caller's loop never waits on rendering
     // the caller asks for a job with Restart and picks up finished images with TakeLatest
@@ -35,7 +44,7 @@ namespace Duck::RayTraceCpu
         // throws away the current image and starts over. the camera is copied; scene and integrator are
         // referenced, so they must outlive the renderer and must not change while it uses them
         void Restart(std::shared_ptr<const RenderScene> newScene, const Camera& camera, IIntegrator& integrator,
-                     std::shared_ptr<const ISampler> sampler = std::make_shared<IndependentSampler>());
+                     RenderSettings settings);
 
         // swaps the newest finished image into display if there is one. returns whether display changed
         // display must be width x height
@@ -46,7 +55,8 @@ namespace Duck::RayTraceCpu
             int Passes = 0;
             int TargetPasses = 0;
             float LastPassMs = 0.0f;
-            bool Done() const { return Passes >= TargetPasses; }
+            float ActiveFraction = 1.0f;
+            bool Done() const { return Passes >= TargetPasses || ActiveFraction <= 0.0f; }
         };
         Progress GetProgress() const;
 
@@ -64,12 +74,12 @@ namespace Duck::RayTraceCpu
         std::optional<Camera> camera;
         IIntegrator* integrator = nullptr;
         std::uint64_t generation = 0; // goes up on every Restart
-        std::stop_source jobStop; // stopped by Restart, so a pass of the old job ends early
+        std::stop_source jobStop;     // stopped by Restart, so a pass of the old job ends early
         Framebuffer shared;           // newest finished image
         bool fresh = false;           // shared has an image the caller hasn't taken yet
         Progress progress;
         std::shared_ptr<const RenderScene> scene;
-        std::shared_ptr<const ISampler> sampler;
+        RenderSettings settings;
 
         // last: started after everything above exists, and stopped and joined before any of it is destroyed
         std::jthread thread;

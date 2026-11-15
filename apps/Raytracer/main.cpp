@@ -101,8 +101,14 @@ protected:
 private:
     void RestartRender()
     {
+        const IIntegrator& integrator = *integrators[currentIntegrator];
+        RenderSettings settings = RenderSettings::For(integrator, samplers[currentSampler]);
+        if (!adaptive)
+        {
+            settings.Adaptive = {};
+        }
         renderer.Restart(builtScenes[currentScene], scenes[currentScene].Camera, *integrators[currentIntegrator],
-                         samplers[currentSampler]);
+                         std::move(settings));
     }
 
     void HandleInput()
@@ -168,6 +174,11 @@ private:
             currentSampler = (currentSampler + 1) % samplers.size();
             changed = true;
         }
+        if (input.WasPressed(Key::A))
+        {
+            adaptive = !adaptive;
+            changed = true;
+        }
 
         if (changed)
         {
@@ -226,9 +237,12 @@ private:
             std::format("Integrator  {} ({}/{})  [Up/Down]", integrators[currentIntegrator]->Name(),
                         currentIntegrator + 1, integrators.size()),
             std::format("Sampler     {}  [S]", samplers[currentSampler]->Name()),
-            std::format("Progress    [{}{}] {}/{} passes  {}", std::string(static_cast<size_t>(filled), '#'),
+            std::format("Adaptive    {}  [A]", adaptive ? "on" : "off"),
+            std::format("Progress    [{}{}] {}/{} passes  {:.0f}% pixels active  {}",
+                        std::string(static_cast<size_t>(filled), '#'),
                         std::string(static_cast<size_t>(BarWidth - filled), '-'), progress.Passes,
-                        progress.TargetPasses, progress.Done() ? "done" : "rendering"),
+                        progress.TargetPasses, 100.0f * progress.ActiveFraction,
+                        progress.Done() ? "done" : "rendering"),
             std::format("Timing      {:.1f} ms/pass   display {:.0f} fps", progress.LastPassMs,
                         statusFrames / statusSeconds),
             std::format("Rays        {:.2f} M/s   ({:.2f} closest hit + {:.2f} shadow)", perSecond(delta.Rays()),
@@ -268,6 +282,7 @@ private:
     size_t currentIntegrator = 0;
 
     BackgroundRenderer renderer{FilmWidth, FilmHeight, RenderThreadCount()};
+    bool adaptive = true;
 };
 
 int main()

@@ -9,6 +9,11 @@
 
 namespace Duck::RayTraceCpu
 {
+    RenderSettings RenderSettings::For(const IIntegrator& integrator, std::shared_ptr<const ISampler> sampler)
+    {
+        return {std::move(sampler), integrator.RecommendedPasses(), integrator.GetAdaptiveSettings()};
+    }
+
     BackgroundRenderer::BackgroundRenderer(int width, int height, unsigned threadCount)
         : pool(threadCount), film(width, height), back(width, height), shared(width, height),
           thread([this](std::stop_token stop) { Loop(stop); })
@@ -16,18 +21,18 @@ namespace Duck::RayTraceCpu
     }
 
     void BackgroundRenderer::Restart(std::shared_ptr<const RenderScene> newScene, const Camera& newCamera,
-                                     IIntegrator& newIntegrator, std::shared_ptr<const ISampler> newSampler)
+                                     IIntegrator& newIntegrator, RenderSettings newSettings)
     {
         {
             std::lock_guard lock(mutex);
             scene = std::move(newScene);
             camera = newCamera;
             integrator = &newIntegrator;
-            sampler = std::move(newSampler);
+            settings = std::move(newSettings);
             generation++;
             jobStop.request_stop(); // the pass running now belongs to the old job
             jobStop = {};           // fresh source for the new job
-            progress = {0, newIntegrator.RecommendedPasses()};
+            progress = {0, settings.MaxPasses};
         }
         changed.notify_one();
     }
@@ -59,7 +64,7 @@ namespace Duck::RayTraceCpu
             std::shared_ptr<const RenderScene> jobScene;
             IIntegrator* jobIntegrator = nullptr;
             std::optional<Camera> jobCamera;
-            std::shared_ptr<const ISampler> jobSampler;
+            RenderSettings jobSettings;
             std::stop_token jobCancel;
             {
                 std::unique_lock lock(mutex);
@@ -68,7 +73,8 @@ namespace Duck::RayTraceCpu
                     lock, stop,
                     [&]
                     {
-                        return integrator && (generation != rendering || film.Passes < integrator->RecommendedPasses());
+                        return integrator && (generation != rendering ||
+                                              film.Passes < settings.MaxPasses && film.ActivePixels > 0);
                     });
                 if (!hasWork)
                 {
@@ -82,18 +88,19 @@ namespace Duck::RayTraceCpu
                 jobScene = scene;
                 jobCamera = camera;
                 jobIntegrator = integrator;
-                jobSampler = sampler;
+                jobSettings = settings;
                 jobCancel = jobStop.get_token();
             }
 
             // the slow part, without the lock: the main thread keeps running
             const auto start = std::chrono::steady_clock::now();
-            jobIntegrator->RenderPass(*jobScene, *jobCamera, film, pool, *jobSampler, jobCancel);
+            jobIntegrator->RenderPass(*jobScene, *jobCamera, film, pool, *jobSettings.Sampler, jobCancel);
             if (jobCancel.stop_requested())
             {
                 continue;
             }
             film.Passes++;
+            film.UpdateAdaptive(pool, jobSettings.Adaptive);
             film.Resolve(back, pool, jobIntegrator->GetOutputTransform());
             const float passMs =
                 std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - start).count();
@@ -103,7 +110,9 @@ namespace Duck::RayTraceCpu
             {
                 std::swap(back, shared);
                 fresh = true;
-                progress = {film.Passes, jobIntegrator->RecommendedPasses(), passMs};
+                const float pixelCount = static_cast<float>(film.Sum.Width() * film.Sum.Height());
+                progress = {film.Passes, jobSettings.MaxPasses, passMs,
+                            static_cast<float>(film.ActivePixels) / pixelCount};
             }
         }
     }

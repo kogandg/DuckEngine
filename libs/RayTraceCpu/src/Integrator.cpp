@@ -46,6 +46,10 @@ namespace Duck::RayTraceCpu
                                  }
                                  for (int x = x0; x < x1; x++)
                                  {
+                                     if (!film.IsActive(x, y))
+                                     {
+                                         continue;
+                                     }
                                      sampler->StartPixelSample({x, y}, pass);
                                      const Vec2 offset = jitter ? sampler->GetPixel2D() : Vec2(0.5f);
 
