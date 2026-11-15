@@ -36,8 +36,8 @@ namespace
 
     std::optional<Hit> MeshHit(const MeshGeometry& geometry, const Ray& ray)
     {
-        int tests = 0;
-        return geometry.ClosestHit(ray, 0.0f, Infinity, tests);
+        TraversalStats stats;
+        return geometry.ClosestHit(ray, 0.0f, Infinity, stats);
     }
 
     const Vec3 Forward(0.0f, 0.0f, -1.0f);
@@ -165,4 +165,4 @@ TEST_CASE("Whitted: a smooth mesh sphere shades like the real one", "[whitted][m
     WhittedIntegrator whitted;
     const Vec3 center = CenterPixel(Render(whitted, scene, LookForward(Vec3(0.0f), 1.0f)));
     CHECK_THAT(center, Vec3Near(Vec3(0.5f), 1e-3f));
-}
+}

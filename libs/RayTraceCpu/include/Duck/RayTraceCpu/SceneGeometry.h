@@ -1,6 +1,8 @@
 #pragma once
 
 #include <Duck/RayTraceCpu/Geometry.h>
+#include <Duck/RayTraceCpu/Bvh.h>
+#include <Duck/RayTraceCpu/RayStats.h>
 
 #include <optional>
 #include <span>
@@ -25,8 +27,8 @@ namespace Duck::RayTraceCpu
         Shape GetPrimitive(int id) const { return shapes[static_cast<size_t>(id)]; }
         std::span<const Shape> Shapes() const { return shapes; }
 
-        std::optional<Hit> ClosestHit(const Ray& ray, float tMin, float tMax, int& primitiveTests) const;
-        bool Occluded(const Ray& ray, float tMin, float tMax, int& primitiveTests) const;
+        std::optional<Hit> ClosestHit(const Ray& ray, float tMin, float tMax, TraversalStats& stats) const;
+        bool Occluded(const Ray& ray, float tMin, float tMax, TraversalStats& stats) const;
 
     private:
         std::vector<Shape> shapes;
@@ -43,17 +45,21 @@ namespace Duck::RayTraceCpu
         Shape GetPrimitive(int id) const { return triangles[static_cast<size_t>(id)]; }
         std::span<const Triangle> Triangles() const { return triangles; }
 
-        std::optional<Hit> ClosestHit(const Ray& ray, float tMin, float tMax, int& primitiveTests) const;
-        bool Occluded(const Ray& ray, float tMin, float tMax, int& primitiveTests) const;
+        std::optional<Hit> ClosestHit(const Ray& ray, float tMin, float tMax, TraversalStats& stats) const;
+        bool Occluded(const Ray& ray, float tMin, float tMax, TraversalStats& stats) const;
 
         // the full hit on one triangle, with interpolated vertex normals and uvs
         Hit MakeHit(int triangle, const Ray& ray, const TriangleHit& where) const;
+
+        const Bvh& GetBvh() const { return bvh; }
 
     private:
         std::vector<Triangle> triangles;
         std::vector<IVec3> corners; // each triangles vertex indices, for looking up normals and uvs
         std::vector<Vec3> normals;  // per vertex. empty: flat shaded
         std::vector<Vec2> uvs;      // per vertex. empty: uv = barycentrics
+
+        Bvh bvh;
     };
 
     using Geometry = std::variant<ShapeList, MeshGeometry>;
@@ -69,15 +75,16 @@ namespace Duck::RayTraceCpu
     }
 
     inline std::optional<Hit> GeometryClosestHit(const Geometry& geometry, const Ray& ray, float tMin, float tMax,
-                                                 int& primitiveTests)
+                                                 TraversalStats& stats)
     {
-        return std::visit([&](const auto& typed) { return typed.ClosestHit(ray, tMin, tMax, primitiveTests); },
+        return std::visit([&](const auto& typed) { return typed.ClosestHit(ray, tMin, tMax, stats); },
                           geometry);
     }
 
-    inline bool GeometryOccluded(const Geometry& geometry, const Ray& ray, float tMin, float tMax, int& primitiveTests)
+    inline bool GeometryOccluded(const Geometry& geometry, const Ray& ray, float tMin, float tMax,
+                                 TraversalStats& stats)
     {
-        return std::visit([&](const auto& typed) { return typed.Occluded(ray, tMin, tMax, primitiveTests); },
+        return std::visit([&](const auto& typed) { return typed.Occluded(ray, tMin, tMax, stats); },
                           geometry);
     }
 }

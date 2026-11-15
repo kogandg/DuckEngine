@@ -3,6 +3,7 @@
 #include <Duck/Core/Assert.h>
 #include <Duck/Core/Math.h>
 #include <Duck/Core/Ray.h>
+#include <Duck/Core/Aabb.h>
 
 #include <algorithm>
 #include <array>
@@ -27,31 +28,6 @@ namespace Duck::RayTraceCpu
         int MaterialId = 0;
         int GeometryId = -1;  // which of the render scenes geometries was hit
         int PrimitiveId = -1; // which primitive inside that geometry
-    };
-
-    struct Aabb
-    {
-        Vec3 Min{Infinity};
-        Vec3 Max{-Infinity};
-
-        void Grow(const Vec3& point)
-        {
-            Min = glm::min(Min, point);
-            Max = glm::max(Max, point);
-        }
-        void Grow(const Aabb& other)
-        {
-            Min = glm::min(Min, other.Min);
-            Max = glm::max(Max, other.Max);
-        }
-
-        bool IsEmpty() const { return glm::any(glm::greaterThan(Min, Max)); }
-
-        bool Contains(const Vec3& point, float tolerance = 0.0f) const
-        {
-            return glm::all(glm::greaterThanEqual(point, Min - tolerance)) &&
-                   glm::all(glm::lessThanEqual(point, Max + tolerance));
-        }
     };
 
     struct SurfaceSample

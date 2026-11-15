@@ -178,6 +178,29 @@ namespace
                 .Scene = std::move(scene),
                 .Camera = Camera({0.0f, 1.2f, 1.5f}, {0.0f, 0.5f, -3.0f}, WorldUp, 45.0f, aspectRatio)};
     }
+
+    //lots of triangles for mesureing the BVH: 3 x 3 grid of mesh spheres, 4kish triangles each
+    TestScene MakeDenseMeshes(float aspectRatio)
+    {
+        Scene scene;
+        const int floor = scene.AddMaterial(GltfMaterial::Lambert(Vec3(0.6f)));
+        const int blue = scene.AddMaterial(GltfMaterial::Lambert(Vec3(0.1f, 0.3f, 0.7f)));
+
+        scene.Quads = {{{-20.0f, 0.0f, 10.0f}, {40.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -40.0f}, floor}};
+        for (int x = -1; x < 2; x++)
+        {
+            for (int z = 0; z < 3; z++)
+            {
+                const Vec3 center(1.3f * static_cast<float>(x), 0.6f, -2.5f - 1.3f * static_cast<float>(z));
+                scene.Meshes.push_back(MakeUvSphereMesh(center, 0.6f, 64, 32, blue));
+            }
+        }
+        scene.Lights = {DirectionalLight{glm::normalize(Vec3(0.4f, 1.0f, 0.6f)), Vec3{Pi}}};
+
+        return {.Name = "Dense meshes",
+                .Scene = std::move(scene),
+                .Camera = Camera({0.0f, 2.0f, 1.0f}, {0.0f, 0.4f, -3.8f}, WorldUp, 45.0f, aspectRatio)};
+    }
 }
 
 
@@ -190,5 +213,6 @@ std::vector<TestScene> MakeTestScenes(float aspectRatio)
     scenes.push_back(MakeCornellBox(aspectRatio));
     scenes.push_back(MakeWhitted(aspectRatio));
     scenes.push_back(MakeMeshes(aspectRatio));
+    scenes.push_back(MakeDenseMeshes(aspectRatio));
     return scenes;
 }

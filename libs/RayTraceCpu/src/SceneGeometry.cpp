@@ -2,16 +2,18 @@
 
 #include <Duck/Core/Assert.h>
 
+#include <array>
+
 namespace Duck::RayTraceCpu
 {
-    // ---------- ShapeList ----------
+    // --------- ShapeList --------
 
-    std::optional<Hit> ShapeList::ClosestHit(const Ray& ray, float tMin, float tMax, int& primitiveTests) const
+    std::optional<Hit> ShapeList::ClosestHit(const Ray& ray, float tMin, float tMax, TraversalStats& stats) const
     {
         std::optional<Hit> closest;
         for (size_t i = 0; i < shapes.size(); i++)
         {
-            primitiveTests++;
+            stats.PrimitiveTests++;
             if (auto hit = IntersectShape(shapes[i], ray, tMin, tMax))
             {
                 hit->PrimitiveId = static_cast<int>(i);
@@ -22,11 +24,11 @@ namespace Duck::RayTraceCpu
         return closest;
     }
 
-    bool ShapeList::Occluded(const Ray& ray, float tMin, float tMax, int& primitiveTests) const
+    bool ShapeList::Occluded(const Ray& ray, float tMin, float tMax, TraversalStats& stats) const
     {
         for (const Shape& shape : shapes)
         {
-            primitiveTests++;
+            stats.PrimitiveTests++;
             if (IntersectShape(shape, ray, tMin, tMax))
             {
                 return true; // any hit will do
@@ -35,7 +37,7 @@ namespace Duck::RayTraceCpu
         return false;
     }
 
-    // ---------- MeshGeometry ----------
+    // ------ MeshGeometry --------
 
     MeshGeometry::MeshGeometry(const Mesh& mesh) : normals(mesh.Normals), uvs(mesh.Uvs)
     {
@@ -66,21 +68,68 @@ namespace Duck::RayTraceCpu
                 corners.push_back(corner);
             }
         }
+
+        std::vector<Aabb> bounds;
+        bounds.reserve(triangles.size());
+        for (const Triangle& triangle : triangles)
+        {
+            bounds.push_back(triangle.Bounds());
+        }
+        bvh = Bvh(bounds);
     }
 
-    std::optional<Hit> MeshGeometry::ClosestHit(const Ray& ray, float tMin, float tMax, int& primitiveTests) const
+    std::optional<Hit> MeshGeometry::ClosestHit(const Ray& ray, float tMin, float tMax, TraversalStats& stats) const
     {
+        if (bvh.IsEmpty())
+        {
+            return std::nullopt;
+        }
+
+        const TraversalRay traversalRay(ray);
+        const std::span<const BvhNode> nodes = bvh.Nodes();
+        const std::span<const int> primitives = bvh.PrimitiveIndices();
+
         // find the closest crossing first, and only build the full hit for that one
         int closest = -1;
         TriangleHit closestWhere;
-        for (size_t i = 0; i < triangles.size(); i++)
+
+        std::array<int, Bvh::MaxDepth + 1> stack;
+        int stackSize = 0;
+        stack[stackSize] = 0; // root
+        stackSize++;
+
+        while (stackSize > 0)
         {
-            primitiveTests++;
-            if (const auto where = triangles[i].IntersectBarycentric(ray, tMin, tMax))
+            stackSize--;
+            const BvhNode& node = nodes[static_cast<size_t>(stack[stackSize])];
+
+            stats.NodeTests++;
+            if (node.Bounds.EntryDistance(traversalRay, tMin, tMax) == Infinity)
             {
-                closest = static_cast<int>(i);
-                closestWhere = *where;
-                tMax = where->T;
+                continue;
+            }
+
+            if (node.IsLeaf())
+            {
+                for (int i = node.First; i < node.First + node.Count; i++)
+                {
+                    const int triangle = primitives[static_cast<size_t>(i)];
+                    stats.PrimitiveTests++;
+                    if (const auto where = triangles[static_cast<size_t>(triangle)].IntersectBarycentric(ray, tMin, tMax))
+                    {
+                        closest = triangle;
+                        closestWhere = *where;
+                        tMax = where->T;
+                    }
+                }
+            }
+            else
+            {
+                DUCK_ASSERT(stackSize + 2 <= static_cast<int>(stack.size()), "BVH deeper than the traversal stack");
+                stack[stackSize] = node.First + 1;
+                stackSize++;
+                stack[stackSize] = node.First; // the left child is on top so its visited next
+                stackSize++;
             }
         }
 
@@ -91,14 +140,47 @@ namespace Duck::RayTraceCpu
         return MakeHit(closest, ray, closestWhere);
     }
 
-    bool MeshGeometry::Occluded(const Ray& ray, float tMin, float tMax, int& primitiveTests) const
+    bool MeshGeometry::Occluded(const Ray& ray, float tMin, float tMax, TraversalStats& stats) const
     {
-        for (const Triangle& triangle : triangles)
+        if (bvh.IsEmpty())
         {
-            primitiveTests++;
-            if (triangle.IntersectBarycentric(ray, tMin, tMax))
+            return false;
+        }
+
+        const TraversalRay traversalRay(ray);
+        const std::span<const BvhNode> nodes = bvh.Nodes();
+        const std::span<const int> primitives = bvh.PrimitiveIndices();
+
+        std::array<int, Bvh::MaxDepth + 1> stack;
+        int stackSize = 0;
+        stack[stackSize++] = 0;
+
+        while (stackSize > 0)
+        {
+            const BvhNode& node = nodes[static_cast<size_t>(stack[--stackSize])];
+            stats.NodeTests++;
+            if (node.Bounds.EntryDistance(traversalRay, tMin, tMax) == Infinity)
             {
-                return true;
+                continue;
+            }
+
+            if (node.IsLeaf())
+            {
+                for (int i = node.First; i < node.First + node.Count; i++)
+                {
+                    stats.PrimitiveTests++;
+                    if (triangles[static_cast<size_t>(primitives[static_cast<size_t>(i)])].IntersectBarycentric(
+                            ray, tMin, tMax))
+                    {
+                        return true; // any hit will do
+                    }
+                }
+            }
+            else
+            {
+                DUCK_ASSERT(stackSize + 2 <= static_cast<int>(stack.size()), "BVH deeper than the traversal stack");
+                stack[stackSize++] = node.First + 1;
+                stack[stackSize++] = node.First;
             }
         }
         return false;

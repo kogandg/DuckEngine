@@ -58,10 +58,10 @@ namespace Duck::RayTraceCpu
     std::optional<Hit> RenderScene::ClosestHit(const Ray& ray, float tMin, float tMax, TraversalStats* stats) const
     {
         std::optional<Hit> closest;
-        int primitiveTests = 0;
+        TraversalStats local;
         for (size_t g = 0; g < geometries.size(); g++)
         {
-            if (auto hit = GeometryClosestHit(geometries[g], ray, tMin, tMax, primitiveTests))
+            if (auto hit = GeometryClosestHit(geometries[g], ray, tMin, tMax, local))
             {
                 hit->GeometryId = static_cast<int>(g);
                 tMax = hit->T; // later geometries only need to beat this one
@@ -71,21 +71,23 @@ namespace Duck::RayTraceCpu
 
         RayStats::Counters& counters = RayStats::ThreadCounters;
         counters.ClosestHitRays++;
-        counters.PrimitiveTests += static_cast<uint64_t>(primitiveTests);
+        counters.NodeTests += static_cast<uint64_t>(local.NodeTests);
+        counters.PrimitiveTests += static_cast<uint64_t>(local.PrimitiveTests);
         if (stats)
         {
-            stats->PrimitiveTests += primitiveTests;
+            stats->NodeTests += local.NodeTests;
+            stats->PrimitiveTests += local.PrimitiveTests;
         }
         return closest;
     }
 
     bool RenderScene::Occluded(const Ray& ray, float tMin, float tMax) const
     {
-        int primitiveTests = 0;
+        TraversalStats local;
         bool blocked = false;
         for (const Geometry& geometry : geometries)
         {
-            if (GeometryOccluded(geometry, ray, tMin, tMax, primitiveTests))
+            if (GeometryOccluded(geometry, ray, tMin, tMax, local))
             {
                 blocked = true;
                 break;
@@ -94,7 +96,8 @@ namespace Duck::RayTraceCpu
 
         RayStats::Counters& counters = RayStats::ThreadCounters;
         counters.OcclusionRays++;
-        counters.PrimitiveTests += static_cast<uint64_t>(primitiveTests);
+        counters.NodeTests += static_cast<uint64_t>(local.NodeTests);
+        counters.PrimitiveTests += static_cast<uint64_t>(local.PrimitiveTests);
         return blocked;
     }
 }
