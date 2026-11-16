@@ -2,6 +2,9 @@
 
 #include <Duck/RayTraceCpu/Materials/Bsdf.h>
 #include <Duck/RayTraceCpu/Materials/Materials.h>
+#include <Duck/RayTraceCpu/Materials/Lobes/LobeCommon.h>
+#include <Duck/RayTraceCpu/Materials/Lobes/Lambert.h>
+#include <Duck/RayTraceCpu/Materials/Lobes/Dielectric.h>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
@@ -36,8 +39,8 @@ TEST_CASE("White lobes keep all the light", "[bsdf][furnace]")
 {
     const Lobe lobe =
         GENERATE(Lobe{LambertLobe{Vec3(1.0f)}}, Lobe{SpecularReflectionLobe{.F0 = Vec3(1.0f), .Scale = 1.0f}},
-                 Lobe{SpecularDielectricLobe{.Eta = 1.5f}},         // entering glass
-                 Lobe{SpecularDielectricLobe{.Eta = 1.0f / 1.5f}}); // leaving, with total internal reflection
+                 Lobe{DielectricLobe{.Eta = 1.5f}},         // entering glass
+                 Lobe{DielectricLobe{.Eta = 1.0f / 1.5f}}); // leaving, with total internal reflection
     Random random(41u);
     IndependentSampler sampler(41u);
     for (int i = 0; i < 1000; i++)

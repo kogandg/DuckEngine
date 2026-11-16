@@ -6,73 +6,14 @@
 #include <Duck/RayTraceCpu/Materials/Optics.h>
 #include <Duck/RayTraceCpu/Sampler.h>
 
+#include <Duck/RayTraceCpu/Materials/Lobes/Dielectric.h>
+#include <Duck/RayTraceCpu/Materials/Lobes/Lambert.h>
+
 #include <array>
 #include <cmath>
-#include <concepts>
-#include <optional>
-#include <type_traits>
-#include <variant>
 
-// lobes work in local frame where shading normal is +z and wo is on the +z side
-// wo points towords the viewr, wi toward where the light comes from
-// a delta lobe returns value = weight / |cos(wi)| from Sample, so Value * |cos| / pdf = weight
 namespace Duck::RayTraceCpu
 {
-    struct LobeSample
-    {
-        Vec3 Wi{0.0f};
-        Vec3 Value{0.0f}; // f(wo, wi)
-        float Pdf = 0.0f;
-        bool IsDelta = false; // one exact direction, cant be evaluedted for an arbitrary wi
-    };
-
-    // direction a perfectly smooth version of a lobe sends light
-    struct SpecularPath
-    {
-        Vec3 Direction{0.0f};
-        Vec3 Weight{0.0f};      // fraction of light going this way
-        float Roughness = 0.0f; // of the surface
-    };
-
-    struct SpecularPaths
-    {
-        std::array<SpecularPath, 2> Paths{};
-        int Count = 0;
-        void Add(const SpecularPath& path)
-        {
-            Paths[static_cast<size_t>(Count)] = path;
-            Count++;
-        }
-    };
-
-    //---------------- lobes -------------
-
-    // ideal diffuse reflection
-    struct LambertLobe
-    {
-        Vec3 Reflectance{0.0f};
-
-        Vec3 Evaluate(const Vec3&, const Vec3& wi) const { return wi.z > 0.0f ? Reflectance * InvPi : Vec3(0.0f); }
-
-        std::optional<LobeSample> Sample(const Vec3& wo, ISampler& sampler) const
-        {
-            const Vec2 u = sampler.Get2D();
-            const Vec3 wi = CosineHemisphereLocal(u.x, u.y);
-            if (wi.z <= 0.0f)
-            {
-                return std::nullopt;
-            }
-            return LobeSample{.Wi = wi, .Value = Evaluate(wo, wi), .Pdf = wi.z * InvPi, .IsDelta = false};
-        }
-
-        float Pdf(const Vec3&, const Vec3& wi) const { return wi.z > 0.0f ? wi.z * InvPi : 0.0f; }
-
-        float SampleWeight(const Vec3&) const { return MaxComponent(Reflectance); }
-        SpecularPaths Specular(const Vec3&) const { return {}; }
-
-        bool IsDelta() const { return false; }
-    };
-
     // perfect mirror reflection with Schlick Fresnel: metal (F0 = base color) and the clear coat of dielectrics
     // (F0 from ior)
     struct SpecularReflectionLobe
@@ -99,105 +40,11 @@ namespace Duck::RayTraceCpu
 
         float SampleWeight(const Vec3& wo) const { return MaxComponent(Fresnel(wo.z)); }
 
-        SpecularPaths Specular(const Vec3& wo) const
-        {
-            SpecularPaths paths;
-            paths.Add({Vec3(-wo.x, -wo.y, wo.z), Fresnel(wo.z), Roughness});
-            return paths;
-        }
-
         bool IsDelta() const { return true; }
     };
 
-    // smooth glass surface: Fresnel-weighted reflection and refraction
-    // Eta = index on the far side / index on wo's side, so it already knows whether the ray enters or leaves
-    struct SpecularDielectricLobe
-    {
-        float Eta = 1.5f;
-        Vec3 Tint{1.0f};    // refracted light is multiplied by this
-        float Scale = 1.0f; // weight in the mix
-
-        struct Split
-        {
-            Vec3 Reflected{0.0f};
-            std::optional<Vec3> Refracted; // nullopt on total internal reflection
-            float Reflectance = 1.0f;
-        };
-
-        Split SplitAt(const Vec3& wo) const
-        {
-            Split split;
-            split.Reflected = Vec3(-wo.x, -wo.y, wo.z);
-            split.Refracted = Refract(-wo, Vec3(0.0f, 0.0f, 1.0f), 1.0f / Eta);
-            if (split.Refracted)
-            {
-                // Schlick uses the angle on the lower-index side: wo's when entering denser glass,
-                // the refracted one when leaving
-                const float cosine = Eta > 1.0f ? wo.z : -split.Refracted->z;
-                split.Reflectance = SchlickFresnel(cosine, 1.0f, Eta);
-            }
-            return split;
-        }
-
-        Vec3 Evaluate(const Vec3&, const Vec3&) const { return Vec3(0.0f); }
-
-        std::optional<LobeSample> Sample(const Vec3& wo, ISampler& sampler) const
-        {
-            const Split split = SplitAt(wo);
-            const float r = split.Reflectance;
-            const float u = sampler.Get1D();
-            if (!split.Refracted || u < r)
-            {
-                const Vec3 wi = split.Reflected;
-                return LobeSample{wi, Vec3(Scale * r / std::abs(wi.z)), r, true};
-            }
-            const Vec3 wi = *split.Refracted;
-            return LobeSample{
-                .Wi = wi, .Value = Scale * (1.0f - r) * Tint / std::abs(wi.z), .Pdf = 1.0f - r, .IsDelta = true};
-        }
-
-        float Pdf(const Vec3&, const Vec3&) const { return 0.0f; }
-
-        float SampleWeight(const Vec3&) const { return Scale; }
-
-        SpecularPaths Specular(const Vec3& wo) const
-        {
-            const Split split = SplitAt(wo);
-            SpecularPaths paths;
-            paths.Add({split.Reflected, Vec3(Scale * split.Reflectance), 0.0f});
-            if (split.Refracted)
-            {
-                paths.Add({*split.Refracted, Scale * (1.0f - split.Reflectance) * Tint, 0.0f});
-            }
-            return paths;
-        }
-
-        bool IsDelta() const { return true; }
-    };
-
-    // --------------- interface every lobe must provide ----------
-
-    template <typename T>
-    concept LobeType = requires(const T& lobe, const Vec3& wo, const Vec3& wi, ISampler& sampler) {
-        { lobe.Evaluate(wo, wi) } -> std::same_as<Vec3>; // 0 for delta lobes
-        { lobe.Sample(wo, sampler) } -> std::same_as<std::optional<LobeSample>>;
-        { lobe.SampleWeight(wo) } -> std::same_as<float>;     // rough share of the light
-        { lobe.Specular(wo) } -> std::same_as<SpecularPaths>; // for Whitted
-        { lobe.IsDelta() } -> std::same_as<bool>;             // only reachable by sampling,
-        { lobe.Pdf(wo, wi) } -> std::same_as<float>;          // of Sample returning wi, 0 for delta lobes
-    };
-
-    using Lobe = std::variant<LambertLobe, SpecularReflectionLobe, SpecularDielectricLobe>;
-
-    template <typename TVariant>
-    struct AllLobeTypes;
-    template <typename... TLobes>
-    struct AllLobeTypes<std::variant<TLobes...>> : std::bool_constant<(LobeType<TLobes> && ...)>
-    {
-    };
+    using Lobe = std::variant<LambertLobe, SpecularReflectionLobe, DielectricLobe>;
     static_assert(AllLobeTypes<Lobe>::value, "Every type in Lobe must satisfy LobeType");
-
-    // --------------- the BSDF at one hit point --------
 
     struct ShadingFrame
     {
@@ -307,23 +154,6 @@ namespace Duck::RayTraceCpu
                        std::visit([&](const auto& lobe) { return lobe.Pdf(wo, wi); }, LobeAt(i));
             }
             return pdf;
-        }
-
-        // every perfect reflection / refraction direction, for Whitted
-        template <typename TFunc>
-        void ForEachSpecularPath(const Vec3& woWorld, TFunc&& func) const
-        {
-            const Vec3 wo = frame.ToLocal(woWorld);
-            for (int i = 0; i < count; i++)
-            {
-                const SpecularPaths paths = std::visit([&](const auto& lobe) { return lobe.Specular(wo); }, LobeAt(i));
-                for (int p = 0; p < paths.Count; p++)
-                {
-                    SpecularPath path = paths.Paths[static_cast<size_t>(p)];
-                    path.Direction = frame.ToWorld(path.Direction);
-                    func(path);
-                }
-            }
         }
 
         // total Lambert reflectance, for Whitted's ambient term

@@ -75,7 +75,7 @@ namespace Duck::RayTraceCpu
             }
             if (glass > 0.0f)
             {
-                bsdf.Add(SpecularDielectricLobe{.Eta = hit.FrontFace ? Ior : 1.0f / Ior, .Tint = base, .Scale = glass});
+                bsdf.Add(DielectricLobe{.Eta = hit.FrontFace ? Ior : 1.0f / Ior, .Tint = base, .Scale = glass});
             }
             return bsdf;
         }

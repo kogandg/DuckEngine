@@ -73,10 +73,13 @@ TEST_CASE("Whitted: ambient is blended by the normal's direction", "[whitted]")
     };
 
     WhittedIntegrator whitted;
-    CheckAllPixels(Render(whitted, scene, LookDown({0.0f, 1.0f, 0.0f}, 30.0f)), 0.5f * scene.Environment.AmbientUp, 1e-5f);
-    CheckAllPixels(Render(whitted, scene, LookUp({0.0f, -1.0f, 0.0f}, 30.0f)), 0.5f * scene.Environment.AmbientDown, 1e-5f);
+    CheckAllPixels(Render(whitted, scene, LookDown({0.0f, 1.0f, 0.0f}, 30.0f)), 0.5f * scene.Environment.AmbientUp,
+                   1e-5f);
+    CheckAllPixels(Render(whitted, scene, LookUp({0.0f, -1.0f, 0.0f}, 30.0f)), 0.5f * scene.Environment.AmbientDown,
+                   1e-5f);
     CheckAllPixels(Render(whitted, scene, LookForward({0.0f, 1.0f, 0.0f}, 30.0f)),
-                   0.25f * (scene.Environment.AmbientUp + scene.Environment.AmbientDown), 1e-5f); // sideways normal: halfway
+                   0.25f * (scene.Environment.AmbientUp + scene.Environment.AmbientDown),
+                   1e-5f); // sideways normal: halfway
 }
 
 // ---------- shadows and lights ----------
@@ -198,14 +201,15 @@ TEST_CASE("Whitted: a glass slab seen head-on reflects 2R / (1 + R)", "[whitted]
         {{-10.0f, -1.0f, -10.0f}, {20.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 20.0f}, glass}, // bottom, front faces down
     };
 
+    // every pixel looks head-on, so the whole image averages the same thing. each sample follows one branch at
+    // each surface and sees either the white sky or black, so it takes many: ~4.6e-4 standard error here
     WhittedIntegrator whitted;
-    const Vec3 pixel = CenterPixel(Render(whitted, scene, LookDown({0.0f, 1.0f, 0.0f}, 1.0f)));
+    const Vec3 average = AveragePixel(Render(whitted, scene, LookDown({0.0f, 1.0f, 0.0f}, 1.0f), 9, 4096));
 
     // R0 = ((1 - 1.5) / (1 + 1.5))^2 = 0.04 per surface. summed over every bounce between the surfaces:
     // R + (1 - R)^2 R (1 + R^2 + R^4 + ...) = 2R / (1 + R)
     const float r0 = 0.04f;
-    // MinWeight drops the bounces after the second (~6e-5), hence the tolerance
-    CHECK_THAT(pixel.x, WithinAbs(2.0f * r0 / (1.0f + r0), 1e-4f));
+    CHECK_THAT(average.x, WithinAbs(2.0f * r0 / (1.0f + r0), 2e-3f));
 }
 
 TEST_CASE("Whitted: light through absorbing glass follows Beer-Lambert", "[whitted][glass][absorption]")
@@ -214,7 +218,8 @@ TEST_CASE("Whitted: light through absorbing glass follows Beer-Lambert", "[whitt
     CAPTURE(thickness);
 
     Scene scene = DarkScene();
-    scene.Environment.SkyDown = Vec3(1.0f); // white below, black above: the camera looking down only sees transmitted light
+    scene.Environment.SkyDown =
+        Vec3(1.0f); // white below, black above: the camera looking down only sees transmitted light
     const Vec3 color(0.8f, 0.5f, 0.2f);
     const int glass = scene.AddMaterial(GltfMaterial::ColoredGlass(color, 1.0f));
     // fronts face out of the glass (see the slab test)
@@ -223,15 +228,15 @@ TEST_CASE("Whitted: light through absorbing glass follows Beer-Lambert", "[whitt
         {{-10.0f, -thickness, -10.0f}, {20.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 20.0f}, glass}, // bottom, faces down
     };
 
+    // one branch per surface, so average many samples over the head - on image : ~4e-4 standard error here
     WhittedIntegrator whitted;
-    const Vec3 pixel = CenterPixel(Render(whitted, scene, LookDown({0.0f, 1.0f, 0.0f}, 1.0f)));
+    const Vec3 average = AveragePixel(Render(whitted, scene, LookDown({0.0f, 1.0f, 0.0f}, 1.0f), 9, 4096));
 
     // head-on: R = 0.04 at each surface, T = color^thickness per pass, plus internal round trips
     const float r = 0.04f;
     const Vec3 t = glm::pow(color, Vec3(thickness));
     const Vec3 expected = (1.0f - r) * (1.0f - r) * t / (Vec3(1.0f) - r * r * t * t);
-    // MinWeight drops the second round trip, at most (1 - R)^2 R^2 T^3 < 1e-3
-    CHECK_THAT(pixel, Vec3Near(expected, 1e-3f));
+    CHECK_THAT(average, Vec3Near(expected, 2e-3f));
 }
 
 TEST_CASE("Whitted furnace: a glass ball vanishes in a uniform sky", "[whitted][furnace][glass]")
@@ -290,10 +295,14 @@ TEST_CASE("Whitted furnace: smooth white plastic reflects exactly what arrives",
     scene.Environment.AmbientDown = scene.Environment.AmbientUp = Vec3(1.0f);
     scene.Quads = {Floor(scene.AddMaterial(GltfMaterial::Plastic(Vec3(1.0f), 0.0f)))};
 
+    // each sample adds the diffuse part and follows the coat with chance F, carrying F / F = 1: (1 - F) or
+    // (1 - F) + 1. right on average, but no longer exactly 1 per sample
     WhittedIntegrator whitted;
     // slanted view, so F changes across the image
     const Camera camera({0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, -2.0f}, {0.0f, 1.0f, 0.0f}, 60.0f, 1.0f);
-    CheckAllPixels(Render(whitted, scene, camera), Vec3(1.0f), 1e-5f);
+    const HdrFramebuffer image = Render(whitted, scene, camera, 9, 4096);
+    CheckAllPixels(image, Vec3(1.0f), 0.05f);                  // each pixel: ~7e-3 standard error at most
+    CHECK_THAT(AveragePixel(image).x, WithinAbs(1.0f, 3e-3f)); // the whole image: ~8e-4
 }
 
 TEST_CASE("Whitted: emissive surfaces show their radiance", "[whitted][material]")
