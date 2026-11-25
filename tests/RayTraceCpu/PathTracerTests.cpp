@@ -16,6 +16,20 @@ using namespace Duck::Test;
 using Catch::Matchers::WithinAbs;
 using Catch::Matchers::WithinRel;
 
+// two lamps whose light-sampling pdfs depend on their transforms: an ellipsoid and a stretched, tilted quad
+void AddTwoLamps(Scene& scene)
+{
+    const int lamp = scene.AddMaterial(GltfMaterial::Emissive(Vec3(3.0f, 2.0f, 1.0f)));
+    scene.AddInstance(scene.AddShapes({Sphere{Vec3(0.0f), 0.3f, lamp}}),
+                      glm::translate(Mat4(1.0f), Vec3(-0.5f, 1.5f, 0.5f)) *
+                          glm::scale(Mat4(1.0f), Vec3(2.0f, 0.5f, 1.0f)));
+    const Quad unit{{-0.5f, 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, lamp};
+    scene.AddInstance(scene.AddShapes({unit}),
+                      glm::translate(Mat4(1.0f), Vec3(0.5f, 1.2f, -0.5f)) *
+                          glm::rotate(Mat4(1.0f), 2.6f, glm::normalize(Vec3(1.0f, 0.3f, 0.2f))) *
+                          glm::scale(Mat4(1.0f), Vec3(0.6f, 1.0f, 0.3f)));
+}
+
 TEST_CASE("Path tracer furnace: a diffuse ball shows its albedo exactly", "[pathtracer][furnace]")
 {
     // every bounce off a convex ball goes straight to the uniform sky, so each sample is exactly albedo * 1
@@ -89,7 +103,27 @@ TEST_CASE("Next event estimation and BSDF sampling agree", "[pathtracer][emissio
     // on lights whose pdf depends on their transform. any mistake shows up as a different average
     Scene scene = DarkScene();
     scene.Quads = {Floor(scene.AddMaterial(GltfMaterial::Plastic(Vec3(0.5f), 0.0f)))};
-    // ... the same two lamps as the AreaLightPdf test
+    AddTwoLamps(scene);
+    const Camera camera({0.0f, 3.0f, 2.5f}, {0.0f, 0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, 70.0f, 1.0f);
+
+    PathTracer withNee(8, true);
+    PathTracer bsdfOnly(8, false);
+    const Vec3 expected = AveragePixel(Render(bsdfOnly, scene, camera, 9, 32768));
+    const Vec3 average = AveragePixel(Render(withNee, scene, camera, 9, 2048));
+    CHECK_THAT(average.x, WithinRel(expected.x, 0.02f));
+    CHECK_THAT(average.y, WithinRel(expected.y, 0.02f));
+    CHECK_THAT(average.z, WithinRel(expected.z, 0.02f));
+}
+
+TEST_CASE("Next event estimation and BSDF sampling agree on glossy surfaces", "[pathtracer][emission][mis][microfacet]")
+{
+    // glossy lobes are where light samples and BSDF samples overlap the most: both can find the lamps' reflections,
+    // so MIS has to weigh them against each other correctly for the averages to match
+    const GltfMaterial floor = GENERATE(GltfMaterial::Metal(Vec3(0.9f, 0.6f, 0.3f), 0.3f), // rough metal
+                                        GltfMaterial::Plastic(Vec3(0.5f), 0.4f));          // rough coat over diffuse
+    Scene scene = DarkScene();
+    scene.Quads = {Floor(scene.AddMaterial(floor))};
+    AddTwoLamps(scene);
     const Camera camera({0.0f, 3.0f, 2.5f}, {0.0f, 0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, 70.0f, 1.0f);
 
     PathTracer withNee(8, true);

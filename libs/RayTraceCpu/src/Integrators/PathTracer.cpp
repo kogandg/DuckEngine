@@ -8,57 +8,80 @@
 #include <Duck/RayTraceCpu/Scene/Scene.h>
 
 #include <cmath>
-
-namespace
-{
-    constexpr int RouletteStartBounce = 3;
-}
+#include <algorithm>
 
 namespace Duck::RayTraceCpu
 {
+    namespace
+    {
+        constexpr int RouletteStartBounce = 3;
+
+        struct PrevVertex
+        {
+            bool LightSampled = false; // light sampling also covered this direction there
+            float BsdfPdf = 0.0f;      // density the BSDF picked the direction with
+            Vec3 Point{0.0f};          // where the bounce happened
+        };
+
+        // emission seen at hit, weighted against light sampling if the previous vertex also did NEE
+        Spectrum WeightedEmission(const RenderScene& scene, const Material& material, const Hit& hit,
+                                  const PrevVertex& prev)
+        {
+            const Spectrum emitted = EmissionAt(material, hit);
+            if (MaxComponent(emitted) <= 0.0f || !prev.LightSampled)
+            {
+                return emitted;
+            }
+            const int light = scene.AreaLightAt(hit);
+            return light < 0 ? emitted
+                             : emitted * PowerHeuristic(prev.BsdfPdf, scene.AreaLightPdf(light, hit, prev.Point));
+        }
+
+        // true if the path continues. on survival throughput is scaled up so the average stays the same
+        bool SurviveRoulette(Spectrum& throughput, float etaScale, ISampler& sampler)
+        {
+            const float survive = std::min(MaxComponent(throughput) * etaScale, 1.0f);
+            if (sampler.Get1D() >= survive)
+            {
+                return false;
+            }
+            throughput /= survive;
+            return true;
+        }
+    }
+
     Spectrum PathTracer::Li(const RenderScene& scene, const Ray& cameraRay, ISampler& sampler) const
     {
         Ray ray = cameraRay;
         Spectrum radiance(0.0f);
         Spectrum throughput(1.0f);
+        float etaScale = 1.0f;
 
-        // about the bounce of the current ray
-        bool lightSampled = false; // whether light sampling also covered this direction at the last hit
-        float bsdfPdf = 0.0f;      // density the bounce picked its direciton with
-        Vec3 from(0.0f);           // where the bounce happened
-        float etaScale = 1.0f;     // the eta^2 refraction
+        PrevVertex prev;
 
-        for (int bounce = 0; bounce < this->maxBounces; bounce++)
+        for (int depth = 0; ; depth++)
         {
+            // finish paths of length depth: whatever this ray sees
             const auto hit = scene.ClosestHit(ray, RayEpsilon, Infinity);
             if (!hit)
             {
                 radiance += throughput * scene.GetEnvironment().SkyColor(ray.Direction);
                 break;
             }
-
             const Material& material = scene.GetMaterial(hit->MaterialId);
             throughput *= SegmentTransmittance(material, *hit);
+            radiance += throughput * WeightedEmission(scene, material, *hit, prev);
 
-            const Spectrum emitted = EmissionAt(material, *hit);
-            if (MaxComponent(emitted) > 0.0f)
+            // builds paths of length depth + 1
+            if (depth == maxDepth)
             {
-                float weight = 1.0f;
-                if (lightSampled)
-                {
-                    const int light = scene.AreaLightAt(*hit);
-                    if (light >= 0)
-                    {
-                        weight = PowerHeuristic(bsdfPdf, scene.AreaLightPdf(light, *hit, from));
-                    }
-                }
-                radiance += throughput * emitted * weight;
+                break;
             }
 
             const Vec3 wo = -ray.Direction;
             const Bsdf bsdf = GetBsdf(material, *hit, sampler);
-
             const bool sampleLights = nee && IsNonSpecular(bsdf.Flags());
+
             if (sampleLights)
             {
                 radiance +=
@@ -68,33 +91,22 @@ namespace Duck::RayTraceCpu
             }
 
             const float uc = sampler.Get1D();
-            const Vec2 u = sampler.Get2D();
-            const auto sample = bsdf.Sample(wo, uc, u);
+            const auto sample = bsdf.Sample(wo, uc, sampler.Get2D());
             if (!sample)
             {
-                break; // absorbed
+                break;
             }
-
             throughput *= sample->F * std::abs(glm::dot(sample->Wi, hit->Normal)) / sample->Pdf;
             if (sample->IsTransmission())
             {
                 etaScale *= sample->Eta * sample->Eta;
             }
+            prev = {.LightSampled = sampleLights && !sample->IsSpecular(), .BsdfPdf = sample->Pdf, .Point = hit->Point};
 
-            lightSampled = sampleLights && !sample->IsSpecular();
-            bsdfPdf = sample->Pdf;
-            from = hit->Point;
-
-            if (bounce >= RouletteStartBounce)
+            if (depth >= RouletteStartBounce && !SurviveRoulette(throughput, etaScale, sampler))
             {
-                const float survive = std::min(MaxComponent(throughput) * etaScale, 1.0f);
-                if (sampler.Get1D() >= survive)
-                {
-                    break;
-                }
-                throughput /= survive;
+                break;
             }
-
             ray = SpawnRay(*hit, sample->Wi);
         }
         return radiance;

@@ -51,13 +51,16 @@ namespace Duck::RayTraceCpu
         Bsdf GetBsdf(const Hit& hit, ISampler& sampler) const
         {
             const Spectrum base = FromRgb(BaseColorAt(hit.Point));
+            const GgxDistribution distribution{GgxDistribution::AlphaFromRoughness(Roughness)};
             if (Choose(Metallic, sampler))
             {
-                return Bsdf(hit.Normal, ConductorBxDF{.F0 = base, .Roughness = Roughness});
+                return Bsdf(hit.Normal, ConductorBxDF{.F0 = base, .Distribution = distribution});
             }
             if (Choose(Transmission, sampler))
             {
-                return Bsdf(hit.Normal, DielectricBxDF{.Eta = hit.FrontFace ? Ior : 1.0f / Ior, .Tint = base});
+                return Bsdf(hit.Normal, DielectricBxDF{.Eta = hit.FrontFace ? Ior : 1.0f / Ior,
+                                                       .Tint = base,
+                                                       .Distribution = distribution});
             }
             if (Specular <= 0.0f)
             {
@@ -66,7 +69,7 @@ namespace Duck::RayTraceCpu
             return Bsdf(hit.Normal, CoatedDiffuseBxDF{.Reflectance = base,
                                                       .CoatF0 = F0FromIor(Ior),
                                                       .CoatWeight = Specular,
-                                                      .Roughness = Roughness});
+                                                      .Distribution = distribution});
         }
 
         Spectrum EmissionAt(const Hit& hit) const { return hit.FrontFace ? Emission : Spectrum(0.0f); }

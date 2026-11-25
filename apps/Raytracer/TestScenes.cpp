@@ -178,7 +178,7 @@ namespace
                 .Camera = Camera({0.0f, 1.2f, 1.5f}, {0.0f, 0.5f, -3.0f}, WorldUp, 45.0f, aspectRatio)};
     }
 
-    //lots of triangles for mesureing the BVH: 3 x 3 grid of mesh spheres, 4kish triangles each
+    // lots of triangles for mesureing the BVH: 3 x 3 grid of mesh spheres, 4kish triangles each
     TestScene MakeDenseMeshes(float aspectRatio)
     {
         Scene scene;
@@ -242,13 +242,89 @@ namespace
                 .Scene = std::move(scene),
                 .Camera = Camera({0.0f, 3.0f, 2.0f}, {0.0f, 0.0f, -8.0f}, WorldUp, 50.0f, aspectRatio)};
     }
+
+    namespace
+    {
+        // a box from six outward-facing quads. a, b, c are its three full-length sides
+        void AddBox(Scene& scene, const Vec3& center, const Vec3& a, const Vec3& b, const Vec3& c, int material)
+        {
+            const Vec3 sides[3] = {a, b, c};
+            for (int axis = 0; axis < 3; axis++)
+            {
+                for (const float side : {-0.5f, 0.5f})
+                {
+                    const Vec3 faceCenter = center + side * sides[axis];
+                    Vec3 u = sides[(axis + 1) % 3];
+                    Vec3 v = sides[(axis + 2) % 3];
+                    if (glm::dot(glm::cross(u, v), faceCenter - center) < 0.0f)
+                    {
+                        std::swap(u, v); // the quad's normal is cross(u, v): point it away from the box
+                    }
+                    scene.Quads.push_back({faceCenter - 0.5f * u - 0.5f * v, u, v, material});
+                }
+            }
+        }
+
+        // a conductors reflectance head-on from its complex index of refraction eta + i k
+        Vec3 ConductorF0(const Vec3& eta, const Vec3& k)
+        {
+            return ((eta - 1.0f) * (eta - 1.0f) + k * k) / ((eta + 1.0f) * (eta + 1.0f) + k * k);
+        }
+
+        // copy of veach scene from pbrtv4
+        TestScene MakeVeachMis(float aspectRatio)
+        {
+            Scene scene;
+            scene.Environment.SkyDown = scene.Environment.SkyUp = Vec3(0.0f);
+            scene.Environment.AmbientDown = scene.Environment.AmbientUp = Vec3(0.0f);
+
+            // floor (+y) and back wall (+x), grey diffuse
+            const int diffuse = scene.AddMaterial(GltfMaterial::Lambert(Vec3(0.5f)));
+            scene.Quads.push_back({{-5.0f, 0.0f, -23.76f}, {0.0f, 0.0f, 47.52f}, {19.8f, 0.0f, 0.0f}, diffuse});
+            scene.Quads.push_back({{-5.0f, 0.0f, -23.76f}, {0.0f, 19.8f, 0.0f}, {0.0f, 0.0f, 47.52f}, diffuse});
+
+            // three lights of equal power: radiance * radius^2 = 7.6
+            const struct
+            {
+                float Z, Radius, Radiance;
+            } lights[] = {{-2.8f, 1.0f, 7.599088f}, {0.0f, 0.5f, 30.396353f}, {2.7f, 0.05f, 3039.6353f}};
+            for (const auto& light : lights)
+            {
+                const int lamp = scene.AddMaterial(GltfMaterial::Emissive(Vec3(light.Radiance)));
+                scene.Spheres.push_back({{0.0f, 6.5f, light.Z}, light.Radius, lamp});
+            }
+
+            // four copper plates, 2.1 x 8 x 0.3, each tilted to reflect the lights toward the camera
+            const Vec3 copper = ConductorF0({0.200438f, 0.924033f, 1.102212f}, {3.912949f, 2.452848f, 2.142188f});
+            const struct
+            {
+                Vec2 Center, Normal;
+                float Alpha;
+            } plates[] = {
+                {{0.26407f, 4.09801f}, {0.641183f, 0.767388f}, 0.01f},  // Smooth
+                {{3.06163f, 2.71702f}, {0.37809f, 0.925769f}, 0.05f},   // Glossy
+                {{7.09981f, 1.81891f}, {0.184835f, 0.98277f}, 0.1f},    // Rough
+                {{10.67692f, 1.23376f}, {0.121887f, 0.992544f}, 0.25f}, // SuperRough
+            };
+            for (const auto& plate : plates)
+            {
+                const int metal = scene.AddMaterial(GltfMaterial::Metal(copper, std::sqrt(plate.Alpha)));
+                const Vec3 normal(plate.Normal.x, plate.Normal.y, 0.0f);
+                const Vec3 along(plate.Normal.y, -plate.Normal.x, 0.0f); // down the slope, toward the camera
+                AddBox(scene, Vec3(plate.Center, 0.0f), 2.1f * along, Vec3(0.0f, 0.0f, 8.0f), 0.3f * normal, metal);
+            }
+
+            return {.Name = "Veach MIS",
+                    .Scene = std::move(scene),
+                    .Camera = Camera({28.2792f, 3.5f, 0.0f}, {0.0f, 3.5f, 0.0f}, WorldUp, 20.114292f, aspectRatio)};
+        }
+    }
 }
-
-
 
 std::vector<TestScene> MakeTestScenes(float aspectRatio)
 {
     std::vector<TestScene> scenes;
+    scenes.push_back(MakeVeachMis(aspectRatio));
     scenes.push_back(MakeAbsorption(aspectRatio));
     scenes.push_back(MakeSpheres(aspectRatio));
     scenes.push_back(MakeCornellBox(aspectRatio));
