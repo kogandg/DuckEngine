@@ -18,6 +18,7 @@ namespace Duck::RayTraceCpu
         Ray ray = cameraRay;
         Vec3 radiance(0.0f);
         Vec3 throughput(1.0f); // how much of what the current ray sees reaches the pixel
+        float etaScale = 1.0f;
 
         for (int depth = 0; depth <= maxDepth; depth++)
         {
@@ -32,29 +33,35 @@ namespace Duck::RayTraceCpu
             throughput *= SegmentTransmittance(material, *hit);
 
             const Vec3 wo = -ray.Direction;
-            const Bsdf bsdf = GetBsdf(material, *hit, wo);
+            const Bsdf bsdf = GetBsdf(material, *hit, sampler);
 
             radiance += throughput * EmissionAt(material, *hit);
-            if (bsdf.HasNonDeltaLobes())
+            if (IsNonSpecular(bsdf.Flags()))
             {
-                radiance += throughput * (bsdf.DiffuseReflectance() * scene.GetEnvironment().Ambient(hit->Normal) +
+                radiance += throughput * (bsdf.DiffuseAlbedo(wo) * scene.GetEnvironment().Ambient(hit->Normal) +
                                           DirectLighting(scene, *hit, sampler,
                                                          [&](const Vec3& wi) { return bsdf.Evaluate(wo, wi); }));
             }
 
-            // continue along one smooth branch. picking a diffuse lobe ends the path: the light the diffuse part
-            // reflects was already added above, so it counts as a branch that carries nothing further
-            const auto sample = bsdf.Sample(wo, sampler);
-            if (!sample || !sample->IsDelta)
+            // continue along one smooth branch. picking a diffuse part ends the path: the light it reflects was
+            // already added above, so it counts as a branch that carries nothing further
+            const float uc = sampler.Get1D();
+            const Vec2 u = sampler.Get2D();
+            const auto sample = bsdf.Sample(wo, uc, u);
+            if (!sample || !sample->IsSpecular())
             {
                 break;
             }
-            throughput *= sample->Value * std::abs(glm::dot(sample->Direction, hit->Normal)) / sample->Pdf;
-            if (MaxComponent(throughput) < MinWeight)
+            throughput *= sample->F * std::abs(glm::dot(sample->Wi, hit->Normal)) / sample->Pdf;
+            if (sample->IsTransmission())
+            {
+                etaScale *= sample->Eta * sample->Eta;
+            }
+            if (MaxComponent(throughput) * etaScale < MinWeight)
             {
                 break;
             }
-            ray = SpawnRay(*hit, sample->Direction);
+            ray = SpawnRay(*hit, sample->Wi);
         }
         return radiance;
     }

@@ -2,6 +2,7 @@
 
 #include <Duck/Core/Math.h>
 #include <Duck/RayTraceCpu/Film.h>
+#include <Duck/RayTraceCpu/Spectrum.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -48,7 +49,7 @@ namespace Duck::RayTraceCpu
 
     protected:
         // radiance arriving along ray
-        virtual Vec3 Li(const RenderScene& scene, const Ray& ray, ISampler& sampler) const = 0;
+        virtual Spectrum Li(const RenderScene& scene, const Ray& ray, ISampler& sampler) const = 0;
 
         virtual bool JitterSamples() const { return true; }
 

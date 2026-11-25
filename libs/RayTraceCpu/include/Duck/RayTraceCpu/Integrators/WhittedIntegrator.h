@@ -14,7 +14,7 @@ namespace Duck::RayTraceCpu
         AdaptiveSettings GetAdaptiveSettings() const override { return {.MinPasses = 32, .Threshold = 0.01f}; }
 
     protected:
-        Vec3 Li(const RenderScene& scene, const Ray& ray, ISampler& sampler) const override;
+        Spectrum Li(const RenderScene& scene, const Ray& ray, ISampler& sampler) const override;
 
     private:
         int maxDepth;

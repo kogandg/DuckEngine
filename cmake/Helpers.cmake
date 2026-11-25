@@ -59,5 +59,5 @@ function(duck_test name)
   set_target_properties(${target} PROPERTIES FOLDER tests)
 
   # PRE_TEST lists the tests when ctest runs instead of after every build
-  catch_discover_tests(${target} TEST_PREFIX "${name}." DISCOVERY_MODE PRE_TEST)
+  catch_discover_tests(${target} TEST_PREFIX "${name}." DISCOVERY_MODE POST_BUILD)
 endfunction()

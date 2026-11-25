@@ -1,8 +1,9 @@
 #pragma once
 
 #include <Duck/Core/Math.h>
-#include <Duck/RayTraceCpu/Scene/Geometry.h>
 #include <Duck/RayTraceCpu/Sampler.h>
+#include <Duck/RayTraceCpu/Scene/Geometry.h>
+#include <Duck/RayTraceCpu/Spectrum.h>
 
 #include <cmath>
 #include <concepts>
@@ -17,7 +18,7 @@ namespace Duck::RayTraceCpu
     {
         Vec3 Direction{0.0f};      // wi: unit, from the shaded point toward the light
         float Distance = Infinity; // to the sampled point on the light. shadow rays stop just before it
-        Vec3 Radiance{0.0f};       // arriving along Direction. for delta lights, the value that goes with Pdf = 1
+        Spectrum Radiance{0.0f};   // arriving along Direction. for delta lights, the value that goes with Pdf = 1
         float Pdf = 0.0f;          // of having picked Direction, per solid angle. 1 for delta lights
         bool IsDelta = true;       // a single point or direction: can be sampled, but no ray can ever hit it
     };
@@ -26,26 +27,23 @@ namespace Duck::RayTraceCpu
     struct DirectionalLight
     {
         Vec3 Direction{0.0f, 1.0f, 0.0f}; // unit, points TOWARD the light
-        Vec3 Irradiance{Pi}; // W/m^2 on a surface facing the light. Pi lights a white surface to radiance 1
+        Rgb Irradiance{Pi}; // W/m^2 on a surface facing the light. Pi lights a white surface to radiance 1
 
-        LightSample Sample(const Vec3&, ISampler&) const
-        {
-            return {Direction, Infinity, Irradiance, 1.0f, true};
-        }
+        LightSample Sample(const Vec3&, ISampler&) const { return {Direction, Infinity, FromRgb(Irradiance), 1.0f, true}; }
     };
 
     // light from one point, falls off with 1/distance^2, inverse square law
     struct PointLight
     {
         Vec3 Position{0.0f};
-        Vec3 Intensity{1.0f}; // W/sr
+        Rgb Intensity{1.0f}; // W/sr
 
         LightSample Sample(const Vec3& point, ISampler&) const
         {
             const Vec3 toLight = Position - point;
             const float distanceSquared = glm::dot(toLight, toLight);
             const float distance = std::sqrt(distanceSquared);
-            return {toLight / distance, distance, Intensity / distanceSquared, 1.0f, true}; // inverse-square law
+            return {toLight / distance, distance, FromRgb(Intensity) / distanceSquared, 1.0f, true}; // inverse-square law
         }
     };
 
@@ -53,8 +51,8 @@ namespace Duck::RayTraceCpu
     struct AreaSample
     {
         Vec3 Point{0.0f};
-        Vec3 Normal{0.0f}; //unit
-        float Pdf = 0.0f; //per unit of world space area
+        Vec3 Normal{0.0f}; // unit
+        float Pdf = 0.0f;  // per unit of world space area
     };
 
     // light given off of a shapes surface
@@ -63,7 +61,7 @@ namespace Duck::RayTraceCpu
     {
         int InstanceId = -1;
         int MaterialId = -1;
-        Vec3 Radiance{0.0f};         // W/(m^2 sr)
+        Rgb Radiance{0.0f};         // W/(m^2 sr)
         std::vector<int> Primitives; // which of the instances geometrys primitives emit
         std::vector<float> AreaCdf;  // running total of their areas, in the geometry's own space
         float TotalArea = 0.0f;      // the last AreaCdf entry

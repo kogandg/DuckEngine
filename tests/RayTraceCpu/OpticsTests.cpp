@@ -123,3 +123,29 @@ TEST_CASE("SchlickFresnel matches known values", "[optics]")
     }
     CHECK(bad == 0); // stays in [0, 1] and only falls as the angle gets more head-on
 }
+
+TEST_CASE("FrDielectric matches known values", "[optics]")
+{
+    // head-on into glass: ((1.5 - 1) / (1.5 + 1))^2 = 0.04, the same from either side
+    CHECK_THAT(FrDielectric(1.0f, 1.5f), WithinAbs(0.04f, 1e-6f));
+    CHECK_THAT(FrDielectric(1.0f, 1.0f / 1.5f), WithinAbs(0.04f, 1e-6f));
+    CHECK_THAT(FrDielectric(-1.0f, 1.5f), WithinAbs(0.04f, 1e-6f)); // from the far side
+    // no boundary, no reflection
+    CHECK_THAT(FrDielectric(0.3f, 1.0f), WithinAbs(0.0f, 1e-7f));
+    // past the critical angle leaving glass (sin > 1 / 1.5): total internal reflection
+    CHECK(FrDielectric(0.5f, 1.0f / 1.5f) == 1.0f);
+    // grazing: everything reflects
+    CHECK_THAT(FrDielectric(1e-6f, 1.5f), WithinAbs(1.0f, 1e-4f));
+}
+
+TEST_CASE("FrDielectric is the same along a refracted path in both directions", "[optics]")
+{
+    // light refracting from angle i to t reflects as much as light going back from t to i (Stokes)
+    const float eta = 1.5f;
+    for (float cosI = 0.05f; cosI <= 1.0f; cosI += 0.05f)
+    {
+        const float sinT = std::sqrt(1.0f - cosI * cosI) / eta;
+        const float cosT = std::sqrt(1.0f - sinT * sinT);
+        CHECK_THAT(FrDielectric(cosT, 1.0f / eta), WithinAbs(FrDielectric(cosI, eta), 1e-5f));
+    }
+}

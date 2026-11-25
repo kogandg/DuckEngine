@@ -14,7 +14,7 @@ namespace Duck::RayTraceCpu
         int RecommendedPasses() const override { return 1024; }
         AdaptiveSettings GetAdaptiveSettings() const override { return {.MinPasses = 256, .Threshold = 0.01f}; }
     protected:
-        Vec3 Li(const RenderScene& scene, const Ray& cameraRay, ISampler& sampler) const override;
+        Spectrum Li(const RenderScene& scene, const Ray& cameraRay, ISampler& sampler) const override;
 
     private:
         int maxBounces;

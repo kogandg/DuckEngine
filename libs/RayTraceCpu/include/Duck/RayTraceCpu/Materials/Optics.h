@@ -52,4 +52,24 @@ namespace Duck::RayTraceCpu
         const float m = 1.0f - std::clamp(cosTheta, 0.0f, 1.0f);
         return f0 + (Vec3(1.0f) - f0) * (m * m * m * m * m);
     }
+
+    inline float FrDielectric(float cosThetaI, float eta)
+    {
+        cosThetaI = std::clamp(cosThetaI, -1.0f, 1.0f);
+        if (cosThetaI < 0.0f)
+        {
+            eta = 1.0f / eta;
+            cosThetaI = -cosThetaI;
+        }
+        const float sin2ThetaI = 1.0f - cosThetaI * cosThetaI;
+        const float sin2ThetaT = sin2ThetaI / (eta * eta);
+        if (sin2ThetaT >= 1.0f)
+        {
+            return 1.0f;
+        }
+        const float cosThetaT = std::sqrt(std::max(0.0f, 1.0f - sin2ThetaT));
+        const float parallel = (eta * cosThetaI - cosThetaT) / (eta * cosThetaI + cosThetaT);
+        const float perpendicular = (cosThetaI - eta * cosThetaT) / (cosThetaI + eta * cosThetaT);
+        return 0.5f * (parallel * parallel + perpendicular * perpendicular);
+    }
 }

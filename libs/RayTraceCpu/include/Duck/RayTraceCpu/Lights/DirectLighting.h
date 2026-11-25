@@ -12,12 +12,12 @@ namespace Duck::RayTraceCpu
 {
     // f(wi) * Li * cos / pdf for one light sample, or 0 if the light is behind the surface or something blocks it
     template <typename TBrdf>
-    Vec3 ShadowedContribution(const RenderScene& scene, const Hit& hit, const LightSample& sample, TBrdf&& brdf)
+    Spectrum ShadowedContribution(const RenderScene& scene, const Hit& hit, const LightSample& sample, TBrdf&& brdf)
     {
         const float cosine = glm::dot(hit.Normal, sample.Direction);
         if (sample.Pdf <= 0.0f || cosine <= 0.0f)
         {
-            return Vec3(0.0f); // nothing sampled, or the light is behind the surface
+            return Spectrum(0.0f); // nothing sampled, or the light is behind the surface
         }
 
         // stop short of the light so area lights dont shadow themselves
@@ -43,9 +43,10 @@ namespace Duck::RayTraceCpu
     // lights only one is, picked at random: dividing by the chance of picking it keeps the average equal to the sum
     // over all of them, so the cost stays one shadow ray however many emissive objects there are
     template <typename TBrdf, typename TBsdfPdf>
-    Vec3 DirectLighting(const RenderScene& scene, const Hit& hit, ISampler& sampler, TBrdf&& brdf, TBsdfPdf&& bsdfPdf)
+    Spectrum DirectLighting(const RenderScene& scene, const Hit& hit, ISampler& sampler, TBrdf&& brdf,
+                            TBsdfPdf&& bsdfPdf)
     {
-        Vec3 total(0.0f);
+        Spectrum total(0.0f);
         for (const Light& light : scene.GetLights())
         {
             total += ShadowedContribution(scene, hit, SampleLight(light, hit.Point, sampler), brdf);
@@ -65,7 +66,7 @@ namespace Duck::RayTraceCpu
 
     // light sampling on its own (Whitted): nothing else can find the lights, so every sample has full weight
     template <typename TBrdf>
-    Vec3 DirectLighting(const RenderScene& scene, const Hit& hit, ISampler& sampler, TBrdf&& brdf)
+    Spectrum DirectLighting(const RenderScene& scene, const Hit& hit, ISampler& sampler, TBrdf&& brdf)
     {
         return DirectLighting(scene, hit, sampler, brdf, [](const Vec3&) { return 0.0f; });
     }

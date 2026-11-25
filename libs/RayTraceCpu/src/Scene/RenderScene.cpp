@@ -145,7 +145,7 @@ namespace Duck::RayTraceCpu
                 const Shape primitive = GeometryPrimitive(geometry, p);
                 const int materialId =
                     instance.MaterialOverride >= 0 ? instance.MaterialOverride : ShapeMaterialId(primitive);
-                const Vec3 emission = UniformEmission(materials[static_cast<size_t>(materialId)]);
+                const Rgb emission = UniformEmission(materials[static_cast<size_t>(materialId)]);
                 if (MaxComponent(emission) <= 0.0f)
                 {
                     continue;
@@ -322,7 +322,7 @@ namespace Duck::RayTraceCpu
 
         // per area to per solid angle: a patch dA seen from the point covers dA * cos / distance^2 steradians
         const float pdf = surface.Pdf * distanceSquared / cosLight;
-        return {direction, distance, areaLights[static_cast<size_t>(lightIndex)].Radiance, pdf, false};
+        return {direction, distance, FromRgb(areaLights[static_cast<size_t>(lightIndex)].Radiance), pdf, false};
     }
 
     void RenderScene::BuildAreaLightCdf()

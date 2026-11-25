@@ -2,8 +2,9 @@
 
 #include <Duck/Core/Math.h>
 #include <Duck/RayTraceCpu/Materials/Bsdf.h>
-#include <Duck/RayTraceCpu/Scene/Geometry.h>
 #include <Duck/RayTraceCpu/Materials/Optics.h>
+#include <Duck/RayTraceCpu/Sampler.h>
+#include <Duck/RayTraceCpu/Scene/Geometry.h>
 #include <Duck/RayTraceCpu/Scene/Hit.h>
 
 #include <cmath>
@@ -14,31 +15,29 @@
 namespace Duck::RayTraceCpu
 {
     // glTF metallic-roughness material, plus KHR_materials_transmission, _ior, _specular, _emissive_strength, _volume
-    // lobes:
-    // metal (Metallic): mirror reflection, F0 = BaseColor
-    // clear coat (opaque dielelectric part): mirror reflection, F = Specular * Schlick(F0 from Ior)
-    // diffuse under the coat: Labert, BaseColor * (1 - coat F)
-    // transmission: smooth glass tinted by base color and attenuated by attenuation
-    // gltfs defaults are white, metallic 1, roughness 1
+    //
+    // metal (chance Metallic): ConductorBxDF, F0 = BaseColor
+    // glass (chance (1 - Metallic) * Transmission): DielectricBxDF tinted by BaseColor, absorbed by the attenuation
+    // coated plastic (the rest): CoatedDiffuseBxDF, coat F = Specular * Schlick(F0 from Ior), BaseColor underneath
     struct GltfMaterial
     {
-        Vec3 BaseColor{0.8f};
+        Rgb BaseColor{0.8f};
         float Metallic = 0.0f;
         float Roughness = 0.5f;    // perceptual: 0 = mirror smooth, 1 = fully rough
         float Transmission = 0.0f; // 0 = opaque, 1 = everything under the coat refracts (glass)
         float Ior = 1.5f;
         float Specular = 1.0f; // scales the clear coat. 0 = pure Lambert
-        Vec3 Emission{0.0f};   // emitted radiance, W/(m^2 sr)
+        Rgb Emission{0.0f};   // emitted radiance, W/(m^2 sr)
 
         // light is abosorbed so that after AttenuationDistance, only AttenuationColor is left
-        Vec3 AttenuationColor{1.0f};
+        Rgb AttenuationColor{1.0f};
         float AttenuationDistance{Infinity};
 
         // stand-in for a base color texture until hits have UVs: checker on the XZ plane
-        Vec3 CheckerColor{0.0f};
+        Rgb CheckerColor{0.0f};
         float CheckerSize = 0.0f;
 
-        Vec3 BaseColorAt(const Vec3& point) const
+        Rgb BaseColorAt(const Vec3& point) const
         {
             if (CheckerSize <= 0.0f)
             {
@@ -49,51 +48,41 @@ namespace Duck::RayTraceCpu
             return ((cellX + cellZ) & 1) == 0 ? BaseColor : CheckerColor;
         }
 
-        Bsdf GetBsdf(const Hit& hit, const Vec3& wo) const
+        Bsdf GetBsdf(const Hit& hit, ISampler& sampler) const
         {
-            Bsdf bsdf(hit.Normal);
-            const Vec3 base = BaseColorAt(hit.Point);
-            const float dielectric = 1.0f - Metallic;
-            const float opaque = dielectric * (1.0f - Transmission);
-            const float glass = dielectric * Transmission;
-            const float f0 = F0FromIor(Ior);
-
-            if (Metallic > 0.0f)
+            const Spectrum base = FromRgb(BaseColorAt(hit.Point));
+            if (Choose(Metallic, sampler))
             {
-                bsdf.Add(SpecularReflectionLobe{.F0 = base, .Scale = Metallic, .Roughness = Roughness});
+                return Bsdf(hit.Normal, ConductorBxDF{.F0 = base, .Roughness = Roughness});
             }
-            if (opaque > 0.0f)
+            if (Choose(Transmission, sampler))
             {
-                if (Specular > 0.0f)
-                {
-                    bsdf.Add(
-                        SpecularReflectionLobe{.F0 = Vec3(f0), .Scale = opaque * Specular, .Roughness = Roughness});
-                }
-                // the coat reflected F, the diffuse layer under it gets the rest
-                const float coat = Specular * SchlickReflectance(f0, glm::dot(hit.Normal, wo));
-                bsdf.Add(LambertLobe{base * (opaque * (1.0f - coat))});
+                return Bsdf(hit.Normal, DielectricBxDF{.Eta = hit.FrontFace ? Ior : 1.0f / Ior, .Tint = base});
             }
-            if (glass > 0.0f)
+            if (Specular <= 0.0f)
             {
-                bsdf.Add(DielectricLobe{.Eta = hit.FrontFace ? Ior : 1.0f / Ior, .Tint = base, .Scale = glass});
+                return Bsdf(hit.Normal, DiffuseBxDF{.Reflectance = base});
             }
-            return bsdf;
+            return Bsdf(hit.Normal, CoatedDiffuseBxDF{.Reflectance = base,
+                                                      .CoatF0 = F0FromIor(Ior),
+                                                      .CoatWeight = Specular,
+                                                      .Roughness = Roughness});
         }
 
-        Vec3 EmissionAt(const Hit& hit) const { return hit.FrontFace ? Emission : Vec3(0.0f); }
+        Spectrum EmissionAt(const Hit& hit) const { return hit.FrontFace ? Emission : Spectrum(0.0f); }
 
-        Vec3 UniformEmission() const { return Emission; }
+        Rgb UniformEmission() const { return Emission; }
 
         // fraction of light left after traveling distance through the inside.
         // sigma_a = -ln(AttenuationColor) / AttenuationDistance, so exp(-sigma_a * d) = color^(d / distance)
-        Vec3 InteriorTransmittance(float distance) const
+        Spectrum InteriorTransmittance(float distance) const
         {
             const bool transmissive = (1.0f - Metallic) * Transmission > 0.0f;
             if (!transmissive || std::isinf(AttenuationDistance))
             {
                 return Vec3(1.0f);
             }
-            return glm::pow(AttenuationColor, Vec3(distance / AttenuationDistance));
+            return glm::pow(FromRgb(AttenuationColor), Spectrum(distance / AttenuationDistance));
         }
 
         // shorthands for common materials
@@ -127,16 +116,22 @@ namespace Duck::RayTraceCpu
                     .AttenuationColor = color,
                     .AttenuationDistance = distance};
         }
+
+        // true with probability chance. 0 and 1 need no random number
+        static bool Choose(float chance, ISampler& sampler)
+        {
+            return chance >= 1.0f || (chance > 0.0f && sampler.Get1D() < chance);
+        }
     };
 
     // ---------- interface every Material provides ---------
 
     template <typename T>
-    concept MaterialType = requires(const T& material, const Hit& hit, const Vec3& wo, float distance) {
-        { material.GetBsdf(hit, wo) } -> std::same_as<Bsdf>;
-        { material.EmissionAt(hit) } -> std::same_as<Vec3>;
-        { material.UniformEmission() } -> std::same_as<Vec3>;
-        { material.InteriorTransmittance(distance) } -> std::same_as<Vec3>;
+    concept MaterialType = requires(const T& material, const Hit& hit, ISampler& sampler, float distance) {
+        { material.GetBsdf(hit, sampler) } -> std::same_as<Bsdf>;
+        { material.EmissionAt(hit) } -> std::same_as<Spectrum>;
+        { material.UniformEmission() } -> std::same_as<Rgb>;
+        { material.InteriorTransmittance(distance) } -> std::same_as<Spectrum>;
     };
 
     using Material = std::variant<GltfMaterial>;
@@ -149,30 +144,30 @@ namespace Duck::RayTraceCpu
     };
     static_assert(AllMaterialTypes<Material>::value, "Every type in Material must satisfy MaterialType");
 
-    inline Bsdf GetBsdf(const Material& material, const Hit& hit, const Vec3& wo)
+    inline Bsdf GetBsdf(const Material& material, const Hit& hit, ISampler& sampler)
     {
-        return std::visit([&](const auto& typed) { return typed.GetBsdf(hit, wo); }, material);
+        return std::visit([&](const auto& typed) { return typed.GetBsdf(hit, sampler); }, material);
     }
 
-    inline Vec3 EmissionAt(const Material& material, const Hit& hit)
+    inline Spectrum EmissionAt(const Material& material, const Hit& hit)
     {
         return std::visit([&](const auto& typed) { return typed.EmissionAt(hit); }, material);
     }
 
-    inline Vec3 UniformEmission(const Material& material)
+    inline Rgb UniformEmission(const Material& material)
     {
         return std::visit([](const auto& typed) { return typed.UniformEmission(); }, material);
     }
 
-    inline Vec3 InteriorTransmittance(const Material& material, float distance)
+    inline Spectrum InteriorTransmittance(const Material& material, float distance)
     {
         return std::visit([&](const auto& typed) { return typed.InteriorTransmittance(distance); }, material);
     }
 
     // light coming back along the ray from hit. if the ray hit this surface from the inside, it crossed the
     // objects interior to get there and was partly absorbed on the way. (no nested media)
-    inline Vec3 SegmentTransmittance(const Material& material, const Hit& hit)
+    inline Spectrum SegmentTransmittance(const Material& material, const Hit& hit)
     {
-        return hit.FrontFace ? Vec3(1.0f) : InteriorTransmittance(material, hit.T);
+        return hit.FrontFace ? Spectrum(1.0f) : InteriorTransmittance(material, hit.T);
     }
 }
